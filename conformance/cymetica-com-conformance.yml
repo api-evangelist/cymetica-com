@@ -1,0 +1,114 @@
+generated: '2026-09-19'
+method: searched
+source: https://cymetica.com/.well-known/oauth-authorization-server + /.well-known/oauth-protected-resource + /.well-known/security.txt
+  + /.well-known/agent-card.json + /.well-known/asyncapi.json + /.well-known/ucp.json + /.well-known/acp.json +
+  /.well-known/x402.json + live MCP initialize + response headers + openapi/
+standards:
+- id: oauth2
+  conforms: true
+  evidence: OpenAPI securitySchemes.OAuth2 authorizationCode flow (https://cymetica.com/oauth/authorize, /oauth/token)
+    with read/portfolio/trade scopes; the RFC 8414 document lists grant_types authorization_code + refresh_token,
+    response_types code, token_endpoint_auth_methods none/client_secret_post/client_secret_basic.
+- id: oauth2-pkce
+  conforms: true
+  evidence: 'code_challenge_methods_supported: ["S256"] in /.well-known/oauth-authorization-server.'
+- id: rfc8414-authorization-server-metadata
+  conforms: true
+  evidence: GET https://cymetica.com/.well-known/oauth-authorization-server -> 200, issuer https://cymetica.com,
+    saved at well-known/cymetica-com-oauth-authorization-server.json.
+- id: rfc9728-protected-resource-metadata
+  conforms: true
+  evidence: GET https://cymetica.com/.well-known/oauth-protected-resource -> 200; resource https://cymetica.com,
+    authorization_servers [https://cymetica.com], bearer_methods_supported [header], scopes read/portfolio/trade.
+- id: rfc7591-dynamic-client-registration
+  conforms: true
+  evidence: registration_endpoint https://cymetica.com/oauth/register declared in the RFC 8414 document and POST
+    /oauth/register (register_client_oauth_register_post) present in the OpenAPI. Declared, not exercised — registering
+    a client would create state.
+- id: oidc
+  conforms: false
+  evidence: /.well-known/openid-configuration -> 404 on every host. A userinfo_endpoint is declared in the OAuth
+    metadata but no OIDC discovery document, id_token or openid scope is published.
+- id: rfc9116-security-txt
+  conforms: true
+  evidence: /.well-known/security.txt -> 200 text/plain with Contact (2), Expires 2026-12-31T23:59:00Z, Preferred-Languages,
+    Canonical, Policy, Hiring. Not signed.
+- id: mcp
+  conforms: true
+  evidence: POST https://cymetica.com/mcp/v1 initialize -> protocolVersion 2025-03-26, serverInfo eventtrader-mcp
+    1.0.0; tools/list -> 57 tools each with inputSchema and readOnlyHint/destructiveHint/idempotentHint/openWorldHint
+    annotations. Streamable HTTP, stateless.
+- id: a2a
+  conforms: true
+  evidence: '/.well-known/agent-card.json -> A2A 0.3.0 card graded conformant (capabilities object, protocolVersion,
+    skills array, preferredTransport JSONRPC). Caveat: the declared url answers 405 to JSON-RPC; see a2a/cymetica-com-a2a.yml
+    deviations.'
+- id: agent-skills
+  conforms: true
+  evidence: /.well-known/skills/default/SKILL.md (frontmatter name/description/version) and a plugin SKILL.md; llms.txt
+    cites https://agentskills.io/specification.
+- id: llms-txt
+  conforms: true
+  evidence: https://cymetica.com/llms.txt -> 200 text/plain, 58,910 bytes, H1 + blockquote-style summary + link
+    sections; llms-full.txt also served.
+- id: openai-plugin-manifest
+  conforms: true
+  evidence: /.well-known/ai-plugin.json -> schema_version v1, api.type openapi -> https://cymetica.com/openapi-public.json.
+- id: asyncapi-3.0
+  conforms: true
+  evidence: /.well-known/asyncapi.json -> asyncapi "3.0.0", title "EventTrader WebSocket API", 19 channels, 9 operations,
+    servers.production wss cymetica.com. Saved verbatim.
+- id: openapi-3.1
+  conforms: true
+  evidence: https://cymetica.com/openapi-public.json -> openapi "3.1.0", 109 paths / 114 operations, 3 securitySchemes,
+    global security applied.
+- id: agentic-commerce-manifests (UCP/ACP)
+  conforms: true
+  evidence: /.well-known/ucp.json (version 1.0, catalog_url, checkout_url, oauth2 auth, 3 products) and /.well-known/acp.json
+    (merchant, agent_checkout true, 3 supported_actions, payment_methods) both served as JSON. Checkout endpoints
+    (/api/v1/exchange/buy, /api/v1/nexus/subscribe) are NOT in the curated OpenAPI and were not exercised.
+- id: x402
+  conforms: true
+  evidence: '/.well-known/x402.json -> version 1.0, payment_endpoints /api/v1/premium/* at 0.01 USDC per request
+    on base + ethereum. Declared manifest only: /api/v1/premium/* is not in the curated OpenAPI and no 402 response
+    was observed.'
+- id: content-signal
+  conforms: true
+  evidence: 'Every response carries `content-signal: ai-train=no, search=yes, ai-input=yes` (observed on /openapi.json,
+    /api/v1/markets, /api/v1/portfolio/positions).'
+- id: hsts
+  conforms: true
+  evidence: 'strict-transport-security: max-age=31536000; includeSubDomains (observed); TLSv1.3 (security/cymetica-com-domain-security.yml).'
+- id: rfc9457
+  conforms: false
+  evidence: 'No application/problem+json anywhere in the spec; errors are FastAPI {"detail": ...} / HTTPValidationError
+    and a documented {"error":{"code","message"}} envelope. See errors/cymetica-com-problem-types.yml.'
+- id: json:api
+  conforms: false
+  evidence: No application/vnd.api+json; plain JSON objects.
+- id: pagination
+  conforms: true
+  evidence: 'Mixed: cursor (GET /api/v1/markets `cursor`, response `cursor`; /api-docs calls it "Kalshi-compatible"),
+    limit/offset with `skip` alias and 1-based `page` on /api/v1/event-cards, `page` on clone activity. `limit`
+    appears on 20 operations.'
+- id: idempotency
+  conforms: partial
+  evidence: 'Idempotency-Key header documented on ONE write (POST /api/v1/exchange/{symbol}/orders: response cached
+    300 s keyed by (user_id, idempotency_key)); the CLOB router and every other write have none. conventions/cymetica-com-conventions.yml
+    idempotency.coverage: partial.'
+- id: rfc8594-deprecation-sunset
+  conforms: false
+  evidence: 'No Deprecation or Sunset header, no deprecated: true operation, no deprecation policy page (/changelog,
+    /whats-new, /releases all 404).'
+domain_standard:
+  found: false
+  checked: '2026-09-19'
+  note: REWARD-ONLY check; nothing invented. The contract declares no market-domain standard (no FIX/FIXatdl, no
+    ISO 20022, no OpenRTB/SCIM/OData shape). Its on-chain surfaces reference ERC-20 and ERC-4626 (strategy vaults
+    on /api-docs) and the AsyncAPI names Base/Ethereum chains, but the API contract itself does not expose a standardised
+    schema an integrator could speak without a bespoke connector; the docs' "Kalshi-compatible" cursor pagination
+    is a vendor pattern, not a standard.
+compliance_programs:
+  found: false
+  note: 'No SOC 2 / ISO 27001 / PCI / trust center published (probe-security-programs.py: trust=none; /trust, /security,
+    /transparency 404 or redirect to the bug bounty). No Compliance pointer is emitted.'

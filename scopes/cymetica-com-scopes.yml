@@ -1,0 +1,46 @@
+generated: '2026-09-19'
+method: searched
+source: openapi/cymetica-com-eventtrader-public-api-openapi.yml
+schemes:
+- name: OAuth2
+  source: openapi/cymetica-com-eventtrader-public-api-openapi.yml
+  flows:
+  - flow: authorizationCode
+    authorizationUrl: https://cymetica.com/oauth/authorize
+    tokenUrl: https://cymetica.com/oauth/token
+scopes:
+- scope: portfolio
+  description: Read portfolio positions
+  flows:
+  - authorizationCode
+  sources:
+  - openapi/cymetica-com-eventtrader-public-api-openapi.yml
+- scope: read
+  description: Read public and account data
+  flows:
+  - authorizationCode
+  sources:
+  - openapi/cymetica-com-eventtrader-public-api-openapi.yml
+- scope: trade
+  description: Place and cancel orders
+  flows:
+  - authorizationCode
+  sources:
+  - openapi/cymetica-com-eventtrader-public-api-openapi.yml
+docs: https://cymetica.com/.well-known/oauth-authorization-server
+sources_searched:
+- 'https://cymetica.com/.well-known/oauth-authorization-server (scopes_supported: read, portfolio, trade)'
+- https://cymetica.com/.well-known/oauth-protected-resource (scopes_supported identical)
+- https://cymetica.com/.well-known/mcp.json (authentication.oauth.scopes identical)
+- https://cymetica.com/api-docs (API key permissions read/trade/withdraw — a parallel permission model for keys,
+  not OAuth scopes)
+note: The three scopes in the spec are exactly the scopes_supported in the RFC 8414 and RFC 9728 documents; no scopes/permissions
+  reference page exists beyond those. OAuth tokens cannot withdraw (docs); withdraw is an API-key permission reserved
+  for registered agent keys.
+api_key_permissions:
+- permission: read
+  description: market data / account reads
+- permission: trade
+  description: place/cancel orders
+- permission: withdraw
+  description: registered agent keys only — moves the agent's own balance through the standard withdrawal gates

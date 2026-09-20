@@ -1,0 +1,567 @@
+generated: '2026-09-19'
+method: derived
+source: Derived by aligning the LIVE anonymous tools/list of https://cymetica.com/mcp/v1 (57 tools, 2026-09-19)
+  plus the 35 trust-gated tools declared in /.well-known/mcp.json against the provider's curated public OpenAPI
+  (openapi/cymetica-com-eventtrader-public-api-openapi.yml, 114 operations; source in openapi/_original/). Confidence
+  per row.
+purpose: 'Bind each agent-facing MCP tool to the REST operationId(s) that back it so the tool inherits a real parameters+requestBody
+  contract from the spec, and expose where the MCP, REST and WebSocket surfaces DIVERGE: the remote MCP server is
+  mostly a read/research surface with a preflight-only place_order, the money legs execute over REST, and a large
+  part of the MCP inventory (ontology, agent board, funds, Build-it-Better, launchpad on Sui) has no public REST
+  contract at all.'
+surfaces:
+  rest_openapi: 'openapi/cymetica-com-eventtrader-public-api-openapi.yml  # 114 operations, 47 schemas; provider-published
+    curated subset — the docs site names many more paths'
+  graphql: 'none  # POST /graphql 405, GET 401; no GraphQL surface documented'
+  mcp: 'https://cymetica.com/mcp/v1  # tools/list OPEN anonymously (57 tools with inputSchema); 35 more tools gated
+    by trust tier'
+  websocket: 'asyncapi/cymetica-com-websocket-asyncapi.json  # provider-published AsyncAPI 3.0.0 at /.well-known/asyncapi.json'
+  webhooks: 'asyncapi/cymetica-com-webhooks.yml  # register_webhook MCP tool, allied tier'
+crosswalk:
+- tool: list_markets
+  category: markets
+  rest:
+  - list_markets_api_v1_markets_get
+  binding: rest
+  confidence: high
+  gated: false
+- tool: get_prices
+  category: markets
+  rest:
+  - get_ticker_api_v1_exchange__symbol__ticker_get
+  - best_bid_offer_api_v1_exchange__symbol__bbo_get
+  binding: rest
+  confidence: medium
+  gated: false
+  note: Tool takes market_id (a CLOB pair symbol); the REST ticker/bbo take {symbol} on the exchange router.
+- tool: get_orderbook
+  category: markets
+  rest:
+  - orderbook_api_v1_exchange__symbol__book_get
+  binding: rest
+  confidence: high
+  gated: false
+- tool: list_clob_pairs
+  category: markets
+  rest:
+  - list_exchange_pairs_api_v1_exchange_pairs_get
+  binding: rest
+  confidence: high
+  gated: false
+- tool: search_markets
+  category: markets
+  rest:
+  - search_symbols_api_v1_event_cards_symbols_search_get
+  binding: rest
+  confidence: low
+  gated: false
+  note: Semantic market search; the closest public REST op searches the event-card symbol universe, not prediction
+    markets.
+- tool: get_backtest_models
+  category: backtesting
+  rest:
+  - list_models_api_v1_research_backtest_models_get
+  binding: rest
+  confidence: high
+  gated: false
+- tool: launchpad_list_tokens
+  category: launchpad
+  rest:
+  - list_onchain_tokens_api_v1_launchpad_onchain_tokens_get
+  - launchpad_screener_api_v1_launchpad_onchain_screener_get
+  binding: rest
+  confidence: high
+  gated: false
+- tool: launchpad_launch_token
+  category: launchpad
+  rest:
+  - prepare_launch_api_v1_launchpad_onchain_launch_prepare_post
+  binding: rest
+  confidence: high
+  gated: false
+  note: Both return an unsigned createToken tx for the caller's own wallet to sign.
+- tool: launchpad_list_launchers
+  category: launchpad
+  rest:
+  - list_cross_launchers_api_v1_launchpad_onchain_launchers_get
+  binding: rest
+  confidence: high
+  gated: false
+- tool: launchpad_record_cross_launch
+  category: launchpad
+  rest:
+  - record_cross_launch_route_api_v1_launchpad_onchain_launch_cross_record_post
+  binding: rest
+  confidence: high
+  gated: false
+- tool: launchpad_trade_quote
+  category: launchpad
+  rest:
+  - get_trade_quote_api_v1_launchpad_onchain_tokens__address__quote_get
+  binding: rest
+  confidence: high
+  gated: false
+- tool: launchpad_get_token
+  category: launchpad
+  rest:
+  - get_onchain_token_api_v1_launchpad_onchain_tokens__address__get
+  - get_onchain_token_metadata_api_v1_launchpad_onchain_tokens__address__onchain_get
+  - get_onchain_trades_api_v1_launchpad_onchain_tokens__address__trades_get
+  - get_onchain_holders_api_v1_launchpad_onchain_tokens__address__holders_get
+  binding: rest
+  confidence: high
+  gated: false
+  note: 'Composite: the tool folds token, on-chain metadata, trades and holders into one response.'
+- tool: get_strategy_returns
+  category: backtesting
+  rest:
+  - leaderboard_api_v1_research_backtest_leaderboard_get
+  binding: rest
+  confidence: low
+  gated: false
+  note: Grounded backtest metrics per strategy; the leaderboard op is the nearest public REST projection.
+- tool: preview_card_basket
+  category: event-cards
+  rest:
+  - backtest_event_card_idea_api_v1_event_cards_backtest_idea_post
+  binding: rest
+  confidence: low
+  gated: false
+  note: Preview validates/prices basket legs; the REST idea-backtest takes the same constituent shape (IdeaConstituent).
+- tool: list_clonable_bots
+  category: cloned-bots
+  rest:
+  - get_available_bots_api_v1_cloned_bots_available_get
+  binding: rest
+  confidence: high
+  gated: false
+- tool: get_crypto_outlook
+  category: research
+  rest:
+  - coin_outlook_api_v1_crypto_outlook__symbol__get
+  - coin_outlook_text_api_v1_crypto_outlook__symbol__txt_get
+  binding: rest
+  confidence: high
+  gated: false
+- tool: get_agent_profile
+  category: trust
+  rest:
+  - get_my_profile_mcp_v1_agents_me_get
+  binding: rest
+  confidence: high
+  gated: true
+- tool: get_deposit_address
+  category: funding
+  rest:
+  - get_deposit_addresses_api_v1_funding_deposit_addresses_get
+  - get_user_swarm_wallet_api_v1_funding_me_swarm_wallet_get
+  binding: rest
+  confidence: high
+  gated: true
+- tool: place_order
+  category: trading
+  rest:
+  - place_order_api_v1_clob_orders_post
+  binding: rest
+  confidence: high
+  gated: true
+  note: The MCP tool is a balance-free PREFLIGHT validation; the tool description says execution happens by POSTing
+    the same fields to REST /api/v1/clob/orders.
+- tool: get_positions
+  category: trading
+  rest:
+  - get_portfolio_positions_api_v1_portfolio_positions_get
+  - get_portfolio_summary_api_v1_portfolio_summary_get
+  binding: rest
+  confidence: high
+  gated: true
+- tool: get_event_card_info
+  category: event-cards
+  rest:
+  - get_event_card_api_v1_event_cards__card_id__get
+  - list_event_cards_api_v1_event_cards_get
+  binding: rest
+  confidence: medium
+  gated: true
+  note: Tool resolves by title / EVCDX ticker / id; REST takes card_id.
+- tool: backtest_event_card_idea
+  category: event-cards
+  rest:
+  - backtest_event_card_idea_api_v1_event_cards_backtest_idea_post
+  binding: rest
+  confidence: high
+  gated: true
+- tool: trade_event_card
+  category: event-cards
+  rest:
+  - buy_event_card_api_v1_event_cards__card_id__buy_post
+  - sell_event_card_api_v1_event_cards__card_id__sell_post
+  - short_event_card_api_v1_event_cards__card_id__short_post
+  - paper_trade_event_card_basket_api_v1_event_cards__card_id__paper_trade_post
+  binding: rest
+  confidence: high
+  gated: true
+  note: direction bull -> buy, bear -> short; paper=true -> paper-trade.
+- tool: clone_bot
+  category: cloned-bots
+  rest:
+  - clone_bot_api_v1_cloned_bots_clone_post
+  binding: rest
+  confidence: high
+  gated: true
+  note: Tool description names the REST twin.
+- tool: get_my_clones
+  category: cloned-bots
+  rest:
+  - get_my_clones_api_v1_cloned_bots_my_clones_get
+  binding: rest
+  confidence: high
+  gated: true
+- tool: fund_clone_bot
+  category: funds
+  rest:
+  - fund_clone_bot_api_v1_cloned_bots__instance_id__fund_post
+  binding: rest
+  confidence: high
+  gated: true
+  note: Tool description names the REST twin.
+- tool: get_clone_balance
+  category: cloned-bots
+  rest:
+  - get_clone_bot_balance_api_v1_cloned_bots__instance_id__balance_get
+  binding: rest
+  confidence: high
+  gated: true
+- tool: toggle_bot_trading
+  category: cloned-bots
+  rest:
+  - toggle_trading_api_v1_cloned_bots__instance_id__toggle_trading_post
+  binding: rest
+  confidence: high
+  gated: true
+- tool: update_bot_settings
+  category: cloned-bots
+  rest:
+  - update_settings_api_v1_cloned_bots__instance_id__settings_patch
+  binding: rest
+  confidence: high
+  gated: true
+mcp_only:
+- tool: get_trust_signal
+  gated: false
+  reason: Provider-agnostic trust score; no public REST op.
+- tool: get_market
+  gated: false
+  reason: REST GET /api/v1/markets/{address} is documented in llms.txt/SKILL.md but absent from the curated public
+    OpenAPI.
+- tool: get_platform_status
+  gated: false
+  reason: Runtime status composite; REST /health exists live but is not in the spec.
+- tool: who_is_this
+  gated: false
+  reason: Platform identity text; no REST op.
+- tool: get_ai_native_proof
+  gated: false
+  reason: Reads /api/v1/build-stats (live, not in the curated spec).
+- tool: get_trust_ladder
+  gated: false
+  reason: Trust-ladder specification; MCP-native.
+- tool: get_btc_pool_state
+  gated: false
+  reason: Prediction-pool state; pools API not in the curated spec.
+- tool: get_btc_pool_history
+  gated: false
+  reason: As above.
+- tool: get_prediction_statistics
+  gated: false
+  reason: As above.
+- tool: get_deadcoin_quote
+  gated: false
+  reason: Dead-Coin Buyback Desk; no REST op in the curated spec.
+- tool: get_deadcoin_desk_info
+  gated: false
+  reason: As above.
+- tool: ceo_ai_index_get
+  gated: false
+  reason: Backed by /api/v1/ceo-ai-leaderboard/* (live JSON, not in the curated spec).
+- tool: get_bug_bounty_program
+  gated: false
+  reason: Programme text; no REST op.
+- tool: list_backtest_surfaces
+  gated: false
+  reason: Descriptive composite over five backtest surfaces.
+- tool: launchpad_set_token_socials
+  gated: false
+  reason: Socials write; no public REST op.
+- tool: sui_launchpad_prepare
+  gated: false
+  reason: Sui Move package renderer; no REST op in the spec.
+- tool: list_ontology_dimensions
+  gated: false
+  reason: Master ontology at /api/v1/ontology/master/* is live but not in the curated spec.
+- tool: browse_ontology
+  gated: false
+  reason: As above.
+- tool: resolve_ontology_concept
+  gated: false
+  reason: As above.
+- tool: search_ontology
+  gated: false
+  reason: As above.
+- tool: find_trade_path
+  gated: false
+  reason: Ontology path resolver (instrument -> venue -> place_order); no REST op in the spec.
+- tool: board_channels
+  gated: false
+  reason: Agent Returns Board — REST /api/v1/agent-board/threads is live but not in the curated spec.
+- tool: board_search
+  gated: false
+  reason: As above.
+- tool: board_threads
+  gated: false
+  reason: As above.
+- tool: board_read_thread
+  gated: false
+  reason: As above.
+- tool: board_read_post
+  gated: false
+  reason: As above.
+- tool: board_post
+  gated: false
+  reason: As above (write).
+- tool: board_revise
+  gated: false
+  reason: As above (write).
+- tool: board_replicate
+  gated: false
+  reason: As above (write).
+- tool: board_subscribe
+  gated: false
+  reason: Subscription to a WebSocket feed; see asyncapi/.
+- tool: board_flag
+  gated: false
+  reason: As above (write).
+- tool: list_funds
+  gated: false
+  reason: Fund-performance research; no REST op in the curated spec.
+- tool: get_fund
+  gated: false
+  reason: As above.
+- tool: get_fund_history
+  gated: false
+  reason: As above.
+- tool: get_fund_methodology
+  gated: false
+  reason: As above.
+- tool: bb_search_rebuilt_apps
+  gated: false
+  reason: Build-it-Better workflow; MCP-native.
+- tool: bb_file_request
+  gated: false
+  reason: As above.
+- tool: bb_get_request
+  gated: false
+  reason: As above.
+- tool: bb_accept_spec
+  gated: false
+  reason: As above.
+- tool: bb_request_change
+  gated: false
+  reason: As above.
+- tool: bb_post_verdict
+  gated: false
+  reason: As above.
+- tool: get_rate_limits
+  gated: true
+  reason: Per-key limit status; MCP-native (INSUFFICIENT_TRUST anonymously).
+- tool: submit_observation
+  gated: true
+  reason: Contribution tool; no REST op.
+- tool: submit_feedback
+  gated: true
+  reason: As above.
+- tool: request_feature
+  gated: true
+  reason: As above.
+- tool: query_knowledge
+  gated: true
+  reason: Knowledge-base search; no REST op in the spec.
+- tool: ask_nexus_deep
+  gated: true
+  reason: NEXUS deep investigation; REST /api/v1/bounty/qa-agent/ask is documented in the agent card, not the spec.
+- tool: get_deep_answer
+  gated: true
+  reason: As above.
+- tool: submit_signal
+  gated: true
+  reason: Signal submission; no REST op.
+- tool: get_signal_history
+  gated: true
+  reason: As above.
+- tool: get_market_analytics
+  gated: true
+  reason: Analytics composite; no REST op.
+- tool: get_oracle_insights
+  gated: true
+  reason: As above.
+- tool: get_order_history
+  gated: true
+  reason: No order-history op in the curated spec (GET /api/v1/trades is documented in llms.txt only).
+- tool: register_webhook
+  gated: true
+  reason: Webhook registration is MCP-only; see asyncapi/cymetica-com-webhooks.yml.
+- tool: subscribe_prices
+  gated: true
+  reason: Returns a WebSocket connect recipe; see asyncapi/.
+- tool: create_aib_fund
+  gated: true
+  reason: AIB fund builder; no REST op in the curated spec.
+- tool: list_my_aib_funds
+  gated: true
+  reason: As above.
+- tool: edit_aib_fund_basket
+  gated: true
+  reason: As above.
+- tool: set_aib_fund_weights
+  gated: true
+  reason: As above.
+- tool: suggest_card_assets
+  gated: true
+  reason: Event -> basket suggestion; no REST op in the spec.
+- tool: build_custom_event_card
+  gated: true
+  reason: Custom card launch; no REST op in the spec.
+- tool: get_bot_indicators
+  gated: true
+  reason: Indicator params; no REST op in the spec.
+- tool: update_bot_indicators
+  gated: true
+  reason: As above.
+rest_only:
+- capability: API Keys
+  operations:
+  - list_api_keys_api_v1_api_keys_get
+  - create_api_key_api_v1_api_keys_post
+  - revoke_api_key_api_v1_api_keys__key_id__delete
+  - update_api_key_api_v1_api_keys__key_id__patch
+- capability: Asset Universe
+  operations:
+  - top_movers_api_v1_universe_movers_get
+  - potential_movers_api_v1_universe_movers_potential_get
+  - movers_tournament_api_v1_universe_movers_tournament_get
+  - movers_tournament_enter_api_v1_universe_movers_tournament_enter_post
+- capability: Backtest Labs API
+  operations:
+  - run_backtest_api_v1_backtest_labs_run_post
+- capability: CLOB
+  operations:
+  - cancel_all_orders_api_v1_clob_orders_delete
+  - amend_order_api_v1_clob_orders__order_id__patch
+  - cancel_order_api_v1_clob_orders__order_id__delete
+- capability: Exchange
+  operations:
+  - place_order_api_v1_exchange__symbol__orders_post
+  - cancel_all_orders_for_pair_api_v1_exchange__symbol__orders_delete
+  - recent_trades_api_v1_exchange__symbol__trades_get
+- capability: MCP Public Interface
+  operations:
+  - mcp_jsonrpc_mcp_v1_post
+  - get_platform_capabilities_mcp_v1_capabilities_get
+  - list_available_tools_mcp_v1_tools_get
+  - claim_agent_ownership_mcp_v1_agents__agent_id__claim_post
+  - fund_agent_from_owner_mcp_v1_agents__agent_id__fund_post
+  - register_new_agent_mcp_v1_register_post
+  - list_my_agents_mcp_v1_agents_mine_get
+  - invoke_tool_mcp_v1_tools__tool_name__post
+- capability: Research Backtest API
+  operations:
+  - list_themes_api_v1_research_backtest_themes_get
+  - list_runs_api_v1_research_backtest_runs_get
+  - get_run_api_v1_research_backtest_runs__run_id__get
+  - run_api_v1_research_backtest_run_post
+  - queue_state_api_v1_research_backtest_queue_get
+- capability: Robinhood Testnet
+  operations:
+  - get_testnet_wallet_api_v1_robinhood_wallet_get
+- capability: Swap
+  operations:
+  - get_swap_history_api_v1_swap_history_get
+- capability: Token Launchpad (on-chain)
+  operations:
+  - get_onchain_config_api_v1_launchpad_onchain_config_get
+- capability: authentication
+  operations:
+  - register_auth_register_post
+  - login_auth_login_post
+  - bootstrap_api_key_auth_api_key_post
+- capability: cloned-bots
+  operations:
+  - withdraw_from_clone_bot_api_v1_cloned_bots__instance_id__withdraw_post
+  - get_activity_feed_api_v1_cloned_bots__instance_id__activity_get
+  - get_asset_analytics_api_v1_cloned_bots__instance_id__asset_analytics_get
+  - go_live_api_v1_cloned_bots__instance_id__go_live_post
+  - delete_clone_bot_api_v1_cloned_bots__instance_id__delete
+- capability: clones
+  operations:
+  - fomo_radar_signals_api_v1_clones_fomo_radar_signals_get
+  - fomo_radar_traders_api_v1_clones_fomo_radar_traders_get
+  - fomo_radar_docs_api_v1_clones_fomo_radar_docs_get
+  - memecoin_terminal_tokens_api_v1_clones_memecoin_terminal_tokens_get
+  - memecoin_terminal_search_api_v1_clones_memecoin_terminal_search_get
+  - memecoin_terminal_docs_api_v1_clones_memecoin_terminal_docs_get
+  - social_pulse_assets_api_v1_clones_social_pulse_assets_get
+  - social_pulse_asset_api_v1_clones_social_pulse_assets__symbol__get
+  - social_pulse_docs_api_v1_clones_social_pulse_docs_get
+  - protocol_revenue_rankings_api_v1_clones_protocol_revenue_rankings_get
+  - protocol_revenue_detail_api_v1_clones_protocol_revenue_protocols__slug__get
+  - protocol_revenue_docs_api_v1_clones_protocol_revenue_docs_get
+  - stable_pools_list_api_v1_clones_stable_pools_pools_get
+  - stable_pool_history_api_v1_clones_stable_pools_pools__pool_id__get
+  - stable_pools_docs_api_v1_clones_stable_pools_docs_get
+  - allswap_index_api_v1_clones_allswap_index_get
+  - allswap_docs_api_v1_clones_allswap_docs_get
+- capability: crypto-outlook
+  operations:
+  - coins_api_v1_crypto_outlook_coins_get
+- capability: event-cards
+  operations:
+  - historical_analogs_api_v1_event_cards__card_id__historical_analogs_post
+  - my_positions_api_v1_event_cards_positions_get
+  - index_history_api_v1_event_cards__card_id__index_history_get
+- capability: funder-rewards
+  operations:
+  - get_reward_summary_api_v1_rewards_summary_get
+- capability: macromarket
+  operations:
+  - build_api_v1_macromarket_build_post
+  - backtest_api_v1_macromarket_backtest_post
+- capability: oauth
+  operations:
+  - register_client_oauth_register_post
+  - token_oauth_token_post
+  - userinfo_oauth_userinfo_get
+- capability: posted-links
+  operations:
+  - posted_links_api_api_v1_posted_links_get
+- capability: rst
+  operations:
+  - list_rsts_api_v1_rst_list_get
+  - get_pending_rewards_api_v1_rst__address__rewards_get
+  - et10_diligence_api_v1_rst_et10_diligence_get
+  - get_rst_quote_api_v1_rst__address__quote_get
+- capability: rst-crypto-buy
+  operations:
+  - get_supported_tokens_api_v1_rst_supported_tokens_get
+  - get_exchange_address_api_v1_rst_exchange_address__token_symbol__get
+- capability: withdrawals
+  operations:
+  - public_token_gates_api_v1_withdrawals_token_gates_get
+coverage:
+  tools_named: 92
+  tools_live_anonymous: 57
+  tools_gated: 35
+  tools_bound: 29
+  mcp_only: 63
+  rest_ops_total: 114
+  rest_ops_with_tool: 40
+  rest_only: 74

@@ -1,0 +1,63 @@
+# fetch-price
+
+> UK product and price search API built for AI agents. One request, every
+> supported UK marketplace, normalised JSON out. Currently live: eBay UK
+> (official Browse API). Rolling out: Amazon UK. Free tier: 50 lookups/month,
+> no card and no API key required.
+
+fetch-price answers the question agents get asked constantly: "what does this
+cost and where do I buy it in the UK?" Send a plain-language query, get back
+products with live prices in GBP, condition, and a direct purchase URL to hand
+to the human.
+
+## Affiliate disclosure
+
+Purchase links returned by this API are affiliate-tracked: if a person buys
+through one, the marketplace pays us a commission at no extra cost to them.
+Commission does not affect ranking — results come back in the marketplace's own
+order and we do not reorder, boost or suppress listings. Paid-plan customers can
+supply their own affiliate credentials instead, in which case the commission is
+theirs. If you surface these results to a person, pass this disclosure on.
+Full detail: https://fetch-price.com/privacy
+
+## How to integrate
+
+- [API reference](https://fetch-price.com/docs): POST /api/query — request and response schema, auth, rate limits
+- [MCP server](https://fetch-price.com/docs#mcp): stdio MCP server for Claude Code, Claude Desktop, Cursor, and any MCP client
+- [Agent card](https://fetch-price.com/.well-known/agent-card.json): A2A 1.0.0 discovery document
+- [Pricing](https://fetch-price.com/docs#pricing): Free 50/mo, Pro £29/mo 5,000, Scale £99/mo unlimited
+- [Privacy & disclosure](https://fetch-price.com/privacy): what we log, how commission works
+
+## Install
+
+    npm install fetch-price
+    pip install fetch-price
+
+## Quick example
+
+POST https://api.fetch-price.com/api/query
+{"query": "portable air conditioner", "max_results": 5, "max_price": 300, "networks": ["ebay_uk"]}
+
+Response: {"results": [{"product": "...", "price": 275.99, "currency": "GBP", "condition": "New", "network": "ebay_uk", "result_type": "item", "url": "https://www.ebay.co.uk/itm/..."}], "meta": {...}}
+
+Every result carries result_type: "item" is a real listing with a live price;
+"search_link" is a tracked marketplace search URL with price 0, served for
+networks not yet live or if an upstream API is briefly unavailable. Never
+present a search_link to a user as though it were a product.
+
+## When to use this service
+
+- A user asks an agent to find, compare, or price a physical product available in the UK
+- An agent needs live UK marketplace prices rather than stale training data
+- An agent needs a purchase link it can hand directly to its human
+
+## When not to use it
+
+- Non-UK marketplaces — this is a UK-only service
+- Digital goods, services, or anything without a marketplace listing
+- Bulk scraping of catalogue data; the rate limits are enforced
+
+## Optional
+
+- [Status](https://api.fetch-price.com/health): live service health
+- [Source](https://github.com/fusionx212/fetch-price): MCP server and SDKs, MIT licensed

@@ -1,0 +1,110 @@
+generated: '2026-09-19'
+method: probed
+source: https://cymetica.com/.well-known/agent-card.json
+discovery:
+  path: /.well-known/agent-card.json
+  canonical: true
+  host: cymetica.com
+  note: 'Also served byte-identical at the legacy /.well-known/agent.json and on www.cymetica.com and api.cymetica.com
+    (same application). The provider entered the harvest backlog from an A2A registry listing; the card above was
+    fetched directly from the provider''s own host. Ownership is not in question: provider.organization is "Cymetica"
+    with provider.url https://cymetica.com, the OpenAPI on the same host titles itself "EventTrader Public API"
+    with servers[] https://cymetica.com, and the knowledge base states Company: Cymetica / Product: EventTrader.'
+conformance:
+  spec: A2A 1.0.0
+  grade: conformant
+  protocol_version: 0.3.0
+  preferred_transport: JSONRPC
+  hard_checks:
+    capabilities_is_object: true
+    protocolVersion_present: true
+    skills_is_array: true
+  optional_present:
+    preferredTransport: true
+    defaultInputModes: true
+    defaultOutputModes: true
+    provider: true
+  deviations:
+  - auth-declared-under-nonspec-authentication-key-not-securitySchemes
+  - url-is-site-root-not-a2a-endpoint
+  - a2a-jsonrpc-endpoint-not-answered
+  - custom-envelope-protocol-in-a2a_protocol-extension
+  - seven-nonspec-top-level-keys
+  - skills-carry-nonspec-endpoints-and-url-fields
+  deviation_notes:
+  - The card puts its auth under a non-spec `authentication.schemes` list (bearer + apiKey X-API-Key) instead of
+    A2A `securitySchemes` + `security`; an A2A client reading the spec fields sees no auth declared.
+  - '`url` is https://cymetica.com (the website root). A POST of a JSON-RPC tasks/get to that URL returned HTTP
+    405 {"detail":"Method Not Allowed"} on 2026-09-19, so the declared A2A endpoint does not answer A2A JSON-RPC.'
+  - 'The `a2a_protocol` extension block (version "a2a/1.0") describes a custom REST envelope at POST /api/v1/a2a/message
+    with its own message_types (chat, trade_signal, tip, alert, advice, partnership_inquiry) and optional HMAC-SHA256
+    signatures — cross-agent interop by the provider''s own protocol, not the A2A message/send + tasks/* methods.
+    Not exercised: sending a message would create state.'
+  - 'Top-level keys outside the A2A schema: strongest_model_used, verification, authentication, a2a_protocol, communication_guide,
+    for_evaluating_agents, links. Skill entries add `endpoints` and `url`. Extra keys are not a hard failure and
+    do not affect the grade.'
+card:
+  name: CyMetica AI
+  url: https://cymetica.com
+  version: 1.0.0
+  protocol_version: 0.3.0
+  provider:
+    organization: Cymetica
+    url: https://cymetica.com
+  capabilities:
+    streaming: true
+    pushNotifications: false
+    stateTransitionHistory: false
+  default_input_modes:
+  - application/json
+  default_output_modes:
+  - application/json
+  skills: 19
+  skill_ids:
+  - prop-desk-trading
+  - trade-prediction-markets
+  - trade-event-cards
+  - live-headlines
+  - clone-ai-agent
+  - exchange-tokens
+  - et10-revenue-share
+  - bug-bounty
+  - arena-trading
+  - market-data
+  - ceo-ai-expertise-index
+  - ai-crypto-nativeness-leaderboard
+  - ai-native-provenance
+  - ai-due-diligence
+  - ai-pivot-washing
+  - smart-delegation
+  - tge-prediction-markets
+  - asset-discovery
+  - portfolio-management
+  declared_mcp_endpoint: https://cymetica.com/.well-known/mcp.json
+  declared_custom_a2a_endpoint: https://cymetica.com/api/v1/a2a/message
+  file: cymetica-com-agent-card.json
+x-evidence:
+  fetched: '2026-09-19'
+  url: https://cymetica.com/.well-known/agent-card.json
+  http_status: 200
+  content_type: application/json
+  body_bytes: 21083
+  body_parses_as: JSON object with AgentCard shape (name, url, version, protocolVersion, preferredTransport, capabilities,
+    defaultInputModes, defaultOutputModes, skills, provider)
+  corroborating_probes:
+  - url: https://cymetica.com/.well-known/agent.json
+    http_status: 200
+    note: Byte-identical to agent-card.json.
+  - url: https://www.cymetica.com/.well-known/agent-card.json
+    http_status: 200
+  - url: https://api.cymetica.com/.well-known/agent-card.json
+    http_status: 200
+  - url: https://cymetica.com/.well-known/openid-configuration
+    http_status: 404
+    note: 'Negative control on the same host: 22-byte JSON 404, so the card 200 is not a catch-all.'
+  - url: https://cymetica.com/
+    method: POST
+    body: '{"jsonrpc":"2.0","id":1,"method":"tasks/get","params":{"id":"apievangelist-nonexistent-probe"}}'
+    http_status: 405
+    response: '{"detail":"Method Not Allowed"}'
+    note: The card's declared url does not answer A2A JSON-RPC. No message was sent and no state was created.

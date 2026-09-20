@@ -1,0 +1,1 @@
+{"resource":"https://cymetica.com","authorization_servers":["https://cymetica.com"],"scopes_supported":["read","portfolio","trade"],"bearer_methods_supported":["header"],"resource_documentation":"https://cymetica.com/api"}

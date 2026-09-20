@@ -1,0 +1,109 @@
+generated: '2026-09-19'
+method: searched
+source: registry.npmjs.org, pypi.org/pypi/<pkg>/json, repo1.maven.org, https://cymetica.com/sdk, https://cymetica.com/api-docs#sdk,
+  https://cymetica.com/examples, https://cymetica.com/static/plugins/marketplace.json, https://cymetica.com/launchpad/robinhood/sdk
+summary:
+  first_party_sdk_count: 3
+  note: 'Three first-party packages are live in public registries under the cymetica publisher (dev@cymetica.com):
+    a TypeScript SDK on npm, a Python SDK on PyPI, and the stdio MCP server on PyPI. Two further libraries the docs
+    advertise do NOT exist where the docs say: the Java SDK (com.eventtrader:event-trader-sdk 1.0.0 on /api-docs)
+    is absent from Maven Central, and the npm name `event-trader` (yarn/pnpm snippets) is unregistered — the real
+    npm name is cymetica-eventtrader. The /examples page still says the JS SDK "npm release is in progress" while
+    npm shows 1.2.0 published 2026-09-15: documentation drift, not a missing package. Both SDK releases post-date
+    the OpenAPI capture (no abandonment signal).'
+github_organization:
+  found: false
+  checked: '2026-09-19'
+  note: github.com/eventtrader exists as a user account with ZERO public repositories (api.github.com/users/eventtrader/repos
+    -> []); api.github.com/orgs/eventtrader and api.github.com/users/cymetica both 404. The AGENTS.md that llms.txt
+    and udc.json point at (github.com/eventtrader/event-trader) returns 404 raw. No GitHubOrganization pointer is
+    emitted.
+packages:
+- language: typescript
+  registry: npm
+  name: cymetica-eventtrader
+  url: https://www.npmjs.com/package/cymetica-eventtrader
+  install: npm install cymetica-eventtrader
+  official: true
+  version: 1.2.0
+  published: '2026-09-15'
+  publisher: cymetica (dev@cymetica.com)
+  license: MIT
+  homepage: https://cymetica.com/sdk
+  note: 'Only one version has ever been published (1.2.0). Import name per docs: `event-trader`.'
+- language: python
+  registry: pypi
+  name: cymetica-eventtrader
+  url: https://pypi.org/project/cymetica-eventtrader/
+  install: pip install cymetica-eventtrader
+  extras: pip install cymetica-eventtrader[web3]
+  official: true
+  version: 0.3.0
+  published: '2026-09-15'
+  author: Event Trader <dev@cymetica.com>
+  import_name: event_trader
+  requires: Python 3.10+, httpx, pydantic v2, websockets
+  docs: https://cymetica.com/sdk
+  note: Async-first client with API-key, email/password JWT and SIWE wallet auth, WebSocket streaming and client-side
+    rate limiting (per /sdk).
+- language: python
+  registry: pypi
+  name: cymetica-eventtrader-mcp
+  url: https://pypi.org/project/cymetica-eventtrader-mcp/
+  install: 'pip install cymetica-eventtrader-mcp  # or: uvx cymetica-eventtrader-mcp'
+  official: true
+  kind: mcp-server (stdio)
+  version: 1.1.1
+  published: '2026-07-30'
+  author: Event Trader <dev@cymetica.com>
+  import_name: event_trader_mcp
+  docs: https://cymetica.com/api-docs#mcp
+  note: Local stdio MCP server (documented as 160 tools, 6 resources, 4 prompts) — a different inventory from the
+    hosted https://cymetica.com/mcp/v1. See mcp/cymetica-com-mcp.yml.
+- language: java
+  registry: maven
+  name: com.eventtrader:event-trader-sdk
+  url: null
+  install: null
+  official: true
+  version: null
+  published: null
+  note: Advertised on https://cymetica.com/api-docs#sdk as <groupId>com.eventtrader</groupId><artifactId>event-trader-sdk</artifactId><version>1.0.0</version>,
+    but https://repo1.maven.org/maven2/com/eventtrader/ returns 404 (search.maven.org timed out). Not published
+    to Maven Central as of 2026-09-19; recorded so the claim is not repeated as fact.
+- language: python
+  registry: self-hosted
+  name: eventtrader_launchpad.py
+  url: https://cymetica.com/static/sdk/eventtrader_launchpad.py
+  install: curl -O https://cymetica.com/static/sdk/eventtrader_launchpad.py
+  official: true
+  version: null
+  published: null
+  note: Single-file launchpad helper served from the provider's own static path (HTTP 200, 13,618 bytes, text/plain).
+    No version string in the file and no registry metadata endpoint — the distribution is unpinned, so a consumer
+    cannot tell which revision they are getting. Same functionality is `client.launchpad` in cymetica-eventtrader.
+- language: javascript
+  registry: self-hosted
+  name: eventtrader-launchpad.js
+  url: https://cymetica.com/static/sdk/eventtrader-launchpad.js
+  official: true
+  version: null
+  published: null
+  note: Single-file launchpad helper (HTTP 200, 9,335 bytes, application/javascript). Unpinned; no version string.
+- language: n/a
+  registry: claude-code-plugin-marketplace
+  name: eventtrader-funds@cymetica
+  url: https://cymetica.com/static/plugins/marketplace.json
+  install: /plugin marketplace add https://cymetica.com/static/plugins/marketplace.json && /plugin install eventtrader-funds@cymetica
+  official: true
+  kind: claude-code plugin (remote MCP connector + SKILL.md)
+  version: 1.0.0
+  published: null
+  note: Version read from the marketplace manifest (plugins[0].version); the manifest carries no publish date. Ships
+    skills/cymetica-com-fund-research.md.
+third_party_packages: []
+doc_drift:
+- claim: '`yarn add event-trader` / `pnpm add event-trader` on /api-docs#sdk'
+  finding: registry.npmjs.org/event-trader -> {"error":"Not found"}; the published name is cymetica-eventtrader.
+- claim: '"JavaScript/TypeScript SDK — npm release in progress" on /examples'
+  finding: npm cymetica-eventtrader 1.2.0 was published 2026-09-15.

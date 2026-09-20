@@ -1,0 +1,54 @@
+generated: '2026-09-19'
+method: searched
+source: https://cymetica.com/api-docs (Paper Trading, Vaults "paper vaults", Backtest API) + https://cymetica.com/llms.txt
+  + https://cymetica.com/.well-known/mcp.json (trade_event_card, clone_bot, fund_clone_bot descriptions) + openapi/cymetica-com-eventtrader-public-api-openapi.yml
+  (paper_trade_event_card_basket, robinhood testnet ops)
+summary: 'EventTrader has no separate sandbox host or test-key prefix; it has a PAPER MODE that runs on the production
+  API with the same request shape and a simulated balance. Paper is the default for cloned bots and for MCP event-card
+  trades; any order request can carry "mode": "paper". A Robinhood Chain testnet surface (perpetual markets, wallet,
+  leaderboard) is exposed under /api/v1/robinhood/*. No published test cards, fixture tokens or test clocks — nothing
+  here is invented.'
+modes:
+- name: paper
+  default_for:
+  - 'cloned bots (clone_bot paper=true by default; REST POST /api/v1/cloned-bots/clone with is_paper: true)'
+  - MCP trade_event_card ("Defaults to PAPER trading (no real funds move — positions and P&L are tracked and tagged
+    paper)")
+  - 'REST POST /api/v1/event-cards/{card_id}/paper-trade (paper_trade_event_card_basket_api_v1_event_cards__card_id__paper_trade_post):
+    "Simulated position on a card (no funds)"'
+  how: 'Add "mode": "paper" to any order request (docs); clone with is_paper: true; MCP tools take paper=true.'
+  signals:
+  - 'Paper orders produce sim-{uuid} transaction hashes (docs: `sim_tx_hash`).'
+  - Paper clones draw on `sim_balance_usdc` / `simulated_balance` (docs example shows 10000.00 on clone) — the real
+    USDC balance never moves.
+  - Paper trades earn no rewards ("paper trades earn nothing", llms.txt).
+  switch_to_live: 'Remove is_paper / set "mode": "live"; MCP tools require an explicit paper=false AND the platform
+    trading gate. The web UI shows "PAPER TRADING MODE — Enable real trading on your Account page".'
+- name: live
+  notes: Same endpoints, real USDC from the user's own funded balance; user pays gas (llms.txt Gas Policy).
+- name: robinhood-testnet
+  endpoints:
+  - GET /api/v1/robinhood/wallet (get_testnet_wallet_api_v1_robinhood_wallet_get, in the curated spec)
+  - GET /api/v1/robinhood/leaderboard
+  - GET /api/v1/robinhood/perpetual/markets
+  notes: Testnet perpetuals on Robinhood Chain per llms.txt "REST API — Robinhood Testnet".
+key_formats:
+  user_api_key: evt_...  (issued by POST /auth/api-key or POST /api/v1/api-keys; shown once; SHA-256 hashed at rest)
+  agent_api_key: mcp_...  (issued by POST /mcp/v1/register)
+  api_secret: issued alongside evt_ keys "for HMAC-signed integrations" (docs); prefix shown in docs example only
+  test_vs_live: No separate test key; paper vs live is a per-request / per-clone flag, not a key mode.
+test_values:
+  published: false
+  note: No test cards, fixture wallets or deterministic tokens are published. Market data endpoints are public and
+    need no key.
+time_simulation:
+  published: false
+fixtures_and_triggers:
+  backtests: POST /api/v1/backtest-labs/run, POST /api/v1/research-backtest/run and POST /api/v1/backtest/bots/{slug}/run-backtest
+    run historical simulations (30-day window per docs); results land on the leaderboard.
+  paper_vaults: Docs list "paper vaults for strategy testing" under Vaults.
+console:
+  url: https://cymetica.com/api-docs
+  note: 'Interactive docs (Swagger UI) with a "GENERATE FREE API KEY" button and "TRY LIVE DEMO". CAUTION: the Swagger
+    UI on this page loads /openapi.json, which on this host is a DIFFERENT product''s spec (Agent Health Monitor
+    API, contact agenthealthmonitor.xyz) — the EventTrader contract is /openapi-public.json.'

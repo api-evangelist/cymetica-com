@@ -1,0 +1,116 @@
+overlay: 1.0.0
+info:
+  title: API Evangelist enhancements for the EventTrader Public API
+  version: 1.0.0
+  description: Non-destructive overlay capturing what API Evangelist learned about this contract on 2026-09-19 —
+    provenance, ownership check, the idempotency mechanism, discovery documents, rate-limit headers and undeclared
+    error semantics. The harvested spec in openapi/ is never mutated.
+extends: openapi/cymetica-com-eventtrader-public-api-openapi.yml
+actions:
+- target: $.info
+  description: Provenance + ownership check
+  update:
+    x-apievangelist-provenance:
+      fetched: '2026-09-19'
+      source: https://cymetica.com/openapi-public.json
+      http_status: 200
+      ownership: servers[] https://cymetica.com; info.title EventTrader Public API; description points at cymetica.com/build
+        and cymetica.com/llms.txt; Cymetica knowledge base names EventTrader as its product. The sibling https://cymetica.com/openapi.json
+        is a DIFFERENT company's spec (Agent Health Monitor API, agenthealthmonitor.xyz) and is excluded.
+    x-apievangelist-discovery:
+      llms_txt: https://cymetica.com/llms.txt
+      agent_card: https://cymetica.com/.well-known/agent-card.json
+      mcp: https://cymetica.com/mcp/v1
+      asyncapi: https://cymetica.com/.well-known/asyncapi.json
+      oauth_authorization_server: https://cymetica.com/.well-known/oauth-authorization-server
+      oauth_protected_resource: https://cymetica.com/.well-known/oauth-protected-resource
+- target: $.servers[0]
+  update:
+    description: Production. Same origin serves the website, the REST API, the MCP endpoint (/mcp/v1), the OAuth
+      server and the WebSocket feeds (wss://cymetica.com).
+- target: $.paths['/api/v1/exchange/{symbol}/orders'].post
+  description: Surface the only documented idempotency mechanism as a header parameter
+  update:
+    x-idempotency:
+      header: Idempotency-Key
+      retention_seconds: 300
+      key: (user_id, idempotency_key)
+      behaviour: cached response returned; order not re-executed
+    parameters:
+    - name: Idempotency-Key
+      in: header
+      required: false
+      description: Optional. When supplied, the order response is cached for 300s keyed by (user_id, idempotency_key);
+        a retry with the same key returns the cached response without re-executing the order.
+      schema:
+        type: string
+- target: $.paths['/api/v1/clob/orders'].post
+  update:
+    x-idempotency:
+      header: null
+      note: No replay protection documented on the CLOB router; prefer the exchange router with Idempotency-Key
+        or list open orders before retrying.
+- target: $.components.securitySchemes.OAuth2
+  update:
+    x-authorization-server-metadata: https://cymetica.com/.well-known/oauth-authorization-server
+    x-protected-resource-metadata: https://cymetica.com/.well-known/oauth-protected-resource
+    x-pkce: S256
+    x-dynamic-client-registration: https://cymetica.com/oauth/register
+- target: $.components.securitySchemes.ApiKeyAuth
+  update:
+    description: 'X-API-Key. User keys are prefixed evt_ (POST /auth/api-key or POST /api/v1/api-keys, JWT only);
+      agent keys are prefixed mcp_ (POST /mcp/v1/register, no auth). Key permissions: read, trade, withdraw (registered
+      agent keys only).'
+- target: $.components.headers
+  description: Rate-limit headers documented on /api-docs and observed live
+  update:
+    X-RateLimit-Limit:
+      schema:
+        type: integer
+      description: Request budget for the current window.
+    X-RateLimit-Remaining:
+      schema:
+        type: integer
+    X-RateLimit-Reset:
+      schema:
+        type: integer
+      description: Unix timestamp at which the budget resets.
+- target: $.components.responses
+  description: Error responses the API returns but the spec does not declare (observed / documented)
+  update:
+    Unauthorized:
+      description: Authentication required. Provide Bearer token or X-API-Key header.
+      headers:
+        WWW-Authenticate:
+          schema:
+            type: string
+            example: Bearer
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+    TooManyRequests:
+      description: Rate limit exceeded; read X-RateLimit-Reset.
+      headers:
+        X-RateLimit-Reset:
+          $ref: '#/components/headers/X-RateLimit-Reset'
+- target: $.tags
+  description: Declare the tags the operations already use (the spec ships an empty tags array)
+  update:
+  - name: CLOB
+    description: Account-wide order router with amend and per-order cancel
+  - name: Exchange
+    description: 'Per-pair router: book, trades, bbo, ticker, orders (Idempotency-Key)'
+  - name: event-cards
+    description: EVCDX themed-basket index markets
+  - name: cloned-bots
+    description: Clone, fund, configure and withdraw from agent species
+  - name: MCP Public Interface
+    description: Agent registration and the JSON-RPC MCP door
+  - name: oauth
+    description: RFC 7591 client registration, token, userinfo
+  - name: authentication
+    description: Register, login, API-key bootstrap

@@ -1,0 +1,227 @@
+generated: '2026-09-19'
+method: probed
+source: live GET probes of the closed /.well-known/ path list on every host the record knows, 2026-09-19
+summary: 'Cymetica serves an unusually complete discovery surface from ONE origin: RFC 9116 security.txt, RFC 8414
+  authorization-server metadata (with an RFC 7591 registration_endpoint and S256 PKCE), RFC 9728 protected-resource
+  metadata, an OpenAI ai-plugin.json, an A2A agent card at both the canonical and legacy paths, two MCP discovery
+  documents, a UDC master index, UCP/ACP agentic-commerce manifests, an x402 payment manifest, an Agent Skills index,
+  a WebMCP card and an AsyncAPI 3.0.0 document. Misses are real JSON 404s: openid-configuration, api-catalog, aauth-resource.json
+  and every APIs.json location.'
+pointer_basis: WellKnown pointer emitted on the strength of the 200s above; SecurityTxt pointer emitted because
+  /.well-known/security.txt is a real RFC 9116 file (Contact, Expires 2026-12-31, Canonical, Policy). Neither is
+  a presence-by-file claim — every hit parses.
+host_set_note: cymetica.com is simultaneously the registrable domain, the OpenAPI servers[] host, the MCP server
+  host (https://cymetica.com/mcp/v1), the A2A card host and the OAuth authorization server (issuer https://cymetica.com;
+  authorization_servers in the protected-resource doc names the same host), so RFC 9728 metadata and the auth-server
+  metadata live on the primary host rather than a separate mcp.* or auth host. www.cymetica.com and api.cymetica.com
+  resolve to the same application and serve byte-identical documents. docs.cymetica.com, mcp.cymetica.com and app.cymetica.com
+  do not resolve (NXDOMAIN).
+false_positive_watch: 'The /.well-known/agent-card.json 200 is a served document, not a catch-all: sibling paths
+  on the same host (openid-configuration, api-catalog, aauth-resource.json, apis.json) return a 22-byte JSON 404,
+  and the card body is a 21 KB JSON object with AgentCard shape.'
+hosts:
+- host: cymetica.com
+  documents:
+  - path: /.well-known/security.txt
+    status: 200
+    file: cymetica-com-security.txt
+  - path: /.well-known/openid-configuration
+    status: 404
+    body: '{"detail":"Not Found"} (22-byte JSON 404 from the FastAPI router — a real miss, not an SPA shell)'
+  - path: /.well-known/oauth-authorization-server
+    status: 200
+    file: cymetica-com-oauth-authorization-server.json
+  - path: /.well-known/oauth-protected-resource
+    status: 200
+    file: cymetica-com-oauth-protected-resource.json
+  - path: /.well-known/api-catalog
+    status: 404
+    body: '{"detail":"Not Found"} (22-byte JSON 404 from the FastAPI router — a real miss, not an SPA shell)'
+  - path: /.well-known/api-catalog.json
+    status: 404
+    body: '{"detail":"Not Found"} (22-byte JSON 404 from the FastAPI router — a real miss, not an SPA shell)'
+  - path: /.well-known/ai-plugin.json
+    status: 200
+    file: cymetica-com-ai-plugin.json
+  - path: /.well-known/ucp.json
+    status: 200
+    file: cymetica-com-ucp.json
+  - path: /.well-known/acp.json
+    status: 200
+    file: cymetica-com-acp.json
+  - path: /.well-known/aauth-resource.json
+    status: 404
+    body: '{"detail":"Not Found"} (22-byte JSON 404 from the FastAPI router — a real miss, not an SPA shell)'
+  - path: /.well-known/apis.json
+    status: 404
+    body: '{"detail":"Not Found"} (22-byte JSON 404 from the FastAPI router — a real miss, not an SPA shell)'
+  - path: /apis.json
+    status: 404
+    body: '{"detail":"Not Found"} (22-byte JSON 404 from the FastAPI router — a real miss, not an SPA shell)'
+  - path: /apis.yml
+    status: 404
+    body: '{"detail":"Not Found"} (22-byte JSON 404 from the FastAPI router — a real miss, not an SPA shell)'
+  - path: /.well-known/agent-card.json
+    status: 200
+    file: ../a2a/cymetica-com-agent-card.json
+  - path: /.well-known/agent.json
+    status: 200
+    file: ../a2a/cymetica-com-agent-card.json
+    note: Legacy pre-0.3 path; byte-identical to agent-card.json (21,083 bytes).
+  - path: /.well-known/mcp.json
+    status: 200
+    file: cymetica-com-mcp.json
+  - path: /.well-known/mcp
+    status: 200
+    file: cymetica-com-mcp-discovery.json
+  - path: /.well-known/udc.json
+    status: 200
+    file: cymetica-com-udc.json
+  - path: /.well-known/asyncapi.json
+    status: 200
+    file: ../asyncapi/cymetica-com-websocket-asyncapi.json
+  - path: /.well-known/agent-skills.json
+    status: 200
+    file: cymetica-com-agent-skills.json
+  - path: /.well-known/webmcp.json
+    status: 200
+    file: cymetica-com-webmcp.json
+  - path: /.well-known/x402.json
+    status: 200
+    file: cymetica-com-x402.json
+  - path: /.well-known/oauth-protected-resource/mcp/v1
+    status: 404
+    body: '{"detail":"Not Found"} (22-byte JSON 404 from the FastAPI router — a real miss, not an SPA shell)'
+- host: www.cymetica.com
+  note: Same application as the apex; every document byte-identical.
+  documents:
+  - path: /.well-known/security.txt
+    status: 200
+    file: cymetica-com-security.txt
+  - path: /.well-known/openid-configuration
+    status: 404
+    body: '{"detail":"Not Found"} (22-byte JSON 404 from the FastAPI router — a real miss, not an SPA shell)'
+  - path: /.well-known/oauth-authorization-server
+    status: 200
+    file: cymetica-com-oauth-authorization-server.json
+  - path: /.well-known/oauth-protected-resource
+    status: 200
+    file: cymetica-com-oauth-protected-resource.json
+  - path: /.well-known/api-catalog
+    status: 404
+    body: '{"detail":"Not Found"} (22-byte JSON 404 from the FastAPI router — a real miss, not an SPA shell)'
+  - path: /.well-known/api-catalog.json
+    status: 404
+    body: '{"detail":"Not Found"} (22-byte JSON 404 from the FastAPI router — a real miss, not an SPA shell)'
+  - path: /.well-known/ai-plugin.json
+    status: 200
+    file: cymetica-com-ai-plugin.json
+  - path: /.well-known/ucp.json
+    status: 200
+    file: cymetica-com-ucp.json
+  - path: /.well-known/acp.json
+    status: 200
+    file: cymetica-com-acp.json
+  - path: /.well-known/aauth-resource.json
+    status: 404
+    body: '{"detail":"Not Found"} (22-byte JSON 404 from the FastAPI router — a real miss, not an SPA shell)'
+  - path: /.well-known/apis.json
+    status: 404
+    body: '{"detail":"Not Found"} (22-byte JSON 404 from the FastAPI router — a real miss, not an SPA shell)'
+  - path: /apis.json
+    status: 404
+    body: '{"detail":"Not Found"} (22-byte JSON 404 from the FastAPI router — a real miss, not an SPA shell)'
+  - path: /apis.yml
+    status: 404
+    body: '{"detail":"Not Found"} (22-byte JSON 404 from the FastAPI router — a real miss, not an SPA shell)'
+  - path: /.well-known/agent-card.json
+    status: 200
+    file: ../a2a/cymetica-com-agent-card.json
+  - path: /.well-known/agent.json
+    status: 200
+    file: ../a2a/cymetica-com-agent-card.json
+    note: Legacy pre-0.3 path; byte-identical to agent-card.json (21,083 bytes).
+  - path: /.well-known/mcp.json
+    status: 200
+    file: cymetica-com-mcp.json
+  - path: /.well-known/mcp
+    status: 200
+    file: cymetica-com-mcp-discovery.json
+  - path: /.well-known/udc.json
+    status: 200
+    file: cymetica-com-udc.json
+  - path: /.well-known/oauth-protected-resource/mcp/v1
+    status: 404
+    body: '{"detail":"Not Found"} (22-byte JSON 404 from the FastAPI router — a real miss, not an SPA shell)'
+- host: api.cymetica.com
+  note: Resolves and serves the same application as the apex (the homepage HTML is identical); every /.well-known/
+    document byte-identical. Not a distinct API host — the OpenAPI servers[] names https://cymetica.com.
+  documents:
+  - path: /.well-known/security.txt
+    status: 200
+    file: cymetica-com-security.txt
+  - path: /.well-known/openid-configuration
+    status: 404
+    body: '{"detail":"Not Found"} (22-byte JSON 404 from the FastAPI router — a real miss, not an SPA shell)'
+  - path: /.well-known/oauth-authorization-server
+    status: 200
+    file: cymetica-com-oauth-authorization-server.json
+  - path: /.well-known/oauth-protected-resource
+    status: 200
+    file: cymetica-com-oauth-protected-resource.json
+  - path: /.well-known/api-catalog
+    status: 404
+    body: '{"detail":"Not Found"} (22-byte JSON 404 from the FastAPI router — a real miss, not an SPA shell)'
+  - path: /.well-known/api-catalog.json
+    status: 404
+    body: '{"detail":"Not Found"} (22-byte JSON 404 from the FastAPI router — a real miss, not an SPA shell)'
+  - path: /.well-known/ai-plugin.json
+    status: 200
+    file: cymetica-com-ai-plugin.json
+  - path: /.well-known/ucp.json
+    status: 200
+    file: cymetica-com-ucp.json
+  - path: /.well-known/acp.json
+    status: 200
+    file: cymetica-com-acp.json
+  - path: /.well-known/aauth-resource.json
+    status: 404
+    body: '{"detail":"Not Found"} (22-byte JSON 404 from the FastAPI router — a real miss, not an SPA shell)'
+  - path: /.well-known/apis.json
+    status: 404
+    body: '{"detail":"Not Found"} (22-byte JSON 404 from the FastAPI router — a real miss, not an SPA shell)'
+  - path: /apis.json
+    status: 404
+    body: '{"detail":"Not Found"} (22-byte JSON 404 from the FastAPI router — a real miss, not an SPA shell)'
+  - path: /apis.yml
+    status: 404
+    body: '{"detail":"Not Found"} (22-byte JSON 404 from the FastAPI router — a real miss, not an SPA shell)'
+  - path: /.well-known/agent-card.json
+    status: 200
+    file: ../a2a/cymetica-com-agent-card.json
+  - path: /.well-known/agent.json
+    status: 200
+    file: ../a2a/cymetica-com-agent-card.json
+    note: Legacy pre-0.3 path; byte-identical to agent-card.json (21,083 bytes).
+  - path: /.well-known/mcp.json
+    status: 200
+    file: cymetica-com-mcp.json
+  - path: /.well-known/mcp
+    status: 200
+    file: cymetica-com-mcp-discovery.json
+  - path: /.well-known/udc.json
+    status: 200
+    file: cymetica-com-udc.json
+  - path: /.well-known/oauth-protected-resource/mcp/v1
+    status: 404
+    body: '{"detail":"Not Found"} (22-byte JSON 404 from the FastAPI router — a real miss, not an SPA shell)'
+unresolved_hosts:
+- host: docs.cymetica.com
+  result: NXDOMAIN
+- host: mcp.cymetica.com
+  result: NXDOMAIN
+- host: app.cymetica.com
+  result: NXDOMAIN
+extra_documents_note: asyncapi.json, agent-skills.json, webmcp.json and x402.json are outside the closed probe list;
+  they were fetched because /.well-known/udc.json (the provider's own master index) names them, and each parsed
+  as a real JSON document. udc.json also names /.well-known/agent-registration.json, which 404s.

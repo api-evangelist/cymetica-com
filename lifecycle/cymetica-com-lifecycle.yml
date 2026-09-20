@@ -1,0 +1,68 @@
+generated: '2026-09-19'
+method: searched
+source: https://cymetica.com/api-docs + https://cymetica.com/terms + https://cymetica.com/privacy + https://cymetica.com/robots.txt
+  + https://cymetica.com/api/v1/build-stats + live probes of /status, /changelog, /whats-new, /releases, /roadmap,
+  /health + MCP get_platform_status
+versioning:
+  scheme: path-segment
+  current: /api/v1 (REST), /mcp/v1 (MCP); /auth/* and /oauth/* are unversioned
+  spec_info_version: 1.0.0
+  notes: No v2 anywhere; no version header. The curated OpenAPI is info.version 1.0.0 and the AsyncAPI info.version
+    1.0.0.
+changelog:
+  url: null
+  artifact: changelog/cymetica-com-changelog.yml
+  notes: 'No dated changelog, release notes or what''s-new page is published (/changelog, /whats-new, /releases
+    -> 404 HTML shells). The provider publishes live build telemetry instead (GET /api/v1/build-stats: daily commits,
+    first_session 2025-11-23), which is activity evidence, not a changelog.'
+status_page:
+  url: null
+  provider: null
+  machine_readable_api: false
+  runtime_health:
+  - url: https://cymetica.com/health
+    status: 200
+    note: JSON health endpoint (178 bytes), also at /api/v1/health.
+  - tool: MCP get_platform_status
+    result: status operational; features prediction_markets/clob_exchange/arena/api operational; statistics total_markets
+      29202, clob_pairs 580 (2026-09-20T02:56Z)
+  probed:
+  - url: https://cymetica.com/status
+    status: 404
+  - url: https://cymetica.com/status.json
+    status: 404
+  - url: https://cymetica.com/api/v1/status
+    status: 404
+  notes: No status page (no StatusPage pointer). A live health endpoint and an MCP status tool exist but neither
+    is an incident/uptime history.
+deprecation:
+  policy_documented: false
+  deprecated_operations: []
+  sunset_header: false
+  notes: 'No deprecation / sunset policy located; zero operations carry deprecated: true; no Deprecation/Sunset
+    headers observed. No Deprecation pointer is emitted. llms.txt and the docs contain no "deprecat" match.'
+sla:
+  documented: false
+  notes: No uptime SLA. The agent card states a 2-5 s response time for the sync qa-agent endpoint and 1-10 minutes
+    for async investigations; the bug bounty page states a 48 h average response time. None is an availability commitment.
+support_lifetime:
+  stated_period: null
+  notes: Not published.
+legal_document_versions:
+- document: Terms of Service
+  url: https://cymetica.com/terms
+  last_updated: August 11, 2026
+  version: '1.1'
+- document: Privacy Policy
+  url: https://cymetica.com/privacy
+  last_updated: July 30, 2026
+- document: security.txt
+  expires: '2026-12-31T23:59:00.000Z'
+observed_activity:
+  company_founded: November 2025 (knowledge base)
+  build_stats_first_session: '2025-11-23'
+  robots_txt_last_updated: '2026-04-19'
+  npm_sdk_published: '2026-09-15'
+  pypi_sdk_published: '2026-09-15'
+  pypi_mcp_published: '2026-07-30'
+  note: Every dated artifact is within the last twelve months; SDK releases post-date the spec capture.

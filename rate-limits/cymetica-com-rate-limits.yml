@@ -1,0 +1,124 @@
+generated: '2026-09-19'
+method: searched
+source: https://cymetica.com/api-docs (Rate Limits, API Key Management, Quick Start tiers) + https://cymetica.com/llms-full.txt
+  + MCP tools/call get_trust_ladder (public) 2026-09-19 + https://cymetica.com/.well-known/agent-card.json (communication_guide)
+  + observed response headers
+limit_count: 13
+summary: 'Limits are published in three independent ladders — REST general requests per API key, REST order placement
+  per key tier, and MCP calls per agent trust level — plus two per-endpoint limits. The runtime signal is the X-RateLimit-Limit
+  / X-RateLimit-Remaining / X-RateLimit-Reset trio with HTTP 429 on exhaustion. Observed live: an anonymous GET
+  /api/v1/markets returned x-ratelimit-limit: 2000, which matches none of the documented numbers (100 authenticated
+  / 20 unauthenticated), so the deployed general budget is looser than the docs state.'
+headers:
+  limit: X-RateLimit-Limit
+  remaining: X-RateLimit-Remaining
+  reset: X-RateLimit-Reset (Unix timestamp)
+  retry_after: null
+  exhaustion_status: 429
+  observed:
+  - url: https://cymetica.com/api/v1/markets
+    auth: none
+    x-ratelimit-limit: 2000
+    x-ratelimit-remaining: 1999
+    x-ratelimit-reset: 1789872840
+  - url: https://cymetica.com/openapi.json
+    auth: none
+    x-ratelimit-limit: 2000
+limits:
+- scope: per-api-key
+  tier: Standard
+  class: general API requests
+  limit: 100
+  window: 1 minute
+  source: https://cymetica.com/api-docs
+- scope: per-api-key
+  tier: Premium
+  class: general API requests
+  limit: 1000
+  window: 1 minute
+  source: https://cymetica.com/api-docs
+- scope: per-api-key
+  tier: Admin (internal)
+  class: general API requests
+  limit: 10000
+  window: 1 minute
+  source: https://cymetica.com/api-docs
+- scope: per-ip
+  tier: unauthenticated
+  class: general API requests
+  limit: 20
+  window: 1 minute
+  source: https://cymetica.com/llms-full.txt ("100 req/min (authenticated), 20 req/min (unauthenticated)")
+- scope: per-api-key
+  tier: STANDARD
+  class: order placement
+  limit: 3000
+  window: 1 minute
+  source: https://cymetica.com/api-docs
+- scope: per-api-key
+  tier: PREMIUM
+  class: order placement
+  limit: 12000
+  window: 1 minute
+  source: https://cymetica.com/api-docs
+- scope: per-api-key
+  tier: MARKET_MAKER
+  class: order placement
+  limit: 60000
+  window: 1 minute
+  note: DMM agreement required
+  source: https://cymetica.com/api-docs
+- scope: per-agent (MCP)
+  tier: unknown (rank 0)
+  limit: 10
+  window: 1 minute
+  also:
+    per_hour: 100
+    per_day: 500
+    concurrent_connections: 1
+  source: MCP get_trust_ladder
+- scope: per-agent (MCP)
+  tier: recognized (rank 1)
+  limit: 30
+  window: 1 minute
+  also:
+    per_hour: 500
+    per_day: 5000
+    concurrent_connections: 3
+  source: MCP get_trust_ladder
+- scope: per-agent (MCP)
+  tier: trusted (rank 2)
+  limit: 60
+  window: 1 minute
+  also:
+    per_hour: 2000
+    per_day: 20000
+    concurrent_connections: 5
+  source: MCP get_trust_ladder
+- scope: per-agent (MCP)
+  tier: allied (rank 3)
+  limit: 200
+  window: 1 minute
+  also:
+    per_hour: 10000
+    per_day: null
+    concurrent_connections: 20
+  source: MCP get_trust_ladder
+- scope: per-ip
+  endpoint: POST /api/v1/bounty/qa-agent/ask
+  limit: 20
+  window: 1 minute
+  source: https://cymetica.com/.well-known/agent-card.json communication_guide.sync_endpoint.rate_limit
+- scope: per-agent
+  endpoint: POST /mcp/v1/register response
+  limit: 60
+  window: 1 minute
+  note: 'Docs example response `rate_limits.requests_per_minute: 60` for a freshly registered agent at trust_level
+    recognized — an example value, kept separate from the ladder above.'
+  source: https://cymetica.com/api-docs
+penalties:
+  api_violations: -50 trust points per rate-limit or policy violation (get_trust_ladder points_per_action.api_violations)
+gaps:
+- Retry-After is not documented or observed.
+- The general-request numbers disagree across sources (docs 100/20 vs observed header 2000).
+- The SDK advertises client-side "Rate Limiting" but publishes no algorithm.

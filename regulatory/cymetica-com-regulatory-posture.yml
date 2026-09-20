@@ -1,0 +1,89 @@
+generated: '2026-09-19'
+method: searched
+probe: true
+source: well-known/cymetica-com-security.txt, security/, lifecycle/, conformance/ (already harvested) + live probes
+  of /accessibility, /legal/subprocessors, /legal/dpa, /privacy/requests, /transparency, /trust, /security/sbom,
+  /docs/data-residency, /ai, /ai/transparency, /legal/report-content (all 404 HTML shells, 18,681 bytes) + https://cymetica.com/privacy
+  + https://cymetica.com/terms
+signals:
+  data_subject_request:
+    url: https://cymetica.com/privacy
+    contact: privacy@cymetica.com
+    stated_response_time: We will respond to your request within 30 days.
+    rights_listed:
+    - Access
+    - Correction
+    - Deletion
+    - Portability
+    - Objection
+    - Restriction
+    - Withdraw Consent
+    evidence:
+    - source: https://cymetica.com/privacy
+      section: Your Rights
+      keywords:
+      - privacy@cymetica.com
+      - within 30 days
+      - Portability
+      - Deletion
+    note: A published rights list with a named contact and a stated response period — substance, not the word. No
+      self-service request endpoint; the human-review right for automated decisions cites GDPR Article 22.
+  ai_transparency:
+    url: https://cymetica.com/privacy
+    section: AI Systems & Automated Processing
+    evidence:
+    - source: https://cymetica.com/privacy
+      keywords:
+      - NEXUS assistant & support bots
+      - Composer
+      - AI news curation
+      - AI-managed vaults
+      - User-deployed agents
+      - GDPR Article 22
+      - human review
+    note: A component-by-component disclosure of what each AI system processes, why, and its retention (24 months
+      for assistant conversations; 5 years suitability records), plus a human-review path for automated decisions.
+      Recorded as an AI transparency disclosure because it carries that substance; it lives inside the privacy policy
+      rather than a dedicated /ai page, and it is not an EU AI Act Art. 50 conformity statement.
+checked_and_absent:
+  sbom: not published (/security/sbom 404; never derived)
+  support_lifetime: not published
+  accessibility_conformance: /accessibility 404; no VPAT or WCAG statement found
+  training_data_summary: not published (the privacy policy says assistant conversations are not used to build advertising
+    profiles; nothing on model training)
+  global_privacy_control: no published statement; NOT tested by header per the contract
+  subprocessors: no list (/legal/subprocessors 404; privacy policy names categories of service providers only)
+  data_residency: not published
+  incident_notification: no stated SLA (privacy policy commits to notifying material policy changes, not incidents)
+  age_assurance: Terms require users to be 18+ and the privacy policy says the service is not intended for under-18s
+    — an eligibility clause, not an assurance mechanism; not recorded
+  notice_and_action: not published
+  transparency_report: not published
+  exit_assistance: Portability is listed as a right; no export documentation or tooling found
+probes:
+- url: https://cymetica.com/accessibility
+  status: 404
+- url: https://cymetica.com/legal/subprocessors
+  status: 404
+- url: https://cymetica.com/legal/dpa
+  status: 404
+- url: https://cymetica.com/privacy/requests
+  status: 404
+- url: https://cymetica.com/transparency
+  status: 404
+- url: https://cymetica.com/trust
+  status: 404
+- url: https://cymetica.com/security/sbom
+  status: 404
+- url: https://cymetica.com/docs/data-residency
+  status: 404
+- url: https://cymetica.com/ai
+  status: 404
+- url: https://cymetica.com/ai/transparency
+  status: 404
+- url: https://cymetica.com/legal/report-content
+  status: 404
+- url: https://cymetica.com/privacy
+  status: 200
+- url: https://cymetica.com/terms
+  status: 200

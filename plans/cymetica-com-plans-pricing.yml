@@ -1,0 +1,91 @@
+generated: '2026-09-19'
+method: searched
+source: https://cymetica.com/api-docs (Quick Start "RATE LIMIT TIERS", Market Maker Guide "Fee Structure", Rate
+  Limits order-placement tiers) + https://cymetica.com/.well-known/ucp.json + /.well-known/acp.json + /.well-known/x402.json
+  (probed) + https://cymetica.com/llms.txt (Arc launchpad fees) + https://cymetica.com/terms (fee clause)
+pricing_url: null
+plan_count: 4
+summary: 'There is no pricing page (/pricing and /fees -> 404). What is published is an API access ladder (Standard
+  free / Premium / Market Maker / Admin-internal) with limits attached, a per-trade fee schedule, one USDC subscription
+  product declared in the agentic-commerce manifests, and an x402 per-request price for a premium endpoint family.
+  Premium and Market Maker carry no published price. Terms clause: "The fee schedule in effect — including any promotional
+  zero-fee periods — is the one displayed" in the product.'
+currency: USDC
+plans:
+- name: Standard
+  price: 0
+  currency: USD
+  billing_period: null
+  included: Free API key on signup; general API 100 req/min; order placement 3,000 orders/min ("Default for all
+    new keys")
+  overage: null
+  limits:
+    requests_per_minute: 100
+    orders_per_minute: 3000
+  source: https://cymetica.com/api-docs
+- name: Premium
+  price: null
+  currency: null
+  billing_period: null
+  included: '"VIP 1+ — high-volume traders" / "Bot trading strategies"; general API 1,000 req/min; order placement
+    12,000 orders/min'
+  overage: null
+  limits:
+    requests_per_minute: 1000
+    orders_per_minute: 12000
+  note: No price published; qualification is by volume tier.
+  source: https://cymetica.com/api-docs
+- name: Market Maker
+  price: null
+  currency: null
+  billing_period: null
+  included: '"DMM agreement required"; order placement 60,000 orders/min'
+  limits:
+    orders_per_minute: 60000
+  note: Contractual (designated market maker agreement); no price.
+  source: https://cymetica.com/api-docs
+- name: Nexus AI Premium
+  price: 9.99
+  currency: USDC
+  billing_period: month
+  included: '"unlimited AI access" (acp.json subscribe action)'
+  purchase: POST https://cymetica.com/api/v1/nexus/subscribe (declared in acp.json; not in the curated OpenAPI)
+  source: https://cymetica.com/.well-known/ucp.json + /.well-known/acp.json
+  method: probed
+internal_tiers_not_purchasable:
+- name: Admin
+  limits:
+    requests_per_minute: 10000
+    orders_per_minute: 600000
+  note: '"Internal services" — listed for completeness, not a plan.'
+fee_schedule:
+  source: https://cymetica.com/api-docs (Market Maker Guide)
+  maker_fee_bps: 0
+  taker_fee_bps: 10
+  maker_rebate_bps: 2
+  notes:
+  - 'llms.txt: "0% maker fees and a 2 bps maker rebate" on the CLOB.'
+  - 'Arc launchpad: "$0 creation and ZERO platform fees — 0% trading fee and 100% of the locked-liquidity fees to
+    the creator" (llms.txt).'
+  - 'Terms: fees may apply to trading, network (gas) costs on withdrawals, and vault mint/redeem; users pay their
+    own gas.'
+machine_readable_prices:
+- source: https://cymetica.com/.well-known/ucp.json
+  products:
+  - id: et10
+    name: ET10 Revenue Token
+    price: 0.001 USDC
+  - id: etlp
+    name: ETLP Liquidity Token
+    price: 1.00 USDC
+  - id: nexus-premium
+    name: Nexus AI Premium
+    price: 9.99 USDC / month
+  note: Token prices in a static manifest are indicative; the live CLOB is the price source.
+- source: https://cymetica.com/.well-known/x402.json
+  endpoint_family: /api/v1/premium/*
+  price: 0.01 USDC per request
+  networks:
+  - base
+  - ethereum
+  note: Declared; /api/v1/premium/* is not in the curated OpenAPI and no 402 was observed.

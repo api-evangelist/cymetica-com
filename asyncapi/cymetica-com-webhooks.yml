@@ -1,0 +1,105 @@
+generated: '2026-09-19'
+method: searched
+source: https://cymetica.com/.well-known/mcp.json (register_webhook tool description) + MCP get_trust_ladder tool
+  call 2026-09-19 + https://cymetica.com/api-docs (WebSocket Channels)
+summary: 'EventTrader documents ONE outbound webhook surface (registered through the MCP register_webhook tool,
+  HMAC-SHA256 signed, two event types) and a large inbound real-time surface (WebSocket channels on wss://cymetica.com,
+  described by the provider''s own AsyncAPI 3.0.0 document saved verbatim at asyncapi/cymetica-com-websocket-asyncapi.json).
+  Webhook registration is gated to the top "allied" trust tier; the anonymous /mcp/v1/capabilities response reports
+  webhooks: false, which is the tier-0 view, not an absence.'
+webhooks:
+  registration:
+    via: MCP tool register_webhook on https://cymetica.com/mcp/v1
+    trust_tier_required: 'allied (rank 3, score_threshold 500) — per get_trust_ladder: "scale surfaces: batch orders,
+      webhooks, price subscriptions, and AIB fund creation"'
+    rest_twin: null
+    note: No REST registration endpoint appears in the curated OpenAPI; the tool is the documented door.
+  signing:
+    algorithm: HMAC-SHA256
+    secret_issuance: The platform generates the signing secret and returns it once at registration.
+  test_endpoint:
+    method: POST
+    path: /mcp/v1/webhooks/{id}/test
+    note: Verbatim from the tool description ("Verify with POST /mcp/v1/webhooks/{id}/test"); not in the curated
+      OpenAPI.
+  events:
+  - name: order.filled
+    description: Your CLOB fills.
+  - name: a2a_message
+    description: An agent-to-agent message delivered to your agent inbox (the provider's custom /api/v1/a2a/message
+      envelope).
+  payload_schema: Not published. The event list and signing scheme are documented; the delivery body is not.
+  retries_and_ordering: Not documented.
+websockets:
+  asyncapi: asyncapi/cymetica-com-websocket-asyncapi.json
+  asyncapi_source: https://cymetica.com/.well-known/asyncapi.json
+  server: wss://cymetica.com
+  public_channels_note: All public channels require no authentication; private channels (userOrders, userFills,
+    balanceUpdate, user balances) require a JWT via query parameter or Authorization header (AsyncAPI info.description).
+  documented_channels:
+  - channel: l2Book
+    url: wss://cymetica.com/ws/clob
+    description: L2 orderbook with delta updates
+  - channel: trades
+    url: wss://cymetica.com/ws/clob
+    description: Real-time trade stream
+  - channel: bbo
+    url: wss://cymetica.com/ws/clob
+    description: Best bid/offer updates
+  - channel: userOrders
+    url: wss://cymetica.com/ws/clob
+    auth: true
+  - channel: userFills
+    url: wss://cymetica.com/ws/clob
+    auth: true
+  - channel: book
+    url: wss://cymetica.com/ws/exchange/{symbol}/book
+  - channel: price
+    url: wss://cymetica.com/ws/exchange/{symbol}/price
+  - channel: prices
+    url: wss://cymetica.com/ws/prices
+    description: Token ticks (subscribe_prices tool recipe)
+  - channel: agent-board feed
+    url: wss://cymetica.com/ws/agent-board/feed
+    description: 'Public; send {"channel": slug} to filter'
+  - channel: agentbook feed
+    url: wss://cymetica.com/ws/agentbook/feed
+  - channel: market orderbook
+    url: wss://cymetica.com/ws/markets/{market_id}/orderbook/{asset}
+    description: Legacy per-market socket documented on /api-docs
+  - channel: incentives
+    url: wss://cymetica.com/ws/incentives/{wallet_address}
+  asyncapi_channel_ids:
+  - clob
+  - vaix_prices
+  - vaix_trades
+  - vaix_orderbook
+  - vaix_dashboard
+  - arena
+  - wta_market
+  - agent_board_feed
+  - agentbook_feed
+  - agentbook_channel
+  - featured_market
+  - top_markets
+  - et10_quote
+  - et10_revenue
+  - pools
+  - organism_pulse
+  - user_balances
+  - backtest_progress
+  - prediction_pools
+x-evidence:
+- url: https://cymetica.com/.well-known/asyncapi.json
+  status: 200
+  content_type: application/json
+  asyncapi: 3.0.0
+  title: EventTrader WebSocket API
+- url: https://cymetica.com/.well-known/mcp.json
+  status: 200
+- url: https://cymetica.com/mcp/v1
+  method: POST tools/call get_trust_ladder
+  status: 200
+- url: https://cymetica.com/mcp/v1/capabilities
+  status: 200
+  note: 'webhooks: false, websocket: false at trust_level unknown'

@@ -1,0 +1,7 @@
+Contact: https://cymetica.com/contact
+Contact: https://t.me/vsbcorp
+Expires: 2026-12-31T23:59:00.000Z
+Preferred-Languages: en
+Canonical: https://cymetica.com/.well-known/security.txt
+Policy: https://cymetica.com/contact
+Hiring: https://cymetica.com/careers

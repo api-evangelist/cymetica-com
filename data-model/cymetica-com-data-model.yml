@@ -1,0 +1,220 @@
+generated: '2026-09-19'
+method: derived
+source: 'Derived from openapi/cymetica-com-eventtrader-public-api-openapi.yml (OpenAPI 3.1.0, 47 components.schemas,
+  114 operations): $ref links (HTTPValidationError->ValidationError, PositionsResponse->PositionItem, DepositAddressesResponse->DepositAddressInfo,
+  TokenResponse->UserResponse, BacktestIdeaRequest->IdeaConstituent) and id-reference fields (user_id, agent_id,
+  key_id, order_id, position_id, card_id, instance_id, source_id, chain_id, token_address, client_id, aib_symbol,
+  run_id). Entity names for Market/ExchangePair/Fund come from path parameters and operation summaries because the
+  curated spec leaves most response schemas untyped ({}).'
+docs: https://cymetica.com/api-docs
+notation: 'Relationships are has_one / has_many / belongs_to with the reference field in `via`; direction is from
+  the entity that owns the reference. Entities with schema: null are addressed by a path or query key only.'
+schema_count: 47
+typed_response_schemas:
+- APIKeyBootstrapResponse
+- APIKeyCreatedResponse
+- APIKeyListItem
+- AgentRegistrationResponse
+- CloneBotResponse
+- DepositAddressInfo
+- DepositAddressesResponse
+- PortfolioSummaryResponse
+- PositionItem
+- PositionsResponse
+- SwarmWalletResponse
+- TokenResponse
+- UserResponse
+entities:
+- name: User
+  schema: UserResponse
+  id_fields:
+  - user_id
+  - wallet_address
+  - swarm_wallet_address
+  description: An account (email/password or wallet); owns API keys, orders, positions, clones and deposit addresses.
+- name: Agent
+  schema: AgentRegistrationResponse
+  id_fields:
+  - agent_id
+  description: A registered AI agent identity (POST /mcp/v1/register) with a trust level and an mcp_ key; may be
+    claimed by and funded from a User.
+- name: APIKey
+  schema: APIKeyListItem
+  id_fields:
+  - key_id
+  - api_key_id
+  description: A named key with read/trade/withdraw permissions; created only under a session JWT.
+- name: OAuthClient
+  schema: Body_token_oauth_token_post
+  id_fields:
+  - client_id
+  description: A dynamically registered OAuth 2.0 client (POST /oauth/register).
+- name: Market
+  schema: null
+  id_fields:
+  - market_id
+  description: A prediction market (GET /api/v1/markets, cursor-paginated).
+- name: ExchangePair
+  schema: null
+  id_fields:
+  - symbol
+  description: A CLOB trading pair (GET /api/v1/exchange/pairs); the {symbol} path key for book/trades/bbo/ticker/orders.
+- name: Order
+  schema: src__api__routes__clob__PlaceOrderRequest / src__api__routes__exchange__PlaceOrderRequest / AmendOrderRequest
+  id_fields:
+  - order_id
+  - position_id
+  description: A resting or filled order on the CLOB or a pair.
+- name: Position
+  schema: PositionItem
+  id_fields:
+  - asset_symbol
+  - position_id
+  description: An open position; aggregated by PositionsResponse and PortfolioSummaryResponse.
+- name: EventCard
+  schema: BuyRequest / SellRequest / ShortRequest / PaperTradeBasketRequest
+  id_fields:
+  - card_id
+  description: A themed asset-basket index market (EVCDX-*); bought, sold, shorted or paper-traded.
+- name: IdeaConstituent
+  schema: IdeaConstituent
+  id_fields:
+  - symbol
+  - coingecko_id
+  description: One leg of a backtestable basket idea (BacktestIdeaRequest.constituents).
+- name: ClonedBot
+  schema: CloneBotResponse
+  id_fields:
+  - instance_id
+  - source_id
+  - source_symbol
+  - wallet_address
+  description: A user-owned clone of an agent species; funded, toggled, configured, withdrawn from, deleted.
+- name: DepositAddress
+  schema: DepositAddressInfo
+  id_fields:
+  - chain_id
+  description: A per-chain deposit address for a User (DepositAddressesResponse) or agent swarm wallet (SwarmWalletResponse).
+- name: LaunchpadToken
+  schema: LaunchPrepareRequest / CrossLaunchRecordRequest
+  id_fields:
+  - token_address
+  - chain_id
+  - creator_address
+  - source_token_address
+  description: A bonding-curve token on Robinhood Chain / Arc with trades, holders, quotes and cross-launch records.
+- name: BacktestRun
+  schema: ResearchBacktestRequest / BacktestRequest
+  id_fields:
+  - run_id
+  - aib_symbol
+  description: A research or macromarket backtest run; listed on a leaderboard.
+- name: Fund
+  schema: null
+  id_fields:
+  - aib_symbol
+  - symbol
+  description: An AIB / Tuatara-managed fund (MCP list_funds); referenced by BacktestRequest.aib_symbol and the
+    macromarket builder.
+- name: TournamentEntry
+  schema: TournamentEntryRequest
+  id_fields: []
+  description: An entry into the movers tournament.
+relationships:
+- from: User
+  type: has_many
+  to: APIKey
+  via: user_id -> APIKeyListItem
+- from: User
+  type: has_many
+  to: Order
+  via: user_id (server-side; orders scoped to the key/JWT identity)
+- from: User
+  type: has_many
+  to: Position
+  via: PositionsResponse -> PositionItem[]
+- from: User
+  type: has_one
+  to: Portfolio
+  via: PortfolioSummaryResponse
+- from: User
+  type: has_many
+  to: DepositAddress
+  via: DepositAddressesResponse.user_id -> DepositAddressInfo[] (via chain_id)
+- from: User
+  type: has_many
+  to: ClonedBot
+  via: my-clones; CloneBotResponse.wallet_address
+- from: User
+  type: has_many
+  to: Agent
+  via: claim_agent_ownership (agent_id); fund_agent_from_owner
+- from: Agent
+  type: has_one
+  to: DepositAddress
+  via: SwarmWalletResponse.swarm_wallet_address / chain_id
+- from: ExchangePair
+  type: has_many
+  to: Order
+  via: '{symbol} path key on POST/DELETE /api/v1/exchange/{symbol}/orders'
+- from: Order
+  type: belongs_to
+  to: Position
+  via: position_id on PlaceOrderRequest (exchange) and SellRequest
+- from: EventCard
+  type: has_many
+  to: Position
+  via: position_id on SellRequest; GET /api/v1/event-cards/positions
+- from: EventCard
+  type: has_many
+  to: IdeaConstituent
+  via: BacktestIdeaRequest.constituents (symbol, coingecko_id)
+- from: ClonedBot
+  type: belongs_to
+  to: AgentSpecies
+  via: source_id / source_symbol on CloneBotRequest/Response
+- from: LaunchpadToken
+  type: belongs_to
+  to: Chain
+  via: chain_id on every launchpad op
+- from: LaunchpadToken
+  type: has_many
+  to: CrossLaunchRecord
+  via: CrossLaunchRecordRequest.source_token_address -> token_address
+- from: BacktestRun
+  type: belongs_to
+  to: Fund
+  via: BacktestRequest.aib_symbol
+- from: OAuthClient
+  type: has_many
+  to: User
+  via: client_id on Body_token_oauth_token_post (token issued to a user)
+domains:
+  identity:
+  - User
+  - Agent
+  - APIKey
+  - OAuthClient
+  markets:
+  - Market
+  - ExchangePair
+  - Order
+  - Position
+  event_cards:
+  - EventCard
+  - IdeaConstituent
+  agents:
+  - ClonedBot
+  funding:
+  - DepositAddress
+  launchpad:
+  - LaunchpadToken
+  research:
+  - BacktestRun
+  - Fund
+  - TournamentEntry
+gaps:
+- 111 of 114 operations declare a 200 with an empty schema ({}), so response object shapes (Market, Order, Trade,
+  Fund) are not machine-derivable from this spec; only request bodies and a handful of responses are typed.
+- The docs describe a 5-year retention of "transaction, order & trading records" and public on-chain settlement
+  records — the on-chain tx hash is the durable identifier for deposits/withdrawals.

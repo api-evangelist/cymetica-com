@@ -1,0 +1,168 @@
+generated: '2026-09-19'
+method: searched
+source: openapi/cymetica-com-eventtrader-public-api-openapi.yml + https://cymetica.com/api-docs (Authentication,
+  API Key Management, Rate Limits, Response Format, Paper Trading) + https://cymetica.com/sdk + https://cymetica.com/llms.txt
+  + live probes 2026-09-19
+summary: Cross-cutting semantics of the EventTrader Public API (REST on https://cymetica.com) and its MCP twin.
+  Three auth styles, a single documented Idempotency-Key on one write, mixed pagination (cursor and limit/offset/page),
+  two error envelopes, X-RateLimit-* signalling, path versioning, an explicit paper mode as the dry-run, and cancel/amend
+  as the only reversal primitives with no stated windows.
+authentication:
+  styles:
+  - api_key_header
+  - http_bearer_jwt
+  - oauth2_authorization_code_pkce
+  - siwe_wallet (SDK)
+  - hmac_api_secret (docs mention, undocumented scheme)
+  api_key_header: X-API-Key
+  key_prefixes:
+    user: evt_
+    agent: mcp_
+  bearer: 'Authorization: Bearer <session JWT from /auth/login | OAuth 2.0 access token>'
+  oauth_scopes:
+  - read
+  - portfolio
+  - trade
+  key_permissions:
+  - read
+  - trade
+  - withdraw (registered agent keys only)
+  rule: Key-management routes (/api/v1/api-keys*) accept ONLY the session JWT, never an API key (spec BearerJWT
+    description). User-issued keys and OAuth tokens can never withdraw.
+  see: authentication/cymetica-com-authentication.yml, scopes/cymetica-com-scopes.yml
+idempotency:
+  coverage: partial
+  header: Idempotency-Key
+  scope:
+  - place_order_api_v1_exchange__symbol__orders_post
+  retention: 300 seconds, keyed by (user_id, idempotency_key)
+  behaviour: Subsequent calls with the same key return the cached response without re-executing the order (spec
+    operation description, verbatim).
+  naturally_idempotent_writes:
+  - 'record_cross_launch_route_api_v1_launchpad_onchain_launch_cross_record_post (description: "Idempotent.")'
+  not_covered: The CLOB router (place_order_api_v1_clob_orders_post), event-card buy/sell/short, clone/fund/withdraw,
+    macromarket build/backtest and every other POST in the 114-operation spec have no replay-protection mechanism;
+    grep for "idempot" hits only the two operations above.
+  agent_risk: An agent that times out on POST /api/v1/clob/orders or /api/v1/event-cards/{card_id}/buy has no safe
+    replay primitive and may double-fill; prefer the exchange router with Idempotency-Key, or list open orders/positions
+    before retrying.
+  mcp_annotations: 'The remote MCP server marks every tool with idempotentHint; write tools (board_post, launchpad_launch_token,
+    bb_*) are annotated idempotentHint: false.'
+dry_run_mode:
+  status: documented
+  mechanisms:
+  - '"mode": "paper" on any order request -> sim-{uuid} tx hash, simulated balance (docs Paper Trading)'
+  - MCP place_order is a balance-free PREFLIGHT that validates against live CLOB state without executing (tool description)
+  - POST /api/v1/event-cards/{card_id}/paper-trade — simulated position, no funds
+  - MCP preview_card_basket validates and prices basket legs BEFORE creating an Event Card
+  see: sandbox/cymetica-com-sandbox.yml
+reversibility:
+  status: documented
+  grade_basis: Reversal operations exist and are named in the spec; NO time window is stated anywhere in the docs
+    for any of them, so the grade is documented (0.4), not verified.
+  write_surfaces:
+  - surface: CLOB orders (/api/v1/clob/orders)
+    create: place_order_api_v1_clob_orders_post
+    reversal:
+    - cancel_order_api_v1_clob_orders__order_id__delete
+    - cancel_all_orders_api_v1_clob_orders_delete
+    modify: amend_order_api_v1_clob_orders__order_id__patch
+    window: null
+    note: Cancel applies to resting (unfilled) orders; a fill is final and is unwound only by an opposite-side order.
+      Window not stated.
+  - surface: Exchange orders (/api/v1/exchange/{symbol}/orders)
+    create: place_order_api_v1_exchange__symbol__orders_post
+    reversal:
+    - cancel_all_orders_for_pair_api_v1_exchange__symbol__orders_delete
+    window: null
+    note: Per-order cancel DELETE /api/v1/exchange/{symbol}/orders/{order_id} and batch cancel are documented on
+      /api-docs but are not in the curated spec.
+  - surface: Event-card positions
+    create:
+    - buy_event_card_api_v1_event_cards__card_id__buy_post
+    - short_event_card_api_v1_event_cards__card_id__short_post
+    reversal:
+    - sell_event_card_api_v1_event_cards__card_id__sell_post (SellRequest.position_id)
+    window: null
+    note: Each card carries a per-card contract_spec with a "dispute window" field (llms.txt) — a data field, not
+      a documented policy; not treated as a stated window.
+  - surface: Cloned bots
+    create: clone_bot_api_v1_cloned_bots_clone_post
+    reversal:
+    - withdraw_from_clone_bot_api_v1_cloned_bots__instance_id__withdraw_post
+    - delete_clone_bot_api_v1_cloned_bots__instance_id__delete
+    - toggle_trading_api_v1_cloned_bots__instance_id__toggle_trading_post (pause)
+    window: null
+  - surface: API keys
+    create: create_api_key_api_v1_api_keys_post
+    reversal:
+    - revoke_api_key_api_v1_api_keys__key_id__delete
+    window: null
+  - surface: Token launches / on-chain actions
+    create:
+    - prepare_launch_api_v1_launchpad_onchain_launch_prepare_post
+    - record_cross_launch_route_api_v1_launchpad_onchain_launch_cross_record_post
+    reversal: []
+    window: null
+    note: Returns unsigned transactions the caller signs; once broadcast on-chain there is no reversal, and the
+      provider's Gas Policy makes the cost the user's.
+  - surface: Funding / withdrawals
+    create: POST /api/v1/funding/withdraw (documented in get_trust_ladder, not in the curated spec)
+    reversal: []
+    window: null
+    note: On-chain withdrawals are irreversible by nature; the platform documents withdrawal whitelisting and permission
+      gates, not reversal.
+pagination:
+  style: mixed
+  cursor:
+    operations:
+    - list_markets_api_v1_markets_get
+    request_param: cursor
+    response_field: cursor ("next_page_token" in the docs example)
+    note: Docs call this "Kalshi-compatible cursor-based pagination".
+  offset:
+    params:
+    - limit
+    - offset
+    - skip (alias for offset)
+    - page (1-based; offset=(page-1)*limit; takes precedence)
+    operations_example: list_event_cards_api_v1_event_cards_get
+    limit_param_count: 20
+  page:
+    operations:
+    - get_activity_feed_api_v1_cloned_bots__instance_id__activity_get (page, default 1)
+field_expansion:
+  supported: false
+  note: No fields/expand/include parameters; some list ops take `include_user_submitted` or `paths=1` style toggles.
+request_tracing:
+  request_id_header: null
+  note: No request-id header documented or observed.
+versioning:
+  scheme: path
+  current: /api/v1, /mcp/v1
+  see: lifecycle/cymetica-com-lifecycle.yml
+error_envelope:
+  shapes:
+  - '{"detail": string} (framework)'
+  - '{"detail": [{loc,msg,type}]} (422)'
+  - '{"error": {"code","message"}} (documented domain errors)'
+  see: errors/cymetica-com-problem-types.yml
+rate_limit_signaling:
+  headers:
+  - X-RateLimit-Limit
+  - X-RateLimit-Remaining
+  - X-RateLimit-Reset (Unix timestamp)
+  exhaustion_status: 429
+  observed: 'x-ratelimit-limit: 2000, x-ratelimit-remaining: 1999, x-ratelimit-reset: 1789872840 on an anonymous
+    GET /api/v1/markets'
+  see: rate-limits/cymetica-com-rate-limits.yml
+content_negotiation:
+  json: application/json everywhere
+  text_variants: 'GET /api/v1/crypto-outlook/{symbol}.txt serves plain text; /build serves markdown to agents and
+    HTML to humans (llms.txt); every response carries content-signal: ai-train=no, search=yes, ai-input=yes'
+money_semantics:
+  gas_policy: Users pay their own gas — the platform never funds a user-initiated transaction leg (llms.txt "Gas
+    Policy", verbatim intent).
+  fees: Maker 0 bps, taker 10 bps, maker rebate 2 bps (docs Market Maker Guide) — see plans/cymetica-com-plans-pricing.yml
+  paper_by_default: Clones and MCP card trades default to paper; live requires explicit opt-in plus the platform
+    trading gate.

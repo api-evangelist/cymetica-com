@@ -1,18 +1,132 @@
 aid: cymetica-com
 name: Cymetica
-description: 'Cymetica is a company surfaced via the API Evangelist harvest backlog (source: a2a-registry)
-  and added to the network as a stub for full-pipeline profiling.'
+description: 'Cymetica (Berkeley, California; founded November 2025 by Kasian Franks) is the company behind EventTrader, an
+  AI-native perpetual prediction market and hybrid CEX-DEX exchange: a central limit order book with 500+ pairs, EVCDX event-card
+  index markets, clonable AI trading agent species, AI-managed funds and a token launchpad, with off-chain matching and on-chain
+  settlement on Base L2 and Ethereum. It publishes an unusually complete agent-facing surface from one origin — a curated
+  OpenAPI 3.1 REST contract, a hosted MCP server with an open tools/list, an A2A agent card, an AsyncAPI 3.0 WebSocket description,
+  llms.txt, OAuth 2.0 with PKCE and RFC 8414/9728 discovery, UCP/ACP/x402 commerce manifests, security.txt and TypeScript/Python
+  SDKs.'
+image: https://cymetica.com/static/img/og-default.png
 url: https://raw.githubusercontent.com/api-evangelist/cymetica-com/refs/heads/main/apis.yml
 x-type: company
 x-source: harvest:a2a-registry
-x-tier: stub
-x-tier-reason: harvest
+x-tier: profiled
+x-tier-reason: enrichment pass 2026-09-19 (local-v3; was a2a-registry harvest stub)
 specificationVersion: '0.20'
 created: '2026-09-19'
 modified: '2026-09-19'
-tags:
-- Company
-apis: []
+tags: &id001
+- Prediction Markets
+- Cryptocurrency Exchange
+- Trading
+- AI Agents
+- MCP
+- agent-native
+- Blockchain
+- DeFi
+- Financial Services
+- Market Data
+tags_raw: &id002
+- prediction-markets
+- cryptocurrency-exchange
+- trading
+- ai-agents
+- mcp
+- agent-native
+- blockchain
+- defi
+- financial-services
+- market-data
+apis:
+- name: EventTrader Public API
+  description: 'Curated public REST surface of EventTrader, Cymetica''s perpetual prediction market and CLOB exchange: register
+    and mint API keys, OAuth 2.0 (PKCE) token flows, list markets and exchange pairs, read orderbooks/trades/tickers, place,
+    amend and cancel CLOB and per-pair orders (Idempotency-Key on the exchange router), trade EVCDX event-card index baskets,
+    clone and fund AI trading bots, run backtests, launch and quote bonding-curve tokens, and read portfolio positions and
+    deposit addresses. OpenAPI 3.1.0, 114 operations, served from https://cymetica.com/openapi-public.json. Paper mode on
+    every order; users pay their own gas.'
+  humanURL: https://cymetica.com/api-docs
+  baseURL: https://cymetica.com/api/v1
+  tags: *id001
+  tags_raw: *id002
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-eventtrader-public-api-openapi.yml
+  - type: OpenAPI
+    url: https://cymetica.com/openapi-public.json
+    name: Provider-hosted curated public OpenAPI (source of the local copy)
+  - type: Documentation
+    url: https://cymetica.com/api-docs
+  - type: APIReference
+    url: https://cymetica.com/api-docs
+  - type: GettingStarted
+    url: https://cymetica.com/getting-started
+  - type: CodeSamples
+    url: https://cymetica.com/examples
+  - type: Conventions
+    url: conventions/cymetica-com-conventions.yml
+  - type: Idempotency
+    url: conventions/cymetica-com-conventions.yml
+  - type: ErrorCatalog
+    url: errors/cymetica-com-problem-types.yml
+  - type: DataModel
+    url: data-model/cymetica-com-data-model.yml
+  - type: Overlay
+    url: overlays/cymetica-com-eventtrader-public-api-overlay.yaml
+  - type: Sandbox
+    url: sandbox/cymetica-com-sandbox.yml
+  - type: RateLimits
+    url: rate-limits/cymetica-com-rate-limits.yml
+  - type: Plans
+    url: plans/cymetica-com-plans-pricing.yml
+  - type: AsyncAPI
+    url: asyncapi/cymetica-com-websocket-asyncapi.json
+  - type: Webhooks
+    url: asyncapi/cymetica-com-webhooks.yml
+  - type: Lifecycle
+    url: lifecycle/cymetica-com-lifecycle.yml
+  - type: Conformance
+    url: conformance/cymetica-com-conformance.yml
+  - type: SDKs
+    url: packages/cymetica-com-packages.yml
+  image: https://cymetica.com/static/img/og-default.png
+  x-base-note: OpenAPI servers[0] is https://cymetica.com with /api/v1/... paths (auth at /auth, /oauth and the MCP door at
+    /mcp/v1 share the origin); baseURL names the REST prefix rather than the site root. servers[] left untouched.
+- name: EventTrader MCP Server
+  description: Hosted Streamable-HTTP MCP endpoint at https://cymetica.com/mcp/v1 (protocol 2025-03-26) answering anonymous
+    tools/list with 57 annotated tools — markets, orderbooks, funds research, ontology, agent returns board, launchpad, Build-it-Better
+    — and 35 more that unlock by agent trust tier after a free POST /mcp/v1/register. A separate local stdio package (PyPI
+    cymetica-eventtrader-mcp) ships a 160-tool inventory. X-API-Key auth; OAuth tokens are REST-only. Reachable today from
+    Claude Code, Claude Desktop, ChatGPT connectors and Gemini CLI by URL.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - MCP
+  - AI Agents
+  - agent-native
+  - Prediction Markets
+  - Trading
+  - Market Data
+  tags_raw:
+  - mcp
+  - ai-agents
+  - agent-native
+  - prediction-markets
+  - trading
+  - market-data
+  properties:
+  - type: MCPServer
+    url: mcp/cymetica-com-mcp.yml
+  - type: ToolCrosswalk
+    url: mcp/cymetica-com-tool-crosswalk.yml
+  - type: Documentation
+    url: https://cymetica.com/build
+  - type: APIReference
+    url: https://cymetica.com/api-docs#mcp
+  - type: AgentSkill
+    url: skills/_index.yml
+  image: https://cymetica.com/static/img/og-default.png
 maintainers:
 - FN: Kin Lane
   email: kin@apievangelist.com
@@ -21,3 +135,64 @@ maintainers:
 common:
 - type: Website
   url: https://cymetica.com/
+- type: DeveloperPortal
+  url: https://cymetica.com/build
+- type: Documentation
+  url: https://cymetica.com/api-docs
+- type: GettingStarted
+  url: https://cymetica.com/getting-started
+- type: Support
+  url: https://cymetica.com/contact
+- type: Community
+  url: https://discord.gg/JCn76KcVmk
+- type: Blog
+  url: https://cymetica.com/blog
+- type: Newsroom
+  url: https://cymetica.com/press
+- type: Leadership
+  url: https://cymetica.com/about
+- type: SignUp
+  url: https://cymetica.com/signup
+- type: Login
+  url: https://cymetica.com/login
+- type: TermsOfService
+  url: https://cymetica.com/terms
+- type: PrivacyPolicy
+  url: https://cymetica.com/privacy
+- type: LLMsTxt
+  url: llms/cymetica-com-llms.txt
+- type: AgentCard
+  url: a2a/cymetica-com-a2a.yml
+- type: WellKnown
+  url: well-known/cymetica-com-well-known.yml
+- type: SecurityTxt
+  url: well-known/cymetica-com-security.txt
+- type: Security
+  url: security/cymetica-com-vulnerability-disclosure.yml
+- type: VulnerabilityDisclosure
+  url: security/cymetica-com-vulnerability-disclosure.yml
+- type: DomainSecurity
+  url: security/cymetica-com-domain-security.yml
+- type: Authentication
+  url: authentication/cymetica-com-authentication.yml
+- type: OAuthScopes
+  url: scopes/cymetica-com-scopes.yml
+- type: Packages
+  url: packages/cymetica-com-packages.yml
+- type: SDKs
+  url: packages/cymetica-com-packages.yml
+- type: AgentSkill
+  url: skills/_index.yml
+- type: Conformance
+  url: conformance/cymetica-com-conformance.yml
+- type: Lifecycle
+  url: lifecycle/cymetica-com-lifecycle.yml
+- type: DataSubjectRequest
+  url: https://cymetica.com/privacy
+- type: AITransparency
+  url: https://cymetica.com/privacy
+x-enrichment:
+  date: '2026-09-19'
+  status: enriched
+  artifacts_added: 43
+  pass: local-v3

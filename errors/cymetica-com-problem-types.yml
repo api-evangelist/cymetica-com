@@ -1,0 +1,76 @@
+generated: '2026-09-19'
+method: searched
+source: openapi/cymetica-com-eventtrader-public-api-openapi.yml + https://cymetica.com/api-docs (Response Format,
+  Rate Limits) + live unauthenticated probes 2026-09-19
+format: mixed-json
+rfc9457: false
+summary: 'Two error envelopes coexist. The FastAPI-native shape {"detail": <string | ValidationError[]>} is what
+  the OpenAPI declares (422 on 85 of 114 operations) and what the live 401/404/405 responses return; the docs''
+  Response Format section documents a second shape {"error": {"code": "MARKET_NOT_FOUND", "message": "..."}} for
+  domain errors. MCP tool errors come back inside a successful JSON-RPC result with isError: true and a text body
+  such as {"error": "INSUFFICIENT_TRUST"}. No problem+json, no request-id.'
+response_codes_declared_in_spec:
+  '201': 3
+  '422': 85
+  '200': 111
+envelopes:
+- name: fastapi-detail
+  shape: '{"detail": string}'
+  where: auth, routing and framework errors (observed live)
+  examples:
+  - status: 401
+    body: '{"detail":"Authentication required. Provide Bearer token or X-API-Key header."}'
+    headers:
+      www-authenticate: Bearer
+    observed: GET /api/v1/portfolio/positions, no credentials
+  - status: 404
+    body: '{"detail":"Not Found"}'
+    observed: /.well-known/openid-configuration, /api/v1/status (22-byte JSON)
+  - status: 405
+    body: '{"detail":"Method Not Allowed"}'
+    observed: POST / (A2A JSON-RPC probe), GET /auth/register
+- name: fastapi-validation
+  shape: '{"detail": [{"loc": [string|int], "msg": string, "type": string}]}'
+  schema: '#/components/schemas/HTTPValidationError -> ValidationError'
+  where: 422 Validation Error on every operation with a body or typed params (85 operations)
+- name: domain-error
+  shape: '{"error": {"code": string, "message": string}}'
+  where: documented on /api-docs "Response Format" for business errors
+  examples:
+  - code: MARKET_NOT_FOUND
+    message: Market with contract address 0x123 not found
+  note: Codes are not enumerated in the spec; only this example is published.
+- name: mcp-tool-error
+  shape: 'JSON-RPC result {content:[{type:text,text:''{"error": "<CODE>"}''}], isError:true}'
+  examples:
+  - code: INSUFFICIENT_TRUST
+    observed: tools/call get_rate_limits, anonymous
+problem_types:
+- status: 401
+  title: Authentication required
+  remediation: 'Send X-API-Key (evt_ or mcp_ key) or Authorization: Bearer <JWT | OAuth token>. Key-management routes
+    accept only the session JWT.'
+- status: 403
+  title: Forbidden / insufficient permission or trust
+  remediation: API keys carry read/trade/withdraw permissions; MCP tools unlock by trust tier (unknown -> recognized
+    -> trusted -> allied). Register at POST /mcp/v1/register to leave tier 0.
+  note: 403 is not declared in the spec; inferred from the documented permission model. MCP returns INSUFFICIENT_TRUST
+    inside a 200 instead.
+- status: 404
+  title: Not Found
+  remediation: Check the path; the curated spec covers 109 paths while the docs name more.
+- status: 405
+  title: Method Not Allowed
+- status: 422
+  title: Validation Error
+  remediation: Read detail[].loc for the offending field; every write declares this response.
+- status: 429
+  title: Too Many Requests
+  remediation: Read X-RateLimit-Reset (Unix timestamp) and back off; general limit 100 req/min per standard key,
+    order placement has its own budget. See rate-limits/cymetica-com-rate-limits.yml.
+  note: Documented on /api-docs; not declared in the spec.
+gaps:
+- No 4xx other than 422 is declared in the OpenAPI, so an agent reading the contract alone sees no 401/403/404/429
+  semantics.
+- Domain error codes beyond MARKET_NOT_FOUND are not enumerated anywhere public.
+- No request/correlation id header is documented or observed.

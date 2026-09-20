@@ -1,0 +1,23 @@
+generated: '2026-09-19'
+method: searched
+source: live probes of https://cymetica.com/changelog, /whats-new, /releases, /blog (7 posts, none a release note),
+  llms.txt (0 matches for changelog/release notes), /api/v1/build-stats
+scheme: null
+current_version: 1.0.0 (OpenAPI info.version; /api/v1 path)
+entries: []
+summary: 'No provider-published changelog exists. Recorded so the absence is a measurement rather than an unchecked
+  field; NO ChangeLog pointer is emitted in apis.yml. The only dated change evidence is telemetry: GET /api/v1/build-stats
+  exposes daily_commits and daily_activity since first_session 2025-11-23, and /about cites "76.6 commits per day
+  average" — activity, not a semantic changelog. A future round can diff openapi/_original/ captures to derive an
+  observed change cadence.'
+probed:
+- url: https://cymetica.com/changelog
+  status: 404
+- url: https://cymetica.com/whats-new
+  status: 404
+- url: https://cymetica.com/releases
+  status: 404
+- url: https://cymetica.com/api/v1/build-stats
+  status: 200
+  note: 'keys: totals, daily_activity, daily_model_tokens, daily_commits, model_usage, hourly_distribution, longest_session,
+    first_session, ai_native_proof'
