@@ -1,0 +1,914 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Event Cards API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: event-cards
+paths:
+  /api/v1/event-cards/backtest-idea:
+    post:
+      tags:
+      - event-cards
+      summary: Backtest Event Card Idea
+      description: 'Historical what-if backtest of an ad-hoc basket idea.
+
+
+        Read-only: no card is created, no ledger or on-chain writes, no money
+
+        moves. Reuses the same engine (run_basket_backtest) as the saved-card
+
+        backtest, so an idea and a published card with the same basket return
+
+        identical numbers.
+
+
+        Two distinct exclusion lists in the response:
+
+        * ``unresolved_symbols`` — constituents we couldn''t map to a price
+
+        source at all (bad/unknown ticker, or a crypto leg with no
+
+        coingecko_id we could resolve).
+
+        * ``dropped_symbols`` — resolved to a price source fine, but had no
+
+        price history in the requested window (newly listed, etc.); weights
+
+        renormalized over the rest.
+
+
+        ``requested_weight_covered`` (0..1) is ALWAYS in the response — the
+
+        fraction of the basket''s requested weight that actually priced. If it
+
+        falls below 80% the endpoint returns 422 INSUFFICIENT_BASKET_COVERAGE
+
+        instead of a headline return that would describe a different
+
+        (substitute) basket than the one requested (ET-25808 — a published
+
+        8-leg basket that lost 6 legs to unresolved/no-data equities
+
+        previously renormalized onto the 2 survivors and returned a -85%
+
+        "card result" that was really a 98.5%-weighted single equity leg).'
+      operationId: backtest_event_card_idea_api_v1_event_cards_backtest_idea_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BacktestIdeaRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  card_id:
+                    type:
+                    - string
+                    - 'null'
+                  period_days:
+                    type: integer
+                  starting_capital_usdc:
+                    type: number
+                  ending_capital_usdc:
+                    type: number
+                  total_return_pct:
+                    type: number
+                  sharpe_ratio:
+                    type:
+                    - number
+                    - 'null'
+                  max_drawdown_pct:
+                    type:
+                    - number
+                    - 'null'
+                  equity_curve:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties:
+                        type: number
+                  basket:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+                  dropped_symbols:
+                    type: array
+                    items:
+                      type: string
+                  unresolved_symbols:
+                    type: array
+                    items:
+                      type: string
+                  n_points:
+                    type: integer
+                  started_at:
+                    type: string
+                  ended_at:
+                    type: string
+                additionalProperties: true
+                required:
+                - period_days
+                - starting_capital_usdc
+                - ending_capital_usdc
+                - total_return_pct
+                description: Historical buy-and-hold backtest of a basket idea (BacktestResult.as_dict).
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/event-cards/{card_id}/paper-trade:
+    post:
+      tags:
+      - event-cards
+      summary: Paper Trade Event Card Basket
+      description: 'Paper-trade a card''s whole basket: split the notional across its legs by
+
+        weight and open SIMULATED positions at live spot, in a per-card paper book
+
+        (``ec:``).
+
+
+        The bridge from "backtest an idea" to "watch it run" — no real funds move,
+
+        nothing is withdrawable (the same catalog paper rail as the Asset Universe
+
+        page). Read the result back any time via
+
+        ``GET /api/v1/universe/paper/portfolio?book=ec:``.'
+      operationId: paper_trade_event_card_basket_api_v1_event_cards__card_id__paper_trade_post
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: card_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Card Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaperTradeBasketRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/event-cards/{card_id}/historical-analogs:
+    post:
+      tags:
+      - event-cards
+      summary: Historical Analogs
+      description: 'How did events LIKE this one perform historically?
+
+
+        Finds up to ``limit`` real PAST events similar to this card (same sector +
+
+        sentiment sign, ranked by asset-profile overlap), builds each one''s basket
+
+        index over the ``window_days`` FOLLOWING its event date, and returns every
+
+        series (re-keyed by day-offset for overlay) plus the distribution of forward
+
+        returns. Read-only: no money, no card creation. Grounded in the real
+
+        headline corpus — a thin corpus returns fewer than ``limit`` (the real
+
+        count), never a fabricated event.'
+      operationId: historical_analogs_api_v1_event_cards__card_id__historical_analogs_post
+      security: []
+      parameters:
+      - name: card_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Card Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HistoricalAnalogsRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/event-cards:
+    get:
+      tags:
+      - event-cards
+      summary: List Event Cards
+      description: 'List Event Cards (defaults to live cards), newest first.
+
+
+        ``origin=''aib_rally''`` (the Rally Cards deck) is ordered by SPIKE SIZE
+
+        instead — biggest measured move at the top, either direction — with
+
+        newest-first as the tiebreak for cards that predate the measurement.
+
+
+        User-submitted cards are filtered out by default; toggle
+
+        ``include_user_submitted=true`` to see the full firehose.
+
+
+        Pagination: ``offset``/``skip``/``page`` all move the window (ET-24574
+
+        — offset was previously accepted but silently ignored, stranding any
+
+        card past the first page of the default feed, e.g. an older
+
+        user-submitted card unreachable at any offset). ``total`` in the
+
+        response is the true row count under the active filter; ``count``
+
+        stays the number of rows in THIS page (unchanged key, for backward
+
+        compatibility). ``q``/``search``/``symbol`` filter the same feed.'
+      operationId: list_event_cards_api_v1_event_cards_get
+      security: []
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          default: live
+          title: Status
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 50
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          description: 'Row offset for pagination (0-based). Alias: skip.'
+          default: 0
+          title: Offset
+        description: 'Row offset for pagination (0-based). Alias: skip.'
+      - name: skip
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+            minimum: 0
+          - type: 'null'
+          description: Alias for offset.
+          title: Skip
+        description: Alias for offset.
+      - name: page
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+            minimum: 1
+          - type: 'null'
+          description: 1-based page number; offset = (page-1)*limit. Takes precedence over offset/skip when given.
+          title: Page
+        description: 1-based page number; offset = (page-1)*limit. Takes precedence over offset/skip when given.
+      - name: q
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: 'Case-insensitive substring match on card title or tradable symbol (EVCDX-*/AIB-*). Alias: search.'
+          title: Q
+        description: 'Case-insensitive substring match on card title or tradable symbol (EVCDX-*/AIB-*). Alias: search.'
+      - name: search
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Alias for q.
+          title: Search
+        description: Alias for q.
+      - name: symbol
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Exact (case-insensitive) match on the card's tradable symbol (EVCDX-*/AIB-*).
+          title: Symbol
+        description: Exact (case-insensitive) match on the card's tradable symbol (EVCDX-*/AIB-*).
+      - name: origin
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Filter to a single card origin (e.g. 'aib_rally' for the Rally Cards deck). Omitted → the full curated feed.
+          title: Origin
+        description: Filter to a single card origin (e.g. 'aib_rally' for the Rally Cards deck). Omitted → the full curated feed.
+      - name: include_user_submitted
+        in: query
+        required: false
+        schema:
+          type: boolean
+          description: If true, include user-submitted cards in the result. Default is false so the curated system feed stays clean — user-submitted cards are reachable via the user's own /positions or by passing this flag explicitly.
+          default: false
+          title: Include User Submitted
+        description: If true, include user-submitted cards in the result. Default is false so the curated system feed stays clean — user-submitted cards are reachable via the user's own /positions or by passing this flag explicitly.
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/event-cards/positions:
+    get:
+      tags:
+      - event-cards
+      summary: My Positions
+      description: 'The authenticated user''s Event Card positions with live valuation.
+
+
+        Surfaces BOTH spot positions (event_card_positions: bull/bear) AND
+
+        leveraged perp positions (evcdx_perp_positions: long/short). The
+
+        perp short path was previously invisible on /positions — CentCom
+
+        #5970 (expire76): "shorted event card doesn''t appear in positions".'
+      operationId: my_positions_api_v1_event_cards_positions_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+  /api/v1/event-cards/symbols/search:
+    get:
+      tags:
+      - event-cards
+      summary: Search Symbols
+      description: 'Search tradable symbols for basket customization across the FULL global
+
+        trading-vehicle catalog (stocks, ETFs, ADRs, REITs, crypto, …), optionally
+
+        filtered to one asset type (``asset_type`` = an ``ontology_class`` such as
+
+        ''etf'', ''common-stock'', ''crypto-assets'', ''leveraged-etf'', ''reit''). Crypto rows
+
+        keep their CoinGecko price/image; non-crypto rows come from the ontology and
+
+        are priced live by the builder''s preview-basket step. Only PRICEABLE vehicles
+
+        are returned (a vehicle explicitly flagged extra.priceable=false — no live
+
+        quote — is excluded so a card can never contain an unquotable leg).'
+      operationId: search_symbols_api_v1_event_cards_symbols_search_get
+      parameters:
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 30
+          default: ''
+          title: Q
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 20
+          title: Limit
+      - name: asset_type
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 40
+          default: ''
+          title: Asset Type
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/event-cards/{card_id}:
+    get:
+      tags:
+      - event-cards
+      summary: Get Event Card
+      description: Full detail for one Event Card.
+      operationId: get_event_card_api_v1_event_cards__card_id__get
+      security: []
+      parameters:
+      - name: card_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Card Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/event-cards/{card_id}/index-history:
+    get:
+      tags:
+      - event-cards
+      summary: Index History
+      description: 'Event Index price series for the card over 1d / 5d / 30d / all.
+
+
+        ``all`` = since inception: anchored to the card''s creation time so the
+
+        landing chart matches the AIB fund tiles on /fund-performance, which plot
+
+        their full history rather than a rolling window.
+
+
+        Downsampled server-side to ≤300 points so the response stays
+
+        sparkline-sized regardless of how fast the pricer ticks.'
+      operationId: index_history_api_v1_event_cards__card_id__index_history_get
+      security: []
+      parameters:
+      - name: card_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Card Id
+      - name: interval
+        in: query
+        required: false
+        schema:
+          type: string
+          default: 5d
+          title: Interval
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/event-cards/{card_id}/buy:
+    post:
+      tags:
+      - event-cards
+      summary: Buy Event Card
+      description: 'Open (or add to) a bull position on an Event Card.
+
+
+        A Trend Card / custom-basket card (backed by a tokenized AIB) routes the buy
+
+        to AIB SHARE ISSUANCE (mint at NAV+spread) instead of per-leg basket
+
+        execution. Ordinary Event Cards keep the bull-position path below.
+
+
+        Paper mode resolution order:
+
+        1. ``body.paper`` (explicit per-trade override)
+
+        2. ``user.simulation_mode`` (per-user setting)
+
+        3. ``EVENT_CARDS_TRADING_ENABLED`` env (platform-wide gate)'
+      operationId: buy_event_card_api_v1_event_cards__card_id__buy_post
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: card_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Card Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BuyRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/event-cards/{card_id}/sell:
+    post:
+      tags:
+      - event-cards
+      summary: Sell Event Card
+      description: 'Close (or partially close) a spot position (bull OR bear) on an Event Card.
+
+
+        Note: close-side paper/live mode is derived from the position''s stored
+
+        is_paper flag (set at open time) — body.paper is accepted for
+
+        forward-compat but ignored. The mode of a close MUST match the open
+
+        to avoid mixed accounting.
+
+
+        Dispatches by the position''s stored side: the frontend Close button sends
+
+        every SPOT position here, but bear rows previously dead-ended on
+
+        close_bull_position''s "Not a bull position" guard — a user could hold a
+
+        short (bot/NEXUS-opened) they could never exit from the UI (2026-08-04).
+
+        Bear closes are full-position only (the service has no partial bear close),
+
+        so a fraction < 1 on a bear is rejected rather than silently over-closing.'
+      operationId: sell_event_card_api_v1_event_cards__card_id__sell_post
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: card_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Card Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SellRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/event-cards/{card_id}/short:
+    post:
+      tags:
+      - event-cards
+      summary: Short Event Card
+      description: 'Open a perpetual position (long or short) on an Event Card index.
+
+
+        Cash-settled perp contract. Platform is the counterparty.
+
+        Funding rate anchors perp price to NAV (1h cycle).'
+      operationId: short_event_card_api_v1_event_cards__card_id__short_post
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: card_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Card Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShortRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    HistoricalAnalogsRequest:
+      properties:
+        window_days:
+          type: integer
+          title: Window Days
+          default: 30
+        limit:
+          type: integer
+          maximum: 20.0
+          minimum: 1.0
+          title: Limit
+          default: 10
+      type: object
+      title: HistoricalAnalogsRequest
+      description: 'Backtest how similar PAST events performed over the window FOLLOWING each
+
+        event — read-only, no money, no card creation.'
+    BacktestIdeaRequest:
+      properties:
+        constituents:
+          items:
+            $ref: '#/components/schemas/IdeaConstituent'
+          type: array
+          maxItems: 20
+          minItems: 1
+          title: Constituents
+        period_days:
+          type: integer
+          title: Period Days
+          default: 30
+        starting_capital:
+          type: number
+          maximum: 1000000.0
+          exclusiveMinimum: 0.0
+          title: Starting Capital
+          default: 1000.0
+        fee_rate:
+          type: number
+          maximum: 0.1
+          minimum: 0.0
+          title: Fee Rate
+          default: 0.0
+        slippage_bps:
+          type: number
+          maximum: 500.0
+          minimum: 0.0
+          title: Slippage Bps
+          default: 0.0
+      type: object
+      required:
+      - constituents
+      title: BacktestIdeaRequest
+      description: 'Backtest an arbitrary basket the user defines — an ''event card idea'' —
+
+        without creating a card or moving any money.'
+    BuyRequest:
+      properties:
+        amount_usdc:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Amount Usdc
+          description: USDC notional to go bull with
+        paper:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Paper
+          description: Paper-trading override. True → paper (no real USDC moves, synthetic fills at registry price, position.is_paper=True). False → live (requires platform-wide live gate). None (default) → use user.simulation_mode if set, otherwise fall through to the platform-wide EVENT_CARDS_TRADING_ENABLED gate (currently paper-mode by default).
+        asset_class:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Asset Class
+          description: 'Active sub-basket: ''crypto'' or ''stock''. None = whole basket. Stock legs are paper-only unless the user has a verified live stock broker connected (then they route to that broker).'
+      type: object
+      required:
+      - amount_usdc
+      title: BuyRequest
+    IdeaConstituent:
+      properties:
+        symbol:
+          type: string
+          maxLength: 32
+          minLength: 1
+          title: Symbol
+        coingecko_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Coingecko Id
+          description: CoinGecko id keyed into historical_prices, for a CRYPTO leg. If omitted we best-effort resolve it from the symbol; unresolvable symbols are returned in unresolved_symbols and excluded.
+        asset_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Asset Type
+          description: '''stock'' or ''crypto''. Tells the resolver which price table and catalog to use, and prevents a ticker that exists as BOTH an equity and a crypto token (e.g. REAL = The RealReal Inc. stock, also the symbol of an unrelated ''RealLink'' crypto token) from being resolved to the wrong instrument. If omitted, we best-effort detect it from event_card_assets / the catalogs; pass it explicitly whenever the symbol is a known collision.'
+        weight:
+          type: number
+          minimum: 0.0
+          title: Weight
+          description: Relative basket weight (renormalized). 0 is accepted and excluded.
+      type: object
+      required:
+      - symbol
+      - weight
+      title: IdeaConstituent
+      description: One leg of an ad-hoc basket idea.
+    SellRequest:
+      properties:
+        position_id:
+          type: string
+          title: Position Id
+        fraction:
+          type: number
+          maximum: 1.0
+          exclusiveMinimum: 0.0
+          title: Fraction
+          default: 1.0
+        paper:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Paper
+          description: Per-trade paper override; see BuyRequest.paper
+      type: object
+      required:
+      - position_id
+      title: SellRequest
+    PaperTradeBasketRequest:
+      properties:
+        usd_notional:
+          type: number
+          maximum: 1000000.0
+          exclusiveMinimum: 0.0
+          title: Usd Notional
+          default: 1000.0
+        side:
+          type: string
+          title: Side
+          default: buy
+      type: object
+      title: PaperTradeBasketRequest
+      description: 'Paper-trade a saved card''s whole basket — open SIMULATED positions in the
+
+        card''s constituents, weighted, at live spot. No real money moves.'
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ShortRequest:
+      properties:
+        margin_usdc:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Margin Usdc
+          description: USDC margin for the perp position
+        leverage:
+          type: integer
+          maximum: 10.0
+          minimum: 1.0
+          title: Leverage
+          description: Leverage (1-10x)
+          default: 1
+        side:
+          type: string
+          title: Side
+          description: '''long'' or ''short'''
+          default: short
+        paper:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Paper
+          description: 'Per-trade paper control. On the spot-bear path (cards whose short_execution is ''spot_bear'', or execution=''broker'') it is honoured exactly like BuyRequest.paper (omitted → inherits the account''s simulation_mode). On the perp path (short_execution ''perp'') there is NO paper book: paper=true is REFUSED with 400 PERP_NO_PAPER_BOOK, and an account in simulation_mode that omits it is refused with 400 ACCOUNT_IN_PAPER_MODE — a paper request is never downgraded to a real-ledger position. Send paper=false to open a real perp on purpose. Read short_execution / perp_symbol on GET /api/v1/event-cards/{id} to know which path a card takes before sending.'
+        execution:
+          type: string
+          title: Execution
+          description: '''auto'' (default): perp when the card has an EVCDX token, spot bear otherwise. ''broker'': force the spot-bear path, which SELLS SHORT the card''s equity legs in your OWN connected brokerage account (requires a verified live stock-broker connection, an all-stock basket, and open US markets).'
+          default: auto
+      type: object
+      required:
+      - margin_usdc
+      title: ShortRequest
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

@@ -1,0 +1,482 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Authentication API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: Authentication
+paths:
+  /auth/register:
+    post:
+      tags:
+      - Authentication
+      summary: Register
+      description: 'Register a new user account.
+
+
+        Args:
+
+        request: FastAPI request object
+
+        user_data: User registration data
+
+        background_tasks: FastAPI background tasks for sending emails
+
+        db: Database session
+
+
+        Returns:
+
+        Access and refresh tokens with user data
+
+
+        Raises:
+
+        HTTPException: If email or username already exists, or rate limit exceeded'
+      operationId: register_auth_register_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegister'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /auth/login:
+    post:
+      tags:
+      - Authentication
+      summary: Login
+      description: 'Login with email or username and password.
+
+
+        Args:
+
+        request: FastAPI request object
+
+        login_data: Login credentials (email or username + password)
+
+        background_tasks: FastAPI background tasks for cache warming
+
+        db: Database session
+
+
+        Returns:
+
+        Access and refresh tokens with user data
+
+
+        Raises:
+
+        HTTPException: If credentials are invalid or rate limit exceeded'
+      operationId: login_auth_login_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLogin'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /auth/api-key:
+    post:
+      tags:
+      - Authentication
+      summary: Bootstrap Api Key
+      description: 'Login and generate an API key in one call.
+
+
+        Designed for SDK/API/bot developers who need programmatic key generation
+
+        without a browser session. Authenticates with email/password, then creates
+
+        and returns an evt_ API key with read+trade permissions.
+
+
+        The API key and secret are shown ONCE in this response — store them securely.'
+      operationId: bootstrap_api_key_auth_api_key_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/APIKeyBootstrapRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIKeyBootstrapResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - BearerJWT: []
+components:
+  schemas:
+    TokenResponse:
+      properties:
+        access_token:
+          type: string
+          title: Access Token
+        refresh_token:
+          type: string
+          title: Refresh Token
+        token_type:
+          type: string
+          title: Token Type
+          default: bearer
+        user:
+          $ref: '#/components/schemas/UserResponse'
+      type: object
+      required:
+      - access_token
+      - refresh_token
+      - user
+      title: TokenResponse
+      description: Token response schema.
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    UserResponse:
+      properties:
+        id:
+          type: integer
+          title: Id
+        email:
+          type: string
+          title: Email
+        username:
+          type: string
+          title: Username
+        full_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Full Name
+        wallet_address:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Wallet Address
+        swarm_wallet_address:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Swarm Wallet Address
+        avatar_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Avatar Url
+        bio:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Bio
+        nexus_instructions:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Nexus Instructions
+        location:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Location
+        website:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Website
+        social_profiles:
+          anyOf:
+          - additionalProperties:
+              type: string
+            type: object
+          - type: 'null'
+          title: Social Profiles
+        auth_provider:
+          type: string
+          title: Auth Provider
+          default: local
+        role:
+          type: string
+          title: Role
+        is_active:
+          type: boolean
+          title: Is Active
+        is_verified:
+          type: boolean
+          title: Is Verified
+        total_trades:
+          type: integer
+          title: Total Trades
+        total_volume:
+          type: integer
+          title: Total Volume
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        last_login:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Last Login
+      type: object
+      required:
+      - id
+      - email
+      - username
+      - full_name
+      - avatar_url
+      - bio
+      - role
+      - is_active
+      - is_verified
+      - total_trades
+      - total_volume
+      - created_at
+      - last_login
+      title: UserResponse
+      description: User response schema.
+    UserRegister:
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email
+        username:
+          type: string
+          maxLength: 50
+          minLength: 3
+          pattern: ^[a-zA-Z0-9_.-]+$
+          title: Username
+        password:
+          type: string
+          maxLength: 72
+          minLength: 8
+          title: Password
+        full_name:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Full Name
+        location:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Location
+        website:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+          title: Website
+        social_profiles:
+          anyOf:
+          - additionalProperties:
+              type: string
+            type: object
+          - type: 'null'
+          title: Social Profiles
+        referral_code:
+          anyOf:
+          - type: string
+            maxLength: 20
+          - type: 'null'
+          title: Referral Code
+          description: Referral code from inviter
+        tos_accepted:
+          type: boolean
+          title: Tos Accepted
+          description: Must be true — user has accepted Terms of Service
+        privacy_policy_accepted:
+          type: boolean
+          title: Privacy Policy Accepted
+          description: Must be true — user has accepted Privacy Policy
+        tos_version:
+          anyOf:
+          - type: string
+            maxLength: 32
+          - type: 'null'
+          title: Tos Version
+          description: ToS version string shown to user (e.g. '2026-05-27')
+        privacy_policy_version:
+          anyOf:
+          - type: string
+            maxLength: 32
+          - type: 'null'
+          title: Privacy Policy Version
+          description: Privacy Policy version string shown to user
+      type: object
+      required:
+      - email
+      - username
+      - password
+      - tos_accepted
+      - privacy_policy_accepted
+      title: UserRegister
+      description: User registration schema.
+    UserLogin:
+      properties:
+        username:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Username
+        email:
+          anyOf:
+          - type: string
+            format: email
+          - type: 'null'
+          title: Email
+        password:
+          type: string
+          maxLength: 72
+          title: Password
+      type: object
+      required:
+      - password
+      title: UserLogin
+      description: User login schema - accepts either email or username.
+    APIKeyBootstrapResponse:
+      properties:
+        access_token:
+          type: string
+          title: Access Token
+        refresh_token:
+          type: string
+          title: Refresh Token
+        api_key:
+          type: string
+          title: Api Key
+        api_secret:
+          type: string
+          title: Api Secret
+        api_key_id:
+          type: string
+          title: Api Key Id
+        message:
+          type: string
+          title: Message
+          default: Store the api_key and api_secret securely — they will not be shown again.
+      type: object
+      required:
+      - access_token
+      - refresh_token
+      - api_key
+      - api_secret
+      - api_key_id
+      title: APIKeyBootstrapResponse
+      description: Response containing tokens AND a new API key.
+    APIKeyBootstrapRequest:
+      properties:
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Email
+        username:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Username
+        password:
+          type: string
+          maxLength: 72
+          title: Password
+        key_name:
+          type: string
+          maxLength: 100
+          title: Key Name
+          default: api-key
+      type: object
+      required:
+      - password
+      title: APIKeyBootstrapRequest
+      description: Request to login and generate an API key in one call.
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

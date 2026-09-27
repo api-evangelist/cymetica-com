@@ -1,0 +1,72 @@
+{
+  "provider": "cymetica-com",
+  "sources": [
+    "_original/cymetica-com-eventtrader-public-api-openapi-original.json"
+  ],
+  "outputs": [
+    "cymetica-com-api-keys-api-openapi.yml",
+    "cymetica-com-asset-universe-api-openapi.yml",
+    "cymetica-com-backtest-labs-api-api-openapi.yml",
+    "cymetica-com-clob-api-openapi.yml",
+    "cymetica-com-exchange-api-openapi.yml",
+    "cymetica-com-funding-api-openapi.yml",
+    "cymetica-com-mcp-public-interface-api-openapi.yml",
+    "cymetica-com-portfolio-api-openapi.yml",
+    "cymetica-com-research-backtest-api-api-openapi.yml",
+    "cymetica-com-robinhood-testnet-api-openapi.yml",
+    "cymetica-com-swap-api-openapi.yml",
+    "cymetica-com-token-launchpad-on-chain-api-openapi.yml",
+    "cymetica-com-authentication-api-openapi.yml",
+    "cymetica-com-cloned-bots-api-openapi.yml",
+    "cymetica-com-clones-api-openapi.yml",
+    "cymetica-com-crypto-outlook-api-openapi.yml",
+    "cymetica-com-event-cards-api-openapi.yml",
+    "cymetica-com-funder-rewards-api-openapi.yml",
+    "cymetica-com-macromarket-api-openapi.yml",
+    "cymetica-com-markets-api-openapi.yml",
+    "cymetica-com-oauth-api-openapi.yml",
+    "cymetica-com-posted-links-api-openapi.yml",
+    "cymetica-com-rst-api-openapi.yml",
+    "cymetica-com-rst-crypto-buy-api-openapi.yml",
+    "cymetica-com-withdrawals-api-openapi.yml"
+  ],
+  "archived": [
+    "deleted 1 superseded output(s) from the previous generation"
+  ],
+  "errors": [],
+  "warnings": [],
+  "notes": [
+    "sourced from openapi/_original/ (1 archived document(s)); previously refined output at the top level was skipped rather than re-split",
+    "cymetica-com-eventtrader-public-api-openapi-original.json: upgraded openapi 3.1.0 -> OpenAPI 3.2.0",
+    "cymetica-com-eventtrader-public-api-openapi-original.json: declared missing tag: API Keys",
+    "cymetica-com-eventtrader-public-api-openapi-original.json: declared missing tag: Asset Universe",
+    "cymetica-com-eventtrader-public-api-openapi-original.json: declared missing tag: Backtest Labs API",
+    "cymetica-com-eventtrader-public-api-openapi-original.json: declared missing tag: CLOB",
+    "cymetica-com-eventtrader-public-api-openapi-original.json: declared missing tag: Exchange",
+    "cymetica-com-eventtrader-public-api-openapi-original.json: declared missing tag: Funding",
+    "cymetica-com-eventtrader-public-api-openapi-original.json: declared missing tag: MCP Public Interface",
+    "cymetica-com-eventtrader-public-api-openapi-original.json: declared missing tag: Portfolio",
+    "cymetica-com-eventtrader-public-api-openapi-original.json: declared missing tag: Research Backtest API",
+    "cymetica-com-eventtrader-public-api-openapi-original.json: declared missing tag: Robinhood Testnet",
+    "cymetica-com-eventtrader-public-api-openapi-original.json: declared missing tag: Swap",
+    "cymetica-com-eventtrader-public-api-openapi-original.json: declared missing tag: Token Launchpad (on-chain)",
+    "cymetica-com-eventtrader-public-api-openapi-original.json: declared missing tag: authentication",
+    "cymetica-com-eventtrader-public-api-openapi-original.json: declared missing tag: cloned-bots",
+    "cymetica-com-eventtrader-public-api-openapi-original.json: declared missing tag: clones",
+    "cymetica-com-eventtrader-public-api-openapi-original.json: declared missing tag: crypto-outlook",
+    "cymetica-com-eventtrader-public-api-openapi-original.json: declared missing tag: event-cards",
+    "cymetica-com-eventtrader-public-api-openapi-original.json: declared missing tag: funder-rewards",
+    "cymetica-com-eventtrader-public-api-openapi-original.json: declared missing tag: macromarket",
+    "cymetica-com-eventtrader-public-api-openapi-original.json: declared missing tag: markets",
+    "cymetica-com-eventtrader-public-api-openapi-original.json: declared missing tag: oauth",
+    "cymetica-com-eventtrader-public-api-openapi-original.json: declared missing tag: posted-links",
+    "cymetica-com-eventtrader-public-api-openapi-original.json: declared missing tag: rst",
+    "cymetica-com-eventtrader-public-api-openapi-original.json: declared missing tag: rst-crypto-buy",
+    "cymetica-com-eventtrader-public-api-openapi-original.json: declared missing tag: withdrawals",
+    "superseded outputs removed: cymetica-com-eventtrader-public-api-openapi.yml",
+    "apis.yml register: written (+25 apis, 26 total)"
+  ],
+  "skipped": [
+    "cymetica-com-eventtrader-public-api-openapi.yml: previously refined output, superseded by openapi/_original/"
+  ]
+}

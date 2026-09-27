@@ -1,0 +1,286 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public CLOB API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: CLOB
+paths:
+  /api/v1/clob/orders:
+    post:
+      tags:
+      - CLOB
+      summary: Place Order
+      description: Place an order on the CLOB.
+      operationId: place_order_api_v1_clob_orders_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/src__api__routes__clob__PlaceOrderRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+    delete:
+      tags:
+      - CLOB
+      summary: Cancel All Orders
+      description: Cancel all user's open orders (in-memory + DB).
+      operationId: cancel_all_orders_api_v1_clob_orders_delete
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+  /api/v1/clob/orders/{order_id}:
+    patch:
+      tags:
+      - CLOB
+      summary: Amend Order
+      description: 'Amend a resting order''s price and/or quantity atomically.
+
+
+        - Price change: order moves to new price level (loses queue priority)
+
+        - Quantity decrease: preserves queue priority at same level
+
+        - Quantity increase: loses queue priority (same as price change)
+
+
+        Industry-standard behavior matching Bybit, OKX, and Hyperliquid.'
+      operationId: amend_order_api_v1_clob_orders__order_id__patch
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: order_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Order Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AmendOrderRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - CLOB
+      summary: Cancel Order
+      description: Cancel an order by ID.
+      operationId: cancel_order_api_v1_clob_orders__order_id__delete
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: order_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Order Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    src__api__routes__clob__PlaceOrderRequest:
+      properties:
+        side:
+          type: string
+          maxLength: 10
+          title: Side
+          description: buy or sell
+        paper:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Paper
+          description: 'Canonical paper/live control. The CLOB has no paper book: true → 400 CLOB_NO_PAPER_BOOK; false → real order; omitted → real order unless the account''s simulation_mode is true, then 400 ACCOUNT_IN_PAPER_MODE (send paper=false to trade live on purpose).'
+        order_type:
+          type: string
+          maxLength: 20
+          title: Order Type
+          description: limit, market, ioc, fok, post_only
+          default: limit
+        price:
+          type: string
+          maxLength: 50
+          title: Price
+          description: Limit price
+          default: '0'
+        quantity:
+          type: string
+          maxLength: 50
+          title: Quantity
+          description: VAIX quantity
+        venue:
+          type: string
+          maxLength: 20
+          title: Venue
+          description: internal, cex, or best
+          default: internal
+        pair:
+          type: string
+          maxLength: 64
+          title: Pair
+          description: Trading pair
+          default: VAIX/USDC
+        stp_mode:
+          anyOf:
+          - type: string
+            maxLength: 30
+          - type: 'null'
+          title: Stp Mode
+          description: 'STP mode: cancel_resting, cancel_incoming, cancel_both, cancel_taker, decrement_and_cancel'
+        stop_price:
+          anyOf:
+          - type: number
+          - type: string
+          - type: 'null'
+          title: Stop Price
+          description: Stop trigger price for stop-limit orders
+        expire_at:
+          anyOf:
+          - type: string
+            maxLength: 50
+          - type: 'null'
+          title: Expire At
+          description: GTD expiry as ISO datetime or epoch microseconds
+        display_qty:
+          anyOf:
+          - type: number
+          - type: string
+          - type: 'null'
+          title: Display Qty
+          description: Iceberg visible quantity
+      type: object
+      required:
+      - side
+      - quantity
+      title: PlaceOrderRequest
+      description: 'CLOB order. LIVE BOOK ONLY — the CLOB has no paper book. `paper` is the
+
+        canonical control shared by every order surface: true is rejected (400
+
+        CLOB_NO_PAPER_BOOK), false places a REAL order, omitted = live UNLESS the
+
+        account is in simulation_mode, in which case the order is rejected (400
+
+        ACCOUNT_IN_PAPER_MODE) so a paper-mode caller never spends real balance by
+
+        omission — pass paper=false to trade live deliberately (ET-22652).'
+    AmendOrderRequest:
+      properties:
+        price:
+          anyOf:
+          - type: string
+            maxLength: 50
+          - type: 'null'
+          title: Price
+          description: New limit price
+        quantity:
+          anyOf:
+          - type: string
+            maxLength: 50
+          - type: 'null'
+          title: Quantity
+          description: New quantity
+      type: object
+      title: AmendOrderRequest
+      description: Amend a resting order's price and/or quantity atomically.
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

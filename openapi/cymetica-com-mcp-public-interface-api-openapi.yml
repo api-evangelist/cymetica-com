@@ -1,0 +1,560 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public MCP Public Interface API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: MCP Public Interface
+paths:
+  /mcp/v1:
+    post:
+      tags:
+      - MCP Public Interface
+      summary: Mcp Jsonrpc
+      description: MCP JSON-RPC over streamable HTTP — initialize / tools/list / tools/call.
+      operationId: mcp_jsonrpc_mcp_v1_post
+      parameters:
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /mcp/v1/capabilities:
+    get:
+      tags:
+      - MCP Public Interface
+      summary: Get Platform Capabilities
+      description: Get platform capabilities for agent's trust level.
+      operationId: get_platform_capabilities_mcp_v1_capabilities_get
+      parameters:
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /mcp/v1/tools:
+    get:
+      tags:
+      - MCP Public Interface
+      summary: List Available Tools
+      description: Get catalog of available tools (plus the caller's own trust level).
+      operationId: list_available_tools_mcp_v1_tools_get
+      parameters:
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /mcp/v1/agents/{agent_id}/claim:
+    post:
+      tags:
+      - MCP Public Interface
+      summary: Claim Agent Ownership
+      description: 'Record that the calling PLATFORM account owns this agent.
+
+
+        Authenticate as the human (JWT or evt_ account API key), not as the
+
+        agent. Allowed when your account is verified and its email matches the
+
+        agent''s registered contact_email. From then on your confirmed CentCom
+
+        bugs, implemented feature requests, real CLOB fills and real-money
+
+        headline positions count toward the agent''s trust score (reputation
+
+        overlay only -- the agent still trades from its own funded account).'
+      operationId: claim_agent_ownership_mcp_v1_agents__agent_id__claim_post
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: agent_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Agent Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /mcp/v1/agents/{agent_id}/fund:
+    post:
+      tags:
+      - MCP Public Interface
+      summary: Fund Agent From Owner
+      description: 'Move USDC between YOUR platform account and your agent''s spend account.
+
+
+        Authenticate as the human owner (JWT or evt_ account API key). Allowed
+
+        only for an agent you have claimed (POST /mcp/v1/agents/{agent_id}/claim,
+
+        or registered while signed in). This is an internal ledger transfer
+
+        between two accounts of the same person — nothing goes on-chain, nothing
+
+        is charged. Your available (unlocked) balance is the ceiling; the same
+
+        call with direction=to_owner brings it back. The agent trades from the
+
+        spend account, so its orders use ONLY what you moved here.'
+      operationId: fund_agent_from_owner_mcp_v1_agents__agent_id__fund_post
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: agent_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Agent Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentFundRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /mcp/v1/register:
+    post:
+      tags:
+      - MCP Public Interface
+      summary: Register New Agent
+      description: 'Register a new MCP agent.
+
+
+        A register call that carries the human''s own JWT / account API key binds
+
+        the new agent to that account (mcp_agent_owners) so its confirmed bugs
+
+        and real fills count toward the agent''s trust from day one (ET-22493).
+
+
+        Creates both an MCPAgent row and an APIKey row so the key works
+
+        with both the MCP auth flow and the AgentBook verify_api_key flow.'
+      operationId: register_new_agent_mcp_v1_register_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentRegistrationRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentRegistrationResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /mcp/v1/agents/mine:
+    get:
+      tags:
+      - MCP Public Interface
+      summary: List My Agents
+      description: 'Your claimed agents with each spend account''s USDC balance (ET-22549).
+
+
+        Authenticate as the HUMAN owner (browser session, JWT or evt_ account API
+
+        key). Returns your own available USDC next to every agent''s, so a one-click
+
+        move in either direction is a single follow-up call to
+
+        POST /mcp/v1/agents/{agent_id}/fund. The Account page renders this panel.'
+      operationId: list_my_agents_mcp_v1_agents_mine_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+  /mcp/v1/agents/me:
+    get:
+      tags:
+      - MCP Public Interface
+      summary: Get My Profile
+      description: Get current agent's profile.
+      operationId: get_my_profile_mcp_v1_agents_me_get
+      parameters:
+      - name: x-api-key
+        in: header
+        required: true
+        schema:
+          type: string
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /mcp/v1/tools/{tool_name}:
+    post:
+      tags:
+      - MCP Public Interface
+      summary: Invoke Tool
+      description: Invoke an MCP tool.
+      operationId: invoke_tool_mcp_v1_tools__tool_name__post
+      parameters:
+      - name: tool_name
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Tool Name
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ToolInvokeRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    AgentFundRequest:
+      properties:
+        amount:
+          anyOf:
+          - type: number
+            exclusiveMinimum: 0.0
+          - type: string
+          title: Amount
+          description: Amount to move (USDC)
+        currency:
+          type: string
+          title: Currency
+          description: Only USDC is supported
+          default: USDC
+        direction:
+          type: string
+          title: Direction
+          description: 'to_agent: owner -> agent spend account; to_owner: agent -> owner'
+          default: to_agent
+      type: object
+      required:
+      - amount
+      title: AgentFundRequest
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    ToolInvokeRequest:
+      properties:
+        params:
+          type: object
+          title: Params
+      type: object
+      title: ToolInvokeRequest
+      description: Request to invoke a tool.
+    AgentRegistrationResponse:
+      properties:
+        agent_id:
+          type: string
+          title: Agent Id
+          description: Stable agent id (UUID); path parameter for /mcp/v1/agents/{agent_id}/…
+        api_key:
+          type: string
+          title: Api Key
+          description: Send as X-API-Key on every MCP/REST call. Shown only in this response.
+        trust_level:
+          type: string
+          title: Trust Level
+          description: 'Starting rung of the trust ladder: unknown → recognized → trusted → allied (the trust_tiers keys in /.well-known/mcp.json)'
+        rate_limits:
+          type: object
+          title: Rate Limits
+          description: requests_per_minute / _hour / _day, concurrent_connections, max_message_size_kb for this rung
+        created_at:
+          type: string
+          title: Created At
+        expires_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Expires At
+        important_notice:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Important Notice
+        welcome_message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Welcome Message
+        onboarding_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Onboarding Url
+        api_docs_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Api Docs Url
+        sdk_docs_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sdk Docs Url
+        profit_paths_count:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Profit Paths Count
+        paper_trading_available:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Paper Trading Available
+        trading_pairs:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Trading Pairs
+        fee_structure:
+          anyOf:
+          - type: object
+          - type: 'null'
+          title: Fee Structure
+        quick_start:
+          anyOf:
+          - type: object
+          - type: 'null'
+          title: Quick Start
+        role:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Role
+          description: Echo of the requested role, if any
+        role_guidance:
+          anyOf:
+          - {}
+          - type: 'null'
+          title: Role Guidance
+      additionalProperties: true
+      type: object
+      required:
+      - agent_id
+      - api_key
+      - trust_level
+      - rate_limits
+      - created_at
+      title: AgentRegistrationResponse
+      description: '200 body of POST /mcp/v1/register (ET-22540).
+
+
+        The field /build tells an agent to save — ``api_key`` — is shown ONCE, here.
+
+        Extra keys (role guidance, welcome copy) are allowed so the documented shape
+
+        is a floor, not a ceiling.'
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    AgentRegistrationRequest:
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          minLength: 3
+          title: Name
+        description:
+          anyOf:
+          - type: string
+            maxLength: 1000
+          - type: 'null'
+          title: Description
+        contact_email:
+          type: string
+          title: Contact Email
+        capabilities:
+          items:
+            type: string
+          type: array
+          title: Capabilities
+        intended_use:
+          type: string
+          maxLength: 2000
+          minLength: 10
+          title: Intended Use
+        organization:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Organization
+        website:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Website
+        role:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Role
+          description: 'Agent role: market_maker, trader, liquidity_provider, arbitrageur, analyst, bot_operator, other'
+      type: object
+      required:
+      - name
+      - contact_email
+      - intended_use
+      title: AgentRegistrationRequest
+      description: Request to register a new MCP agent.
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

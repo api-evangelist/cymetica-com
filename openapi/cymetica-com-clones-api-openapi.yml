@@ -1,0 +1,629 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Clones API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: clones
+paths:
+  /api/v1/clones/fomo-radar/signals:
+    get:
+      tags:
+      - clones
+      summary: Fomo Radar Signals
+      description: Tokens the tracked wallets are buying right now, ranked by conviction.
+      operationId: fomo_radar_signals_api_v1_clones_fomo_radar_signals_get
+      parameters:
+      - name: chain
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^(robinhood|solana)$
+          default: robinhood
+          title: Chain
+      - name: filter
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^(all|hot|fresh|exits)$
+          default: all
+          title: Filter
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 40
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Fomo Radar Signals Api V1 Clones Fomo Radar Signals Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/clones/fomo-radar/traders:
+    get:
+      tags:
+      - clones
+      summary: Fomo Radar Traders
+      description: Leaderboard of wallets ranked by their realized on-chain track record.
+      operationId: fomo_radar_traders_api_v1_clones_fomo_radar_traders_get
+      parameters:
+      - name: chain
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^(robinhood|solana)$
+          default: robinhood
+          title: Chain
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 25
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Fomo Radar Traders Api V1 Clones Fomo Radar Traders Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/clones/fomo-radar/docs:
+    get:
+      tags:
+      - clones
+      summary: Fomo Radar Docs
+      description: Machine-readable description of the two scoring models.
+      operationId: fomo_radar_docs_api_v1_clones_fomo_radar_docs_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Fomo Radar Docs Api V1 Clones Fomo Radar Docs Get
+      security: []
+  /api/v1/clones/memecoin-terminal/tokens:
+    get:
+      tags:
+      - clones
+      summary: Memecoin Terminal Tokens
+      description: Ranked memecoin rows for one tab + chain filter.
+      operationId: memecoin_terminal_tokens_api_v1_clones_memecoin_terminal_tokens_get
+      parameters:
+      - name: tab
+        in: query
+        required: false
+        schema:
+          type: string
+          default: trending
+          title: Tab
+      - name: chain
+        in: query
+        required: false
+        schema:
+          type: string
+          default: all
+          title: Chain
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 50
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Memecoin Terminal Tokens Api V1 Clones Memecoin Terminal Tokens Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/clones/memecoin-terminal/search:
+    get:
+      tags:
+      - clones
+      summary: Memecoin Terminal Search
+      description: Search every indexed chain for a symbol, name or contract address.
+      operationId: memecoin_terminal_search_api_v1_clones_memecoin_terminal_search_get
+      parameters:
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 64
+          default: ''
+          title: Q
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Memecoin Terminal Search Api V1 Clones Memecoin Terminal Search Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/clones/memecoin-terminal/docs:
+    get:
+      tags:
+      - clones
+      summary: Memecoin Terminal Docs
+      description: Machine-readable description of this clone's public API.
+      operationId: memecoin_terminal_docs_api_v1_clones_memecoin_terminal_docs_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Memecoin Terminal Docs Api V1 Clones Memecoin Terminal Docs Get
+      security: []
+  /api/v1/clones/social-pulse/assets:
+    get:
+      tags:
+      - clones
+      summary: Social Pulse Assets
+      description: Ranked Pulse table. Always answers from the cached snapshot.
+      operationId: social_pulse_assets_api_v1_clones_social_pulse_assets_get
+      parameters:
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^(pulse|mentions|sentiment|price|rank_change)$
+          default: pulse
+          title: Sort
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 250
+          minimum: 1
+          default: 100
+          title: Limit
+      - name: trend
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^(all|up|down)$
+          default: all
+          title: Trend
+      - name: q
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 40
+          - type: 'null'
+          title: Q
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/clones/social-pulse/assets/{symbol}:
+    get:
+      tags:
+      - clones
+      summary: Social Pulse Asset
+      description: Score components + the recent headlines that drove them, for one asset.
+      operationId: social_pulse_asset_api_v1_clones_social_pulse_assets__symbol__get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/clones/social-pulse/docs:
+    get:
+      tags:
+      - clones
+      summary: Social Pulse Docs
+      description: The Pulse Score formula, machine-readable.
+      operationId: social_pulse_docs_api_v1_clones_social_pulse_docs_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      security: []
+  /api/v1/clones/protocol-revenue/rankings:
+    get:
+      tags:
+      - clones
+      summary: Protocol Revenue Rankings
+      description: Protocols ranked by fees or revenue over 24h / 7d / 30d.
+      operationId: protocol_revenue_rankings_api_v1_clones_protocol_revenue_rankings_get
+      parameters:
+      - name: metric
+        in: query
+        required: false
+        schema:
+          type: string
+          description: fees | revenue — the column sorted on
+          default: fees
+          title: Metric
+        description: fees | revenue — the column sorted on
+      - name: window
+        in: query
+        required: false
+        schema:
+          type: string
+          description: 24h | 7d | 30d
+          default: 24h
+          title: Window
+        description: 24h | 7d | 30d
+      - name: chain
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 64
+          default: ''
+          title: Chain
+      - name: category
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 64
+          default: ''
+          title: Category
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 64
+          default: ''
+          title: Q
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 1000
+          minimum: 1
+          default: 200
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Protocol Revenue Rankings Api V1 Clones Protocol Revenue Rankings Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/clones/protocol-revenue/protocols/{slug}:
+    get:
+      tags:
+      - clones
+      summary: Protocol Revenue Detail
+      description: 'One protocol: 30 days of daily fees + revenue, cached for 10 minutes.'
+      operationId: protocol_revenue_detail_api_v1_clones_protocol_revenue_protocols__slug__get
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Protocol Revenue Detail Api V1 Clones Protocol Revenue Protocols  Slug  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/clones/protocol-revenue/docs:
+    get:
+      tags:
+      - clones
+      summary: Protocol Revenue Docs
+      description: Machine-readable description of this clone's public JSON API.
+      operationId: protocol_revenue_docs_api_v1_clones_protocol_revenue_docs_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Protocol Revenue Docs Api V1 Clones Protocol Revenue Docs Get
+      security: []
+  /api/v1/clones/stable-pools/pools:
+    get:
+      tags:
+      - clones
+      summary: Stable Pools List
+      description: Curve pools with their Convex-boosted counterpart, filtered and sorted.
+      operationId: stable_pools_list_api_v1_clones_stable_pools_pools_get
+      parameters:
+      - name: chain
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Chain filter, e.g. Ethereum or arbitrum
+          title: Chain
+        description: Chain filter, e.g. Ethereum or arbitrum
+      - name: stable
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          description: 1 = stablecoin pools only, 0 = crypto pools only
+          title: Stable
+        description: 1 = stablecoin pools only, 0 = crypto pools only
+      - name: min_tvl
+        in: query
+        required: false
+        schema:
+          type: number
+          minimum: 0.0
+          description: Minimum pool TVL in USD
+          default: 0.0
+          title: Min Tvl
+        description: Minimum pool TVL in USD
+      - name: q
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Search symbol / pool name / chain
+          title: Q
+        description: Search symbol / pool name / chain
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          description: apy | tvl | boost | volume
+          default: tvl
+          title: Sort
+        description: apy | tvl | boost | volume
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 500
+          minimum: 1
+          default: 200
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/clones/stable-pools/pools/{pool_id}:
+    get:
+      tags:
+      - clones
+      summary: Stable Pool History
+      description: 30-day APY / TVL history for one pool (Curve or its Convex counterpart).
+      operationId: stable_pool_history_api_v1_clones_stable_pools_pools__pool_id__get
+      parameters:
+      - name: pool_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Pool Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/clones/stable-pools/docs:
+    get:
+      tags:
+      - clones
+      summary: Stable Pools Docs
+      description: Machine-readable description of the Stable Pools API.
+      operationId: stable_pools_docs_api_v1_clones_stable_pools_docs_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      security: []
+  /api/v1/clones/allswap/index:
+    get:
+      tags:
+      - clones
+      summary: Allswap Index
+      description: The AllSwap index (30-day series) plus its 20 constituents.
+      operationId: allswap_index_api_v1_clones_allswap_index_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Allswap Index Api V1 Clones Allswap Index Get
+      security: []
+  /api/v1/clones/allswap/docs:
+    get:
+      tags:
+      - clones
+      summary: Allswap Docs
+      description: Machine-readable description of this clone's public JSON API.
+      operationId: allswap_docs_api_v1_clones_allswap_docs_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Allswap Docs Api V1 Clones Allswap Docs Get
+      security: []
+components:
+  schemas:
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

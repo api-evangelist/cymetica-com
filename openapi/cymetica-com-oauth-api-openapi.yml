@@ -1,0 +1,225 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public OAuth API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: OAuth
+paths:
+  /oauth/register:
+    post:
+      tags:
+      - OAuth
+      summary: Register Client
+      description: 'Open dynamic client registration. Returns client_id (+ client_secret for
+
+        confidential clients, shown once).'
+      operationId: register_client_oauth_register_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /oauth/token:
+    post:
+      tags:
+      - OAuth
+      summary: Token
+      description: 'OAuth 2.0 token endpoint (form-encoded). Supports authorization_code (PKCE)
+
+        and refresh_token rotation.'
+      operationId: token_oauth_token_post
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Body_token_oauth_token_post'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /oauth/userinfo:
+    get:
+      tags:
+      - OAuth
+      summary: Userinfo
+      description: 'OIDC-style userinfo — proves an issued OAuth token authenticates against a
+
+        real protected resource. Requires scope ''read''.'
+      operationId: userinfo_oauth_userinfo_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      security:
+      - BearerJWT: []
+components:
+  schemas:
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    Body_token_oauth_token_post:
+      properties:
+        grant_type:
+          type: string
+          title: Grant Type
+        code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Code
+        redirect_uri:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Redirect Uri
+        client_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Client Id
+        client_secret:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Client Secret
+        code_verifier:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Code Verifier
+        refresh_token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Refresh Token
+      type: object
+      required:
+      - grant_type
+      title: Body_token_oauth_token_post
+    RegisterRequest:
+      properties:
+        client_name:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Client Name
+        redirect_uris:
+          items:
+            type: string
+          type: array
+          maxItems: 10
+          minItems: 1
+          title: Redirect Uris
+        grant_types:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Grant Types
+        response_types:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Response Types
+        token_endpoint_auth_method:
+          type: string
+          title: Token Endpoint Auth Method
+          default: none
+        scope:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Scope
+        contact_email:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+          title: Contact Email
+      type: object
+      required:
+      - client_name
+      - redirect_uris
+      title: RegisterRequest
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

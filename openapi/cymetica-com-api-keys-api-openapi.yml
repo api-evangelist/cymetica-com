@@ -1,0 +1,367 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public API Keys API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: API Keys
+paths:
+  /api/v1/api-keys:
+    get:
+      tags:
+      - API Keys
+      summary: List Api Keys
+      description: List all API keys for the current user (keys are masked).
+      operationId: list_api_keys_api_v1_api_keys_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/APIKeyListItem'
+                type: array
+                title: Response List Api Keys Api V1 Api Keys Get
+      security:
+      - BearerJWT: []
+    post:
+      tags:
+      - API Keys
+      summary: Create Api Key
+      description: Generate a new API key. The plaintext key is returned ONCE.
+      operationId: create_api_key_api_v1_api_keys_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAPIKeyRequest'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIKeyCreatedResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - BearerJWT: []
+  /api/v1/api-keys/{key_id}:
+    delete:
+      tags:
+      - API Keys
+      summary: Revoke Api Key
+      description: Revoke (deactivate) an API key.
+      operationId: revoke_api_key_api_v1_api_keys__key_id__delete
+      security:
+      - BearerJWT: []
+      parameters:
+      - name: key_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Key Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+      - API Keys
+      summary: Update Api Key
+      description: Update an API key's name, permissions, or IP whitelist.
+      operationId: update_api_key_api_v1_api_keys__key_id__patch
+      security:
+      - BearerJWT: []
+      parameters:
+      - name: key_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Key Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAPIKeyRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIKeyListItem'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    CreateAPIKeyRequest:
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: Name
+        permissions:
+          type: object
+          title: Permissions
+          description: 'Key permissions: read, trade, withdraw'
+          default:
+            read: true
+            trade: false
+            withdraw: false
+        ip_whitelist:
+          anyOf:
+          - items:
+              type: string
+            type: array
+            maxItems: 20
+          - type: 'null'
+          title: Ip Whitelist
+          description: Optional IP whitelist
+        allowed_markets:
+          anyOf:
+          - items:
+              type: string
+            type: array
+            maxItems: 100
+          - type: 'null'
+          title: Allowed Markets
+          description: Optional perp market_id allowlist (restrict trading to these markets)
+        expires_in_days:
+          anyOf:
+          - type: integer
+            maximum: 3650.0
+            minimum: 1.0
+          - type: 'null'
+          title: Expires In Days
+      type: object
+      required:
+      - name
+      title: CreateAPIKeyRequest
+    UpdateAPIKeyRequest:
+      properties:
+        name:
+          anyOf:
+          - type: string
+            maxLength: 100
+            minLength: 1
+          - type: 'null'
+          title: Name
+        permissions:
+          anyOf:
+          - type: object
+          - type: 'null'
+          title: Permissions
+        ip_whitelist:
+          anyOf:
+          - items:
+              type: string
+            type: array
+            maxItems: 20
+          - type: 'null'
+          title: Ip Whitelist
+        allowed_markets:
+          anyOf:
+          - items:
+              type: string
+            type: array
+            maxItems: 100
+          - type: 'null'
+          title: Allowed Markets
+      type: object
+      title: UpdateAPIKeyRequest
+    APIKeyCreatedResponse:
+      properties:
+        key:
+          type: string
+          title: Key
+        secret:
+          type: string
+          title: Secret
+        id:
+          type: string
+          title: Id
+        name:
+          type: string
+          title: Name
+        tier:
+          type: string
+          title: Tier
+        permissions:
+          type: object
+          title: Permissions
+        allowed_markets:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Allowed Markets
+        expires_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Expires At
+        rate_limit_per_minute:
+          type: integer
+          title: Rate Limit Per Minute
+        created_at:
+          type: string
+          title: Created At
+        message:
+          type: string
+          title: Message
+          default: Store this key and secret securely — they will not be shown again. Authenticate by sending the key as the X-API-Key header on every request; that alone is sufficient for all API-key-enabled endpoints today. The secret is reserved for optional HMAC request signing (X-Signature = HMAC-SHA256(secret, timestamp+method+path+body)); no endpoint currently requires it.
+      type: object
+      required:
+      - key
+      - secret
+      - id
+      - name
+      - tier
+      - permissions
+      - rate_limit_per_minute
+      - created_at
+      title: APIKeyCreatedResponse
+    APIKeyListItem:
+      properties:
+        id:
+          type: string
+          title: Id
+        name:
+          type: string
+          title: Name
+        tier:
+          type: string
+          title: Tier
+        permissions:
+          type: object
+          title: Permissions
+        allowed_markets:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Allowed Markets
+        rate_limit_per_minute:
+          type: integer
+          title: Rate Limit Per Minute
+        key_prefix:
+          type: string
+          title: Key Prefix
+        ip_whitelist:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Ip Whitelist
+        expires_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Expires At
+        created_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Created At
+        last_used_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Last Used At
+        is_active:
+          type: boolean
+          title: Is Active
+      type: object
+      required:
+      - id
+      - name
+      - tier
+      - permissions
+      - rate_limit_per_minute
+      - key_prefix
+      - ip_whitelist
+      - created_at
+      - last_used_at
+      - is_active
+      title: APIKeyListItem
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

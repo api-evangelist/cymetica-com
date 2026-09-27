@@ -1,0 +1,743 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Research Backtest API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: Research Backtest API
+paths:
+  /api/v1/research-backtest/themes:
+    get:
+      tags:
+      - Research Backtest API
+      summary: List Themes
+      operationId: list_themes_api_v1_research_backtest_themes_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  themes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        label:
+                          type: string
+                      additionalProperties: true
+                additionalProperties: false
+                required:
+                - themes
+      security: []
+  /api/v1/research-backtest/models:
+    get:
+      tags:
+      - Research Backtest API
+      summary: List Models
+      operationId: list_models_api_v1_research_backtest_models_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  models:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        label:
+                          type: string
+                        experimental:
+                          type: boolean
+                        caveat:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: true
+                additionalProperties: false
+                required:
+                - models
+      security: []
+  /api/v1/research-backtest/runs:
+    get:
+      tags:
+      - Research Backtest API
+      summary: List Runs
+      operationId: list_runs_api_v1_research_backtest_runs_get
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 100
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  runs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        run_id:
+                          type: string
+                        label:
+                          type: string
+                        created_at:
+                          type: string
+                        n_baskets:
+                          type: integer
+                        hold_days:
+                          type: integer
+                        mean_basket_gain_pct:
+                          type:
+                          - number
+                          - 'null'
+                        mean_vs_btc_pct:
+                          type:
+                          - number
+                          - 'null'
+                        hit_rate_pct:
+                          type:
+                          - number
+                          - 'null'
+                        algo_model:
+                          type: string
+                        themes:
+                          type: array
+                          items:
+                            type: string
+                      additionalProperties: true
+                      required:
+                      - run_id
+                      description: One research-backtest run (index entry).
+                additionalProperties: false
+                required:
+                - runs
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/research-backtest/runs/{run_id}:
+    get:
+      tags:
+      - Research Backtest API
+      summary: Get Run
+      operationId: get_run_api_v1_research_backtest_runs__run_id__get
+      parameters:
+      - name: run_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Run Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  run_id:
+                    type: string
+                  label:
+                    type: string
+                  created_at:
+                    type: string
+                  algo_model:
+                    type: string
+                  themes:
+                    type: array
+                    items:
+                      type: string
+                  n_baskets:
+                    type: integer
+                  hold_days:
+                    type: integer
+                  mean_basket_gain_pct:
+                    type:
+                    - number
+                    - 'null'
+                  mean_vs_btc_pct:
+                    type:
+                    - number
+                    - 'null'
+                  hit_rate_pct:
+                    type:
+                    - number
+                    - 'null'
+                  baskets:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+                additionalProperties: true
+                required:
+                - run_id
+                description: Full stored run document (index fields + per-basket detail).
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/research-backtest/run:
+    post:
+      tags:
+      - Research Backtest API
+      summary: Run
+      description: 'Enqueue a research backtest. Returns {run_id, instance_id, status} immediately; the client
+
+        streams progress over ws://…/ws/backtest/{instance_id}?run_id={run_id}.
+
+
+        Open to anonymous callers by design (the /backtest-rally page needs no login), bounded by
+
+        30 POSTs/min per IP and at most RESEARCH_BACKTEST_INFLIGHT_ANON (2) queued+running runs per
+
+        anonymous IP / RESEARCH_BACKTEST_INFLIGHT_AUTH (5) per account → 429 beyond that.'
+      operationId: run_api_v1_research_backtest_run_post
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResearchBacktestRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  run_id:
+                    type: string
+                  instance_id:
+                    type: string
+                  status:
+                    type: string
+                    enum:
+                    - queued
+                  ws:
+                    type: string
+                    description: 'Progress WebSocket path: /ws/backtest/{instance_id}?run_id=…'
+                additionalProperties: false
+                required:
+                - run_id
+                - instance_id
+                - status
+                - ws
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/research-backtest/leaderboard:
+    get:
+      tags:
+      - Research Backtest API
+      summary: Leaderboard
+      operationId: leaderboard_api_v1_research_backtest_leaderboard_get
+      parameters:
+      - name: section
+        in: query
+        required: false
+        schema:
+          type: string
+          default: all
+          title: Section
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          default: vs_btc
+          title: Sort
+      - name: theme
+        in: query
+        required: false
+        schema:
+          type: string
+          default: ''
+          title: Theme
+      - name: model
+        in: query
+        required: false
+        schema:
+          type: string
+          default: ''
+          title: Model
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 50
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  section:
+                    type: string
+                  sort:
+                    type: string
+                  runs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        run_id:
+                          type: string
+                        label:
+                          type: string
+                        created_at:
+                          type: string
+                        n_baskets:
+                          type: integer
+                        hold_days:
+                          type: integer
+                        mean_basket_gain_pct:
+                          type:
+                          - number
+                          - 'null'
+                        mean_vs_btc_pct:
+                          type:
+                          - number
+                          - 'null'
+                        hit_rate_pct:
+                          type:
+                          - number
+                          - 'null'
+                        algo_model:
+                          type: string
+                        themes:
+                          type: array
+                          items:
+                            type: string
+                      additionalProperties: true
+                      required:
+                      - run_id
+                      description: One research-backtest run (index entry).
+                  cards:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        card_id:
+                          type: string
+                        title:
+                          type: string
+                        direction:
+                          type: string
+                        index_value:
+                          type: number
+                        index_base:
+                          type: number
+                        return_pct:
+                          type: number
+                        trade_url:
+                          type: string
+                        created_at:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: true
+                additionalProperties: true
+                required:
+                - section
+                - sort
+                description: '`runs` present for section=runs|all, `cards` for section=cards|all.'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/research-backtest/queue:
+    get:
+      tags:
+      - Research Backtest API
+      summary: Queue State
+      description: 'Live backtest-queue state for the visualization: per-lane active/max/mean-run-time + the waiting
+
+        line (anonymized) + (if run_id given) YOUR position + ETA. The page fetches this ONCE then the
+
+        progress WS pushes `queue` frames — no polling (R92). Anonymized: only short user_hash tokens, never
+
+        usernames/balances/PII.'
+      operationId: queue_state_api_v1_research_backtest_queue_get
+      parameters:
+      - name: run_id
+        in: query
+        required: false
+        schema:
+          type: string
+          default: ''
+          title: Run Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  active_count:
+                    type: integer
+                  max_concurrent:
+                    type: integer
+                  queued_count:
+                    type: integer
+                  lanes:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        lane:
+                          type: string
+                        active:
+                          type: integer
+                        max:
+                          type: integer
+                        mean_run_sec:
+                          type: number
+                        enabled:
+                          type: boolean
+                      additionalProperties: true
+                  queue:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+                  auction:
+                    type: object
+                    properties:
+                      enabled:
+                        type: boolean
+                      currency:
+                        type: string
+                      base_price:
+                        type: number
+                      min_bid:
+                        type: number
+                      max_bid:
+                        type: number
+                      reserved_free_slots:
+                        type: integer
+                      paid_slots:
+                        type: integer
+                      max_wait_sec:
+                        type: integer
+                    additionalProperties: true
+                    required:
+                    - enabled
+                additionalProperties: true
+                required:
+                - active_count
+                - queued_count
+                - lanes
+                - queue
+                - auction
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+components:
+  schemas:
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    ResearchBacktestRequest:
+      properties:
+        label:
+          type: string
+          maxLength: 120
+          title: Label
+          default: research backtest
+        themes:
+          items:
+            type: string
+          type: array
+          title: Themes
+        symbols:
+          type: string
+          maxLength: 400
+          title: Symbols
+          default: ''
+        exclude_symbols:
+          type: string
+          maxLength: 400
+          title: Exclude Symbols
+          default: ''
+        algo_model:
+          type: string
+          title: Algo Model
+          default: aib_sentiment
+        hold_days:
+          type: integer
+          maximum: 14.0
+          minimum: 1.0
+          title: Hold Days
+          default: 2
+        top_k:
+          type: integer
+          maximum: 40.0
+          minimum: 2.0
+          title: Top K
+          default: 12
+        long_band:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Long Band
+          default: 0.85
+        short_band:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Short Band
+          default: 0.94
+        neutral_band:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Neutral Band
+          default: 0.94
+        min_tuatara_score:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Min Tuatara Score
+          default: 0.04
+        long_only:
+          type: boolean
+          title: Long Only
+          default: false
+        min_volume_usd:
+          type: number
+          minimum: 0.0
+          title: Min Volume Usd
+          default: 10000.0
+        min_market_cap_usd:
+          type: number
+          minimum: 0.0
+          title: Min Market Cap Usd
+          default: 1000000.0
+        min_price_usd:
+          type: number
+          minimum: 0.0
+          title: Min Price Usd
+          default: 1.0e-05
+        max_circulating_supply:
+          type: number
+          minimum: 0.0
+          title: Max Circulating Supply
+          default: 100000000000.0
+        max_crypto_rank:
+          type: integer
+          maximum: 100000.0
+          minimum: 1.0
+          title: Max Crypto Rank
+          default: 1000
+        spike_window_hours:
+          type: number
+          maximum: 720.0
+          minimum: 0.0
+          title: Spike Window Hours
+          default: 0.0
+        spike_up_min_pct:
+          type: number
+          maximum: 1000.0
+          minimum: 0.0
+          title: Spike Up Min Pct
+          default: 0.0
+        spike_down_min_pct:
+          type: number
+          maximum: 1000.0
+          minimum: 0.0
+          title: Spike Down Min Pct
+          default: 0.0
+        macd_gate:
+          type: boolean
+          title: Macd Gate
+          default: true
+        macd_days:
+          type: integer
+          maximum: 60.0
+          minimum: 2.0
+          title: Macd Days
+          default: 14
+        macd_fast:
+          type: integer
+          maximum: 100.0
+          minimum: 2.0
+          title: Macd Fast
+          default: 12
+        macd_slow:
+          type: integer
+          maximum: 200.0
+          minimum: 3.0
+          title: Macd Slow
+          default: 26
+        macd_threshold:
+          type: number
+          maximum: 10.0
+          minimum: 0.0
+          title: Macd Threshold
+          default: 0.0
+        btc_regime_gate:
+          type: boolean
+          title: Btc Regime Gate
+          default: true
+        btc_regime_mode:
+          type: string
+          title: Btc Regime Mode
+          default: confirm
+        btc_regime_threshold_pct:
+          type: number
+          maximum: 50.0
+          minimum: 0.0
+          title: Btc Regime Threshold Pct
+          default: 3.0
+        btc_regime_window_hours:
+          type: integer
+          maximum: 168.0
+          minimum: 1.0
+          title: Btc Regime Window Hours
+          default: 24
+        zscore_max:
+          type: number
+          maximum: 20.0
+          minimum: 0.0
+          title: Zscore Max
+          default: 0.0
+        headline_filter:
+          type: string
+          maxLength: 400
+          title: Headline Filter
+          default: ''
+        category_filter:
+          type: string
+          maxLength: 200
+          title: Category Filter
+          default: ''
+        fee_bps:
+          type: number
+          maximum: 1000.0
+          minimum: 0.0
+          title: Fee Bps
+          default: 15.0
+        slippage_bps:
+          type: number
+          maximum: 1000.0
+          minimum: 0.0
+          title: Slippage Bps
+          default: 15.0
+        limit:
+          type: integer
+          maximum: 20000.0
+          minimum: 0.0
+          title: Limit
+          default: 0
+        priority_bid:
+          type: number
+          maximum: 1000.0
+          minimum: 0.0
+          title: Priority Bid
+          default: 0.0
+      type: object
+      title: ResearchBacktestRequest
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

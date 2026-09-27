@@ -1,0 +1,221 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Asset Universe API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: Asset Universe
+paths:
+  /api/v1/universe/movers:
+    get:
+      tags:
+      - Asset Universe
+      summary: Top Movers
+      description: 'Top trailing returns across the PRICEABLE subset of the universe.
+
+
+        Reads the precomputed ``universe_return_snapshots`` board — an indexed
+
+        ORDER BY over the chosen window — so it never live-prices the catalog.
+
+        Honest about coverage: ``ranked`` is how many vehicles actually had fresh
+
+        price history for this window (NOT the ~74k catalog total), and ``as_of``
+
+        is the snapshot age; a caller can show both so the board never implies the
+
+        whole universe was priced. ``direction=losers`` flips to the worst returns.'
+      operationId: top_movers_api_v1_universe_movers_get
+      parameters:
+      - name: window
+        in: query
+        required: false
+        schema:
+          type: string
+          default: 30d
+          title: Window
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 10
+          title: Limit
+      - name: direction
+        in: query
+        required: false
+        schema:
+          type: string
+          default: gainers
+          title: Direction
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/universe/movers/potential:
+    get:
+      tags:
+      - Asset Universe
+      summary: Potential Movers
+      description: 'Potential Movers — the day''s screened picks plus their MEASURED track
+
+        record (feature-leaderboard #727 / #728).
+
+
+        Picks are recorded the day they are made, before the outcome is known; a
+
+        week later the forward 7-day return is filled from stored closes. The
+
+        response reports hit rates from scored rows only, live and backtest kept
+
+        separate, each next to the whole-universe base rate. Not a recommendation;
+
+        nothing here promises a return.'
+      operationId: potential_movers_api_v1_universe_movers_potential_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      security: []
+  /api/v1/universe/movers/tournament:
+    get:
+      tags:
+      - Asset Universe
+      summary: Movers Tournament
+      description: 'Movers Tournament (feature-leaderboard #729): current round, leaderboard
+
+        of traders ranked on the real 7-day return of their picks (the NEXUS screen
+
+        competes as a row), and — when signed in OR calling with a user API key —
+
+        the caller''s own entries (ET-25009).
+
+        Scoreboard only: no prizes, nothing moves money.'
+      operationId: movers_tournament_api_v1_universe_movers_tournament_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      security: []
+  /api/v1/universe/movers/tournament/enter:
+    post:
+      tags:
+      - Asset Universe
+      summary: Movers Tournament Enter
+      description: 'Lock up to five universe symbols into the current round at their stored
+
+        close. Rejects unknown/unpriced symbols with a plain reason (422).
+
+
+        Auth: a signed-in session (JWT / cookie) OR a user API key (X-API-Key:
+
+        evt_...), so agents can enter picks the way /api-docs describes
+
+        (ET-25009 — the route previously accepted sessions only).'
+      operationId: movers_tournament_enter_api_v1_universe_movers_tournament_enter_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TournamentEntryRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+components:
+  schemas:
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    TournamentEntryRequest:
+      properties:
+        symbols:
+          items:
+            type: string
+          type: array
+          maxItems: 20
+          minItems: 1
+          title: Symbols
+      type: object
+      required:
+      - symbols
+      title: TournamentEntryRequest
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

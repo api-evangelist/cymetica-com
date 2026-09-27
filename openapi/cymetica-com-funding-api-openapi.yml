@@ -1,0 +1,181 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Funding API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: Funding
+paths:
+  /api/v1/funding/me/swarm-wallet:
+    get:
+      tags:
+      - Funding
+      summary: Get User Swarm Wallet
+      description: 'Get or create the authenticated user''s personal swarm wallet.
+
+
+        Creates wallet lazily on first access using HD derivation from USER_SWARM_MNEMONIC.
+
+        Returns wallet address and current balance on Base chain.'
+      operationId: get_user_swarm_wallet_api_v1_funding_me_swarm_wallet_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SwarmWalletResponse'
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+  /api/v1/funding/deposit-addresses:
+    get:
+      tags:
+      - Funding
+      summary: Get Deposit Addresses
+      description: 'Get user''s unique deposit addresses for all supported chains.
+
+
+        Each user gets a unique deposit address per chain. The backend monitors
+
+        these addresses and automatically:
+
+        1. Detects incoming USDT deposits
+
+        2. Bridges to Base if needed (using Across Protocol)
+
+        3. Credits the net amount to user''s bot wallet
+
+
+        Returns deposit addresses for: Ethereum, Base, Arbitrum, Polygon'
+      operationId: get_deposit_addresses_api_v1_funding_deposit_addresses_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepositAddressesResponse'
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+components:
+  schemas:
+    SwarmWalletResponse:
+      properties:
+        address:
+          type: string
+          title: Address
+          description: Swarm wallet address on Base chain
+        chain_id:
+          type: integer
+          title: Chain Id
+          description: Chain ID (8453 = Base)
+          default: 8453
+        balance_usdc:
+          type: string
+          title: Balance Usdc
+          description: USDC balance
+          default: '0.00'
+        balance_usdt:
+          type: string
+          title: Balance Usdt
+          description: USDT balance
+          default: '0.00'
+        balance_eth:
+          type: string
+          title: Balance Eth
+          description: ETH balance for gas
+          default: '0.0'
+        user_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: User Id
+          description: User ID who owns this wallet
+      type: object
+      required:
+      - address
+      title: SwarmWalletResponse
+      description: Response schema for user's personal swarm wallet.
+    DepositAddressesResponse:
+      properties:
+        user_id:
+          type: integer
+          title: User Id
+        addresses:
+          items:
+            $ref: '#/components/schemas/DepositAddressInfo'
+          type: array
+          title: Addresses
+        instructions:
+          type: string
+          title: Instructions
+        swarm_wallet_address:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Swarm Wallet Address
+      type: object
+      required:
+      - user_id
+      - addresses
+      - instructions
+      title: DepositAddressesResponse
+      description: All deposit addresses for a user.
+    DepositAddressInfo:
+      properties:
+        chain_id:
+          type: integer
+          title: Chain Id
+        chain_name:
+          type: string
+          title: Chain Name
+        address:
+          type: string
+          title: Address
+        usdt_contract:
+          type: string
+          title: Usdt Contract
+        usdc_contract:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Usdc Contract
+        is_solana:
+          type: boolean
+          title: Is Solana
+          default: false
+      type: object
+      required:
+      - chain_id
+      - chain_name
+      - address
+      - usdt_contract
+      title: DepositAddressInfo
+      description: Deposit address for a specific chain.
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

@@ -1,0 +1,206 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Markets API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: Markets
+paths:
+  /api/v1/markets:
+    get:
+      tags:
+      - Markets
+      summary: List Markets
+      description: 'List all prediction markets with optional filters (Kalshi-compatible API).
+
+
+        Supports pagination via cursor and multiple filter parameters.'
+      operationId: list_markets_api_v1_markets_get
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 1000
+          minimum: 1
+          description: Number of results per page
+          default: 100
+          title: Limit
+        description: Number of results per page
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Pagination cursor for next page
+          title: Cursor
+        description: Pagination cursor for next page
+      - name: tickers
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Comma-separated contract addresses
+          title: Tickers
+        description: Comma-separated contract addresses
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: 'Filter by status: pending, active, completed'
+          title: Status
+        description: 'Filter by status: pending, active, completed'
+      - name: asset_type
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/AssetType'
+          - type: 'null'
+          description: Filter by asset type
+          title: Asset Type
+        description: Filter by asset type
+      - name: min_created_ts
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          description: Minimum creation timestamp (Unix)
+          title: Min Created Ts
+        description: Minimum creation timestamp (Unix)
+      - name: max_created_ts
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          description: Maximum creation timestamp (Unix)
+          title: Max Created Ts
+        description: Maximum creation timestamp (Unix)
+      - name: min_close_ts
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          description: Minimum close timestamp (Unix)
+          title: Min Close Ts
+        description: Minimum close timestamp (Unix)
+      - name: max_close_ts
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          description: Maximum close timestamp (Unix)
+          title: Max Close Ts
+        description: Maximum close timestamp (Unix)
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+components:
+  schemas:
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    AssetType:
+      type: string
+      enum:
+      - crypto
+      - stock
+      - bond
+      - commodity
+      - forex
+      - derivative
+      - structured_product
+      - fund
+      - prediction_contract
+      - rwa
+      - index
+      - synthetic
+      - custom
+      title: AssetType
+      description: Asset type enumeration.
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

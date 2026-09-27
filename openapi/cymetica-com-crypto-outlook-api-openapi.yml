@@ -1,0 +1,158 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Crypto Outlook API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: crypto-outlook
+paths:
+  /api/v1/crypto-outlook/coins:
+    get:
+      tags:
+      - crypto-outlook
+      summary: Coins
+      description: Autocomplete roster for the page's search box.
+      operationId: coins_api_v1_crypto_outlook_coins_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /api/v1/crypto-outlook/{symbol}.txt:
+    get:
+      tags:
+      - crypto-outlook
+      summary: Coin Outlook Text
+      description: 'Plain text for chat assistants. Always 200 for a known coin: a cold coin
+
+        is waited on briefly, then answered with a come-back line.'
+      operationId: coin_outlook_text_api_v1_crypto_outlook__symbol__txt_get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      - name: draw
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 0
+          title: Draw
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/plain:
+              schema:
+                type: string
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/crypto-outlook/{symbol}:
+    get:
+      tags:
+      - crypto-outlook
+      summary: Coin Outlook
+      description: 'Simulated price scenarios for one crypto. ``?paths=1`` adds the 40
+
+        scenario paths + the percentile fan in dollars; ``?draw=N`` picks a
+
+        different 40 from the cached pool (a fresh "Run", no re-simulation).'
+      operationId: coin_outlook_api_v1_crypto_outlook__symbol__get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      - name: paths
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 0
+          title: Paths
+      - name: draw
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 0
+          title: Draw
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

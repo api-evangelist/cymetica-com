@@ -1,0 +1,763 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Token Launchpad (on-chain) API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: Token Launchpad (on-chain)
+paths:
+  /api/v1/launchpad/onchain/config:
+    get:
+      tags:
+      - Token Launchpad (on-chain)
+      summary: Get Onchain Config
+      description: 'Per-chain launchpad contract config for wallets and AI agents.
+
+
+        Economics (why launch here): 0.25% total curve fee — 80% of it to the
+
+        creator — vs ~1% elsewhere; $0 creation; LP locked forever with swap fees
+
+        split 80/20 creator/protocol on both sides. On Circle''s Arc there is NO
+
+        platform fee at all (0% curve fee, 100% of LP fees to the creator) — see
+
+        `fees_by_chain` / each chain''s `fees`.
+
+
+        Latency contract: this endpoint is on the critical path of every
+
+        /launchpad/* page paint, so it must answer from memory. The factory probe
+
+        is stale-while-revalidate (see _v2_options_for); a cold cache probes all
+
+        chains in parallel once, never one chain after another.'
+      operationId: get_onchain_config_api_v1_launchpad_onchain_config_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Get Onchain Config Api V1 Launchpad Onchain Config Get
+      security: []
+  /api/v1/launchpad/onchain/tokens:
+    get:
+      tags:
+      - Token Launchpad (on-chain)
+      summary: List Onchain Tokens
+      operationId: list_onchain_tokens_api_v1_launchpad_onchain_tokens_get
+      parameters:
+      - name: chain_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Chain Id
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^(new|volume|graduating|graduated)$
+          default: new
+          title: Sort
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          default: 50
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      - name: creator
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 42
+            maxLength: 42
+            pattern: ^0x[0-9a-fA-F]{40}$
+          - type: 'null'
+          description: Only launches by this wallet (creator history)
+          title: Creator
+        description: Only launches by this wallet (creator history)
+      - name: include_internal
+        in: query
+        required: false
+        schema:
+          type: boolean
+          description: 'Admin/debug: include platform seed + test launches'
+          default: false
+          title: Include Internal
+        description: 'Admin/debug: include platform seed + test launches'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                title: Response List Onchain Tokens Api V1 Launchpad Onchain Tokens Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/launchpad/onchain/screener:
+    get:
+      tags:
+      - Token Launchpad (on-chain)
+      summary: Launchpad Screener
+      description: 'Free screener feed: every launch with trading stats + rug-risk flags
+
+        (top-10 and creator concentration of the circulating supply), computed in
+
+        one aggregate pass so the page never N+1s the holders table.'
+      operationId: launchpad_screener_api_v1_launchpad_onchain_screener_get
+      parameters:
+      - name: chain_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Chain Id
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 500
+          default: 200
+          title: Limit
+      - name: include_external
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: true
+          title: Include External
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                title: Response Launchpad Screener Api V1 Launchpad Onchain Screener Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/launchpad/onchain/tokens/{address}:
+    get:
+      tags:
+      - Token Launchpad (on-chain)
+      summary: Get Onchain Token
+      operationId: get_onchain_token_api_v1_launchpad_onchain_tokens__address__get
+      parameters:
+      - name: address
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Address
+      - name: chain_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          description: Chain the address lives on (4663 Robinhood Chain, 5042 Arc); the same address can exist on several chains
+          title: Chain Id
+        description: Chain the address lives on (4663 Robinhood Chain, 5042 Arc); the same address can exist on several chains
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Get Onchain Token Api V1 Launchpad Onchain Tokens  Address  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/launchpad/onchain/tokens/{address}/onchain:
+    get:
+      tags:
+      - Token Launchpad (on-chain)
+      summary: Get Onchain Token Metadata
+      description: 'Everything the launch wrote ON-CHAIN, read live from the contracts:
+
+        the token''s name/symbol/decimals/supply/description/image (+ socials on
+
+        V2.1), the curve''s creator/payout/tax/fee/guard/price/fee-accrual/
+
+        graduation state, and the factory''s vault + launch record. Works for a
+
+        token the indexer has not picked up yet (pass chain_id). Cached 15s.'
+      operationId: get_onchain_token_metadata_api_v1_launchpad_onchain_tokens__address__onchain_get
+      parameters:
+      - name: address
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Address
+      - name: chain_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Chain Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Get Onchain Token Metadata Api V1 Launchpad Onchain Tokens  Address  Onchain Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/launchpad/onchain/tokens/{address}/trades:
+    get:
+      tags:
+      - Token Launchpad (on-chain)
+      summary: Get Onchain Trades
+      operationId: get_onchain_trades_api_v1_launchpad_onchain_tokens__address__trades_get
+      parameters:
+      - name: address
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Address
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 500
+          default: 100
+          title: Limit
+      - name: chain_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          description: Chain the address lives on (4663 Robinhood Chain, 5042 Arc); the same address can exist on several chains
+          title: Chain Id
+        description: Chain the address lives on (4663 Robinhood Chain, 5042 Arc); the same address can exist on several chains
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                title: Response Get Onchain Trades Api V1 Launchpad Onchain Tokens  Address  Trades Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/launchpad/onchain/tokens/{address}/holders:
+    get:
+      tags:
+      - Token Launchpad (on-chain)
+      summary: Get Onchain Holders
+      description: Holder distribution incl. top-holder concentration (trader risk flag).
+      operationId: get_onchain_holders_api_v1_launchpad_onchain_tokens__address__holders_get
+      parameters:
+      - name: address
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Address
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          default: 50
+          title: Limit
+      - name: chain_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          description: Chain the address lives on (4663 Robinhood Chain, 5042 Arc); the same address can exist on several chains
+          title: Chain Id
+        description: Chain the address lives on (4663 Robinhood Chain, 5042 Arc); the same address can exist on several chains
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Get Onchain Holders Api V1 Launchpad Onchain Tokens  Address  Holders Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/launchpad/onchain/launchers:
+    get:
+      tags:
+      - Token Launchpad (on-chain)
+      summary: List Cross Launchers
+      description: 'Launcher platforms on Circle''s Arc a token can be cross-launched on
+
+        from here. `integrated` = we build the unsigned launchToken tx against
+
+        that platform''s factory (you sign, you pay THEIR launch fee, we add
+
+        nothing); otherwise only a link to launch there by hand.'
+      operationId: list_cross_launchers_api_v1_launchpad_onchain_launchers_get
+      parameters:
+      - name: chain_id
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: 5042 Arc (default), 5042002 Arc Testnet
+          default: 5042
+          title: Chain Id
+        description: 5042 Arc (default), 5042002 Arc Testnet
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response List Cross Launchers Api V1 Launchpad Onchain Launchers Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/launchpad/onchain/launch/cross/record:
+    post:
+      tags:
+      - Token Launchpad (on-chain)
+      summary: Record Cross Launch Route
+      description: 'Record a cross-launch after on-chain proof. Factory platforms (ArcPad,
+
+        lift.fun, Radian): pass `tx_hash` — the receipt must be mined, sent to
+
+        that factory by creator_address, with its launch event. Site platforms
+
+        (Warp, Arcodian, Archemist, Long.supply, …):
+
+        pass `token_address` + `symbol` — the address must be a contract on this
+
+        chain whose ERC-20 symbol matches. Idempotent. Lists the launch on the
+
+        source token''s page.'
+      operationId: record_cross_launch_route_api_v1_launchpad_onchain_launch_cross_record_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrossLaunchRecordRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Record Cross Launch Route Api V1 Launchpad Onchain Launch Cross Record Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/launchpad/onchain/launch/prepare:
+    post:
+      tags:
+      - Token Launchpad (on-chain)
+      summary: Prepare Launch
+      description: 'Build the UNSIGNED ``createToken`` / ``createTokenV2`` transaction for a
+
+        new token. $0 creation — the caller pays only chain gas (plus the optional
+
+        dev-buy as ``value_wei``). Sign and broadcast with your own wallet; the
+
+        token + curve addresses are in the receipt''s ``LaunchCreated`` event and
+
+        the token shows up in ``GET /tokens`` within ~30s.
+
+
+        Same encoder as the MCP tool ``launchpad_launch_token`` (fail-closed: only
+
+        the overload the LIVE factory supports is ever returned).'
+      operationId: prepare_launch_api_v1_launchpad_onchain_launch_prepare_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LaunchPrepareRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Prepare Launch Api V1 Launchpad Onchain Launch Prepare Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/launchpad/onchain/tokens/{address}/quote:
+    get:
+      tags:
+      - Token Launchpad (on-chain)
+      summary: Get Trade Quote
+      description: 'Live bonding-curve quote plus the ordered UNSIGNED transaction(s) to
+
+        sign with your own wallet — buy = one tx to the curve; sell = ERC-20
+
+        ``approve`` then ``sell``. Reads the curve on-chain, fail-closed (503 on
+
+        RPC failure, never a stale number). Graduated tokens → 409 with the DEX
+
+        pool address. Same encoder as the MCP tool ``launchpad_trade_quote``.
+
+        ``fee_bps``/``fees`` are the token''s CHAIN schedule (Arc = 0 bps).'
+      operationId: get_trade_quote_api_v1_launchpad_onchain_tokens__address__quote_get
+      parameters:
+      - name: address
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Address
+      - name: side
+        in: query
+        required: true
+        schema:
+          type: string
+          pattern: ^(buy|sell)$
+          description: '''buy'' (amount = ETH in) or ''sell'' (amount = tokens in)'
+          title: Side
+        description: '''buy'' (amount = ETH in) or ''sell'' (amount = tokens in)'
+      - name: amount
+        in: query
+        required: true
+        schema:
+          type: number
+          exclusiveMinimum: 0.0
+          description: ETH to spend (buy) or tokens to sell
+          title: Amount
+        description: ETH to spend (buy) or tokens to sell
+      - name: slippage_bps
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 5000
+          minimum: 1
+          default: 100
+          title: Slippage Bps
+      - name: chain_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          description: Chain the token lives on (4663 Robinhood Chain, 5042 Arc); the same address can exist on several chains
+          title: Chain Id
+        description: Chain the token lives on (4663 Robinhood Chain, 5042 Arc); the same address can exist on several chains
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Get Trade Quote Api V1 Launchpad Onchain Tokens  Address  Quote Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+components:
+  schemas:
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    LaunchPrepareRequest:
+      properties:
+        name:
+          type: string
+          maxLength: 64
+          minLength: 1
+          title: Name
+          description: Token name
+        symbol:
+          type: string
+          maxLength: 16
+          minLength: 1
+          title: Symbol
+          description: Ticker
+        description:
+          type: string
+          maxLength: 2000
+          title: Description
+          default: ''
+        image_url:
+          type: string
+          maxLength: 500
+          title: Image Url
+          default: ''
+        dev_buy:
+          anyOf:
+          - type: number
+            maximum: 10.0
+            minimum: 0.0
+          - type: 'null'
+          title: Dev Buy
+          description: Optional atomic dev-buy (0-10) in the chain's native currency (ETH on Robinhood Chain, USDC on Arc), sent as tx value
+        dev_buy_eth:
+          type: number
+          maximum: 10.0
+          minimum: 0.0
+          title: Dev Buy Eth
+          description: 'Legacy alias of dev_buy (same unit: ETH on Robinhood Chain, USDC on Arc)'
+          default: 0
+        website:
+          type: string
+          maxLength: 200
+          title: Website
+          default: ''
+        twitter:
+          type: string
+          maxLength: 200
+          title: Twitter
+          default: ''
+        telegram:
+          type: string
+          maxLength: 200
+          title: Telegram
+          default: ''
+        discord:
+          type: string
+          maxLength: 200
+          title: Discord
+          default: ''
+        creator_tax_bps:
+          type: integer
+          minimum: 0.0
+          title: Creator Tax Bps
+          description: 'Extra creator fee on curve trades, bps (cap: /config max_creator_tax_bps)'
+          default: 0
+        share_fees_with_holders:
+          type: boolean
+          title: Share Fees With Holders
+          description: Route ALL creator-side fees to staking holders (irreversible)
+          default: false
+        creator_wallet:
+          type: string
+          maxLength: 42
+          title: Creator Wallet
+          description: 'Payout wallet (default: the signing wallet)'
+          default: ''
+        partner:
+          type: string
+          maxLength: 32
+          title: Partner
+          description: Whitelabel partner slug to attribute this launch to (e.g. 'coinpedia'). Same token; only rev-share attribution differs. Requires launch_wallet. Fail-soft
+          default: ''
+        launch_wallet:
+          type: string
+          maxLength: 42
+          title: Launch Wallet
+          description: The wallet you will sign with — required only with `partner`, so the indexer can attribute the launch (matched against LaunchCreated.creator, 48h)
+          default: ''
+        chain_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Chain Id
+          description: 'Launchpad chain: 4663 Robinhood Chain (default), 5042 Arc'
+        platforms:
+          items:
+            type: string
+          type: array
+          maxItems: 8
+          title: Platforms
+          description: 'Arc only: ALSO launch this token on other Arc launcher platforms (slugs from GET /launchers, e.g. [''arcpad'',''lift'',''radian'']). One extra unsigned factory tx per integrated platform in `cross_launches` (value_wei = that platform''s own launch fee, paid by you to them; ArcPad charges none); site platforms come back as create_url + fields. Requires launch_wallet or creator_wallet'
+      type: object
+      required:
+      - name
+      - symbol
+      title: LaunchPrepareRequest
+      description: Everything a launch writes on-chain. Immutable once signed.
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    CrossLaunchRecordRequest:
+      properties:
+        platform:
+          type: string
+          maxLength: 32
+          title: Platform
+          description: Launcher slug, e.g. 'arcpad', 'lift', 'radian' or 'warp'
+        chain_id:
+          type: integer
+          title: Chain Id
+          description: Chain the launch happened on (5042002 / 5042)
+        tx_hash:
+          anyOf:
+          - type: string
+            pattern: ^0x[0-9a-fA-F]{64}$
+          - type: 'null'
+          title: Tx Hash
+          description: 'Factory launches we encoded (ArcPad, lift.fun, Radian): the launch tx hash — verified by receipt'
+        token_address:
+          anyOf:
+          - type: string
+            pattern: ^0x[0-9a-fA-F]{40}$
+          - type: 'null'
+          title: Token Address
+          description: 'Launches made on a platform''s OWN site (Warp, Arcodian, Archemist, Long.supply, …): the token address it minted — verified on-chain (contract + symbol matches `symbol`)'
+        creator_address:
+          type: string
+          pattern: ^0x[0-9a-fA-F]{40}$
+          title: Creator Address
+        source_token_address:
+          anyOf:
+          - type: string
+            pattern: ^0x[0-9a-fA-F]{40}$
+          - type: 'null'
+          title: Source Token Address
+          description: Your EventTrader token on the same chain
+        name:
+          type: string
+          maxLength: 100
+          title: Name
+          default: ''
+        symbol:
+          type: string
+          maxLength: 20
+          title: Symbol
+          default: ''
+      type: object
+      required:
+      - platform
+      - chain_id
+      - creator_address
+      title: CrossLaunchRecordRequest
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

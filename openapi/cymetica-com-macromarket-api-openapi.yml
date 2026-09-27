@@ -1,0 +1,310 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Macromarket API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: macromarket
+paths:
+  /api/v1/macromarket/build:
+    post:
+      tags:
+      - macromarket
+      summary: Build
+      description: Build + persist an AIB from a theme, using the chosen AI model + class filters.
+      operationId: build_api_v1_macromarket_build_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BuildRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  symbol:
+                    type: string
+                  theme:
+                    type: string
+                  base:
+                    type: string
+                  index_value:
+                    type: string
+                  weighting_used:
+                    type: string
+                  model_used:
+                    type: string
+                  asset_classes:
+                    type:
+                    - array
+                    - 'null'
+                    items:
+                      type: string
+                  ontology_classes:
+                    type:
+                    - array
+                    - 'null'
+                    items:
+                      type: string
+                  scored_fraction:
+                    type: string
+                  transient:
+                    type: boolean
+                  legs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        symbol:
+                          type: string
+                        name:
+                          type: string
+                        asset_class:
+                          type: string
+                        score:
+                          type: string
+                        weight:
+                          type: string
+                        t0_price:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: true
+                      description: One AIB constituent; numeric fields are decimal strings.
+                  excluded:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        symbol:
+                          type: string
+                        reason:
+                          type: string
+                      additionalProperties: true
+                  disclaimer:
+                    type: string
+                  persisted:
+                    type: boolean
+                  page:
+                    type:
+                    - string
+                    - 'null'
+                additionalProperties: true
+                required:
+                - symbol
+                - theme
+                - legs
+                description: Built AI Index Basket (AIBResult.to_dict).
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - BearerJWT: []
+  /api/v1/macromarket/backtest:
+    post:
+      tags:
+      - macromarket
+      summary: Backtest
+      description: Run the gated historical backtest of an AIB (by symbol) or a fresh theme.
+      operationId: backtest_api_v1_macromarket_backtest_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BacktestRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  reason:
+                    type: string
+                  metrics:
+                    type: object
+                    properties:
+                      total_return_pct:
+                        type: number
+                      sharpe:
+                        type: number
+                      max_drawdown_pct:
+                        type: number
+                      win_rate_pct:
+                        type: number
+                      days:
+                        type: integer
+                    additionalProperties: true
+                  nav_start:
+                    type: number
+                  nav_end:
+                    type: number
+                  leg_count:
+                    type: integer
+                  priced_legs:
+                    type: integer
+                  missing:
+                    type: array
+                    items:
+                      type: string
+                  coverage:
+                    type: number
+                  period_days:
+                    type: integer
+                  from_date:
+                    type: string
+                  to_date:
+                    type: string
+                  allowed:
+                    type: boolean
+                  tier:
+                    type: string
+                  aib_symbol:
+                    type: string
+                  theme:
+                    type: string
+                  gate_enabled:
+                    type: boolean
+                  disclaimer:
+                    type: string
+                additionalProperties: true
+                required:
+                - ok
+                description: Historical backtest of an AIB (backtest_aib).
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - BearerJWT: []
+components:
+  schemas:
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    BuildRequest:
+      properties:
+        theme:
+          type: string
+          title: Theme
+        num_assets:
+          type: integer
+          title: Num Assets
+          default: 6
+        weighting:
+          type: string
+          title: Weighting
+          default: tuatara
+        model:
+          type: string
+          title: Model
+          default: tuatara
+        asset_classes:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Asset Classes
+        ontology_classes:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Ontology Classes
+        include_symbols:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Include Symbols
+      type: object
+      required:
+      - theme
+      title: BuildRequest
+    BacktestRequest:
+      properties:
+        aib_symbol:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Aib Symbol
+        theme:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Theme
+        period_days:
+          type: integer
+          title: Period Days
+          default: 365
+      type: object
+      title: BacktestRequest
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

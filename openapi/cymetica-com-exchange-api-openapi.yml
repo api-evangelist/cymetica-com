@@ -1,0 +1,387 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Exchange API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: Exchange
+paths:
+  /api/v1/exchange/pairs:
+    get:
+      tags:
+      - Exchange
+      summary: List Exchange Pairs
+      description: List all available exchange pairs.
+      operationId: list_exchange_pairs_api_v1_exchange_pairs_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      security: []
+  /api/v1/exchange/{symbol}/orders:
+    post:
+      tags:
+      - Exchange
+      summary: Place Order
+      description: 'Place an order on the exchange.
+
+
+        Optional `Idempotency-Key` request header: when supplied, the order
+
+        response is cached for 300s keyed by (user_id, idempotency_key).
+
+        Subsequent calls with the same key return the cached response without
+
+        re-executing the order. Use this to make client-side retries safe
+
+        against the forwarder-timeout-then-late-leader-reply race (where the
+
+        leader executed the order but the follower returned 503 because its
+
+        blpop deadline lapsed). The Idempotency-Key SHOULD be a fresh UUID
+
+        per logical user intent (one click = one key, retries reuse the key).'
+      operationId: place_order_api_v1_exchange__symbol__orders_post
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/src__api__routes__exchange__PlaceOrderRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - Exchange
+      summary: Cancel All Orders For Pair
+      description: 'Cancel all open orders for this pair. Optional side filter.
+
+
+        This is the per-pair kill switch — institutional MMs use this to
+
+        instantly flatten their resting orders on a single market.'
+      operationId: cancel_all_orders_for_pair_api_v1_exchange__symbol__orders_delete
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      - name: side
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: 'Filter by side: buy or sell (omit for all)'
+          title: Side
+        description: 'Filter by side: buy or sell (omit for all)'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/exchange/{symbol}/book:
+    get:
+      tags:
+      - Exchange
+      summary: Orderbook
+      description: L2 CLOB-only orderbook snapshot (+ best-exec DEX levels for opted-in pairs).
+      operationId: orderbook_api_v1_exchange__symbol__book_get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      - name: depth
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 30
+          title: Depth
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/exchange/{symbol}/trades:
+    get:
+      tags:
+      - Exchange
+      summary: Recent Trades
+      description: 'Recent trades boot snapshot, served through the SWR cache.
+
+
+        The full 500-row series is cached once per pair and sliced per request
+
+        (limit deliberately excluded from the key — same doctrine as the chart
+
+        cache, #20); live trades stream over WS after boot.'
+      operationId: recent_trades_api_v1_exchange__symbol__trades_get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 500
+          minimum: 1
+          default: 50
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/exchange/{symbol}/bbo:
+    get:
+      tags:
+      - Exchange
+      summary: Best Bid Offer
+      description: Best bid/offer — CLOB-first, falls back to hybrid only when CLOB is empty.
+      operationId: best_bid_offer_api_v1_exchange__symbol__bbo_get
+      security: []
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/exchange/{symbol}/ticker:
+    get:
+      tags:
+      - Exchange
+      summary: Get Ticker
+      description: '24-hour ticker: high, low, open, last, volume, change%.'
+      operationId: get_ticker_api_v1_exchange__symbol__ticker_get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+components:
+  schemas:
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    src__api__routes__exchange__PlaceOrderRequest:
+      properties:
+        side:
+          type: string
+          title: Side
+          description: buy or sell
+        order_type:
+          type: string
+          title: Order Type
+          description: limit, market, ioc, post_only, stop_limit, stop_market
+          default: limit
+        price:
+          type: string
+          title: Price
+          description: Limit price
+          default: '0'
+        quantity:
+          type: string
+          title: Quantity
+          description: Base token quantity
+        stop_price:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Stop Price
+          description: Stop price for stop-limit orders
+        position_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Position Id
+          description: Optional position UUID — used by the EVCDX-* bridge to target a specific bull position on SELL when the user has multiple open positions on the same card.  Ignored for non-EVCDX symbols.
+        mode:
+          type: string
+          title: Mode
+          description: 'Trading mode: ''live'' or ''paper''. Default ''live''. Resolution: if the account''s simulation_mode is true the server FORCES paper whatever you send; if it is false this field decides, so omitting it places a REAL order. `paper` (below) is the same control under the name every order surface shares. Read your effective mode from GET /api/v1/portfolio/summary (simulation_mode) or GET /mcp/v1/agents/me (trading_mode) before relying on a default (ET-22652).'
+          default: live
+        paper:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Paper
+          description: 'Canonical paper/live control shared by every order surface (event-cards `paper`, bot clone `paper`). true = paper, false = live; when given it overrides `mode`. Omitted: `mode` applies (default live), and an account in simulation_mode is forced to paper regardless.'
+        stp_mode:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Stp Mode
+          description: 'STP mode: cancel_resting, cancel_incoming, cancel_both, cancel_taker, decrement_and_cancel'
+        time_in_force_ms:
+          anyOf:
+          - type: integer
+            maximum: 2592000000.0
+            minimum: 1000.0
+          - type: 'null'
+          title: Time In Force Ms
+          description: 'GTT: order auto-expires after this many ms (1s to 30d)'
+        expire_at:
+          anyOf:
+          - type: integer
+            minimum: 1.0
+          - type: 'null'
+          title: Expire At
+          description: 'GTT: absolute expiry as epoch microseconds (must be in the future)'
+        display_qty:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Display Qty
+          description: 'Iceberg: visible quantity per tranche (remainder hidden)'
+        route_mode:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Route Mode
+          description: 'Execution venue: ''auto'' (default — CLOB, then the displayed DEX levels for anything marketable), ''cex'' (explicit opt-out: CLOB only), ''dex'' (AMM only)'
+          default: auto
+      type: object
+      required:
+      - side
+      - quantity
+      title: PlaceOrderRequest
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

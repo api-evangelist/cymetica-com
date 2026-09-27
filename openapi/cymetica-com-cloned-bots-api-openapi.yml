@@ -1,0 +1,1051 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Cloned Bots API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: cloned-bots
+paths:
+  /api/v1/cloned-bots/available:
+    get:
+      tags:
+      - cloned-bots
+      summary: Get Available Bots
+      description: 'Get all bots available for cloning.
+
+
+        Returns both WTA species (10) and perpetual agents (5).
+
+        No authentication required - this is public data.'
+      operationId: get_available_bots_api_v1_cloned_bots_available_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Get Available Bots Api V1 Cloned Bots Available Get
+      security: []
+  /api/v1/cloned-bots/clone:
+    post:
+      tags:
+      - cloned-bots
+      summary: Clone Bot
+      description: 'Clone a bot for the current user.
+
+
+        Paper mode clones are free — no deposit required.
+
+        Live mode clones require a prior deposit.
+
+        The cloned bot starts PAUSED - user must enable trading.'
+      operationId: clone_bot_api_v1_cloned_bots_clone_post
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CloneBotRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CloneBotResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/cloned-bots/my-clones:
+    get:
+      tags:
+      - cloned-bots
+      summary: Get My Clones
+      description: 'Get all bots cloned by the current user, optionally filtered by paper/live mode.
+
+
+        EVE-14229: Set include_inactive=true to see deactivated bots.'
+      operationId: get_my_clones_api_v1_cloned_bots_my_clones_get
+      parameters:
+      - name: mode
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Filter by 'paper' or 'live'
+          title: Mode
+        description: Filter by 'paper' or 'live'
+      - name: include_inactive
+        in: query
+        required: false
+        schema:
+          type: boolean
+          description: Include deactivated bots
+          default: false
+          title: Include Inactive
+        description: Include deactivated bots
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                title: Response Get My Clones Api V1 Cloned Bots My Clones Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/cloned-bots/{instance_id}/fund:
+    post:
+      tags:
+      - cloned-bots
+      summary: Fund Clone Bot
+      description: 'Fund a clone bot from the user''s internal balance.
+
+
+        Transfers USDC from the user''s available balance to the bot''s
+
+        isolated per-bot balance for trading. A PAPER clone is funded from the
+
+        account''s SIMULATED balance (users.sim_balance_usdc); a LIVE clone from
+
+        the real internal USDC balance.
+
+
+        ET-24565 (expire76): accepts the same X-API-Key the /clone route takes —
+
+        an agent that could clone a bot with its key got a bare 401 here, so it
+
+        owned a bot it could never fund or start. Every lifecycle route
+
+        (fund / balance / withdraw / settings / toggle-trading / go-live /
+
+        delete) now takes JWT or API key alike.'
+      operationId: fund_clone_bot_api_v1_cloned_bots__instance_id__fund_post
+      parameters:
+      - name: instance_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Instance Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FundBotRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Fund Clone Bot Api V1 Cloned Bots  Instance Id  Fund Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/cloned-bots/{instance_id}/balance:
+    get:
+      tags:
+      - cloned-bots
+      summary: Get Clone Bot Balance
+      description: Get clone bot balance with locked trades breakdown.
+      operationId: get_clone_bot_balance_api_v1_cloned_bots__instance_id__balance_get
+      parameters:
+      - name: instance_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Instance Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Get Clone Bot Balance Api V1 Cloned Bots  Instance Id  Balance Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/cloned-bots/{instance_id}/withdraw:
+    post:
+      tags:
+      - cloned-bots
+      summary: Withdraw From Clone Bot
+      description: 'Withdraw funds from a clone bot back to user''s internal balance.
+
+
+        Only available balance can be withdrawn (excludes funds locked in open trades).'
+      operationId: withdraw_from_clone_bot_api_v1_cloned_bots__instance_id__withdraw_post
+      parameters:
+      - name: instance_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Instance Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WithdrawBotRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Withdraw From Clone Bot Api V1 Cloned Bots  Instance Id  Withdraw Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/cloned-bots/{instance_id}/activity:
+    get:
+      tags:
+      - cloned-bots
+      summary: Get Activity Feed
+      description: 'Get trading activity feed for a bot.
+
+
+        Returns trades with Basescan tx_hash links for on-chain verification.
+
+        CRITICAL: All tx_hash are real and verifiable.
+
+        Public endpoint — trade history is visible on public bot profiles.
+
+        No credential is required; a request carrying an X-API-Key or Bearer
+
+        token succeeds identically (the public spec advertises ``security: []``).'
+      operationId: get_activity_feed_api_v1_cloned_bots__instance_id__activity_get
+      parameters:
+      - name: instance_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Instance Id
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+          title: Page
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Page Size
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Get Activity Feed Api V1 Cloned Bots  Instance Id  Activity Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/cloned-bots/{instance_id}/asset-analytics:
+    get:
+      tags:
+      - cloned-bots
+      summary: Get Asset Analytics
+      description: 'EVE-13754: Per-asset trading analytics for a cloned bot.
+
+
+        Returns performance breakdown by asset symbol: win/loss ratio, P&L,
+
+        trade count, average size, and best/worst performing asset.
+
+        Requires authentication and bot ownership.
+
+
+        ET-24612: takes JWT or X-API-Key like every sibling lifecycle route —
+
+        it was the one cloned-bot read that answered 401 to a valid API key.'
+      operationId: get_asset_analytics_api_v1_cloned_bots__instance_id__asset_analytics_get
+      parameters:
+      - name: instance_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Instance Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Get Asset Analytics Api V1 Cloned Bots  Instance Id  Asset Analytics Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/cloned-bots/{instance_id}/settings:
+    patch:
+      tags:
+      - cloned-bots
+      summary: Update Settings
+      description: 'Update trading settings for a cloned bot.
+
+
+        User must own the bot to update settings.
+
+        Settings include stop loss, take profit, max position, and trading enabled.'
+      operationId: update_settings_api_v1_cloned_bots__instance_id__settings_patch
+      parameters:
+      - name: instance_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Instance Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSettingsRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Update Settings Api V1 Cloned Bots  Instance Id  Settings Patch
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/cloned-bots/{instance_id}/toggle-trading:
+    post:
+      tags:
+      - cloned-bots
+      summary: Toggle Trading
+      description: 'Enable or disable trading for a bot.
+
+
+        When enabled, bot will trade 100% on-chain.
+
+        When disabled, bot is paused but maintains position.'
+      operationId: toggle_trading_api_v1_cloned_bots__instance_id__toggle_trading_post
+      parameters:
+      - name: instance_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Instance Id
+      - name: enabled
+        in: query
+        required: true
+        schema:
+          type: boolean
+          title: Enabled
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Toggle Trading Api V1 Cloned Bots  Instance Id  Toggle Trading Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/cloned-bots/{instance_id}/go-live:
+    post:
+      tags:
+      - cloned-bots
+      summary: Go Live
+      description: 'Create a live bot from a paper bot''s settings.
+
+
+        Copies all tuned settings (SL/TP, markets, skills, models, exchange links)
+
+        into a new live bot. The paper bot is preserved. The new bot starts paused
+
+        and unfunded — user must fund it before enabling trading.'
+      operationId: go_live_api_v1_cloned_bots__instance_id__go_live_post
+      parameters:
+      - name: instance_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Instance Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      requestBody:
+        content:
+          application/json:
+            schema:
+              anyOf:
+              - $ref: '#/components/schemas/GoLiveRequest'
+              - type: 'null'
+              title: Request
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Go Live Api V1 Cloned Bots  Instance Id  Go Live Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/cloned-bots/{instance_id}:
+    delete:
+      tags:
+      - cloned-bots
+      summary: Delete Clone Bot
+      description: 'Soft-delete a cloned bot.
+
+
+        Sets is_active=False. Bot must be paused (not trading) first.
+
+        Only the owner can delete their bot.'
+      operationId: delete_clone_bot_api_v1_cloned_bots__instance_id__delete
+      parameters:
+      - name: instance_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Instance Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Delete Clone Bot Api V1 Cloned Bots  Instance Id  Delete
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    UpdateSettingsRequest:
+      properties:
+        stop_loss_pct:
+          anyOf:
+          - type: number
+            maximum: 20.0
+            minimum: 1.0
+          - type: 'null'
+          title: Stop Loss Pct
+        take_profit_pct:
+          anyOf:
+          - type: number
+            maximum: 100.0
+            minimum: 5.0
+          - type: 'null'
+          title: Take Profit Pct
+        max_position_pct:
+          anyOf:
+          - type: number
+            maximum: 50.0
+            minimum: 1.0
+          - type: 'null'
+          title: Max Position Pct
+        is_trading:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Trading
+        name:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Name
+        avatar_emoji:
+          anyOf:
+          - type: string
+            maxLength: 10
+          - type: 'null'
+          title: Avatar Emoji
+        custom_avatar_url:
+          anyOf:
+          - type: string
+            maxLength: 500
+          - type: 'null'
+          title: Custom Avatar Url
+        onchain_pct:
+          anyOf:
+          - type: integer
+            maximum: 100.0
+            minimum: 0.0
+          - type: 'null'
+          title: Onchain Pct
+        custom_markets:
+          anyOf:
+          - type: string
+            maxLength: 1100
+          - type: 'null'
+          title: Custom Markets
+        perpetual_markets:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+          title: Perpetual Markets
+          description: 'Perpetual 5-min epoch lane opt-in, separate from custom_markets (ET-15196): ''NONE'' = no perpetual trading, else CSV of perp symbols (e.g. ''BTC,ETH''). Omit/null keeps the stored value.'
+        breakeven_trigger_pct:
+          anyOf:
+          - type: number
+            maximum: 50.0
+            minimum: 1.0
+          - type: 'null'
+          title: Breakeven Trigger Pct
+          description: P&L % that triggers breakeven stop loss
+        breakeven_enabled:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Breakeven Enabled
+          description: Enable/disable breakeven stop loss
+        arena_trading_enabled:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Arena Trading Enabled
+          description: Enable headline-driven arena trading (stocks, crypto, prediction markets)
+        arena_filters:
+          anyOf:
+          - type: object
+          - type: 'null'
+          title: Arena Filters
+          description: 'Arena trading filters: asset_type_filter, market_direction_filter, max_assets, min_tuatara_score, macd_filter, macd_threshold, spike_filter, spike_threshold, min_price, min_volume, hold_hours, position_size_pct, direction, asset_symbols'
+        tge_trading_enabled:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Tge Trading Enabled
+          description: Enable bot trading on TGE-launch pre-listing prediction markets (cymetica.com/tge-launch)
+        tge_filters:
+          anyOf:
+          - type: object
+          - type: 'null'
+          title: Tge Filters
+          description: 'TGE trading filters: bet_side_default (''YES''/''NO''/null=auto), per_round_max_bet (USDC, default 0.50), token_whitelist (list), token_blacklist (list)'
+        event_card_trading_enabled:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Event Card Trading Enabled
+          description: Enable bot trading on LIVE event cards via the headline sentiment/impact signal (cymetica.com/events)
+        event_card_filters:
+          anyOf:
+          - type: object
+          - type: 'null'
+          title: Event Card Filters
+          description: 'Event-card trading filters: max_position_usdc (USDC, default 1.00), min_abs_sentiment (0-1, default 0.25), min_impact_score (1-10, default 3.0), direction_override (''bull''/''bear''/null=auto). Strong-Card Hunter: ta_confirm (bool — require connected-asset MACD to agree + skip already-spiked baskets), ta_max_spike_pct_24h (0.5-100, default 8), take_profit_pct (1-100, default 5 — auto-close at +X%), stop_loss_pct (1-100, default off).'
+        catalog_trading_enabled:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Catalog Trading Enabled
+          description: Enable bot trading on ANY vehicle in the global trading-vehicle index (~48k equities/cryptos/funds) via the universal best-execution router
+        catalog_watchlist:
+          anyOf:
+          - type: string
+            maxLength: 1100
+          - type: 'null'
+          title: Catalog Watchlist
+          description: Comma-separated catalog symbols the bot may trade, e.g. 'NVDA,AAPL,SOL'. Each is validated router-priceable; unknown symbols are rejected. Up to 50 symbols.
+        covered_call_income_enabled:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Covered Call Income Enabled
+          description: 'Enable Covered-Call Income: the bot writes a call against each OPEN BULL event-card lot it holds (BlackRock IBIT Premium Income style), harvesting premium and auto-rolling each expiry. Paper unless the underlying lot is live. No naked writing.'
+        arb_strategy_enabled:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Arb Strategy Enabled
+          description: 'Enable the built-in ET10 DEX⇄CLOB arbitrage strategy: the bot compares the ET10 internal-CLOB price against the best executable price across the five mainnet ET10 DEX pools and, when the spread beats all fees+gas, trades BOTH legs with YOUR own custodial funds (atomic-or-neither, no shorting, no platform funds). Uses your bot''s own USDC/ET10 balances; on-chain ET10 transfers incur the ET10 reward-pot cost.'
+        covered_call_income_filters:
+          anyOf:
+          - type: object
+          - type: 'null'
+          title: Covered Call Income Filters
+          description: 'Covered-call filters: strike_mode (''ATM''/''OTM_5''/''OTM_10'', default ''OTM_5''), roll_enabled (bool, default true), min_lot_notional_usdc (USDC, default 2.00 — skip lots too small to cover a contract), max_active_strategies (int 1-100, default 25 — cap concurrent written calls).'
+        glassnode_trading_enabled:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Glassnode Trading Enabled
+          description: 'Enable the on-chain (Glassnode, BYO-key) gate: trades are only taken while the configured on-chain condition(s) hold. Fails closed on missing key/data.'
+        glassnode_filters:
+          anyOf:
+          - type: object
+          - type: 'null'
+          title: Glassnode Filters
+          description: 'On-chain gate config. Single condition: metric_category, metric_name, asset (default BTC), interval (default 24h), operator (''<''|''<=''|''>''|''>=''), threshold (float). Multi-condition (ET-14374): {logic: ''AND''|''OR'', conditions: [up to 5 single-condition objects]}.'
+        min_ai_confidence:
+          anyOf:
+          - type: number
+            maximum: 1.0
+            minimum: 0.0
+          - type: 'null'
+          title: Min Ai Confidence
+          description: Universal minimum AI-signal confidence (0-1) before the bot opens ANY trade in venues that carry a confidence signal (event-card |sentiment|, catalog strategy confidence). null/0 = off.
+        strategy_override:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Strategy Override
+          description: 'Per-instance base-strategy override (ET-15226): ''none'' = run with NO base strategy (research/verifier bots — perpetual-epoch and catalog lanes place no trades, no strategy chip shown); ''inherit'' or null = restore the template strategy; a live strategy symbol (e.g. ''HELIX'', ''CORR'') pins the perpetual lane to that exact versioned strategy (ET-17247 Phase 2).'
+        trailing_floor_pct:
+          anyOf:
+          - type: number
+            maximum: 50.0
+            minimum: 0.5
+          - type: 'null'
+          title: Trailing Floor Pct
+          description: 'Opt-in HWM/trailing profit floor (ET-17247 Phase 3): once episode P&L peaks above this %, giving back more than this % from the peak pauses trading, and a proposed stake whose full loss would cross the floor is resized down or rejected pre-trade. null = off.'
+        min_volume_24h_usd:
+          anyOf:
+          - type: number
+            maximum: 10000000.0
+            minimum: 0.0
+          - type: 'null'
+          title: Min Volume 24H Usd
+          description: 'Per-bot liquidity floor (ET-15536): skip any catalog vehicle whose platform 24h traded volume (USD) is below this. Unknown/never-traded volume counts as 0 (fails closed — the bot never opens orders on illiquid assets). null = off. Suggested default: 500.'
+        max_open_positions:
+          anyOf:
+          - type: integer
+            maximum: 100.0
+            minimum: 0.0
+          - type: 'null'
+          title: Max Open Positions
+          description: Cap on the bot's simultaneously OPEN tracked positions across venues. null/0 = unlimited.
+        sector_exposure_caps:
+          anyOf:
+          - type: object
+          - type: 'null'
+          title: Sector Exposure Caps
+          description: 'Per-USER (applies across ALL your bots) sector exposure caps, {sector: max_pct}. Sectors: ai, layer-1, defi, memes, stablecoins, crypto-other, equities, etf-fund, event-cards, prediction-markets, other. A new trade is blocked when the combined open notional of all your bots in that sector would exceed max_pct of your combined bot portfolio. {} clears.'
+      type: object
+      title: UpdateSettingsRequest
+      description: Request to update bot settings.
+    FundBotRequest:
+      properties:
+        amount:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Amount
+          description: Amount in USDC to transfer to the bot
+      type: object
+      required:
+      - amount
+      title: FundBotRequest
+      description: Request to fund a clone bot from user's balance.
+    CloneBotRequest:
+      properties:
+        source_type:
+          type: string
+          title: Source Type
+          description: 'Type: ''wta_species'' or ''perpetual_agent'''
+        source_id:
+          type: string
+          title: Source Id
+          description: ID of the species/agent to clone
+        custom_name:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Custom Name
+          description: Optional custom name
+        is_paper:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Paper
+          description: Explicit paper/live mode. If None, inherits user's simulation_mode.
+        paper:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Paper
+          description: Same as is_paper (canonical name shared with the event-card endpoints). true = paper clone, false = live clone, omitted = inherits the account's simulation_mode.
+      type: object
+      required:
+      - source_type
+      - source_id
+      title: CloneBotRequest
+      description: Request to clone a bot.
+    WithdrawBotRequest:
+      properties:
+        amount:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Amount
+          description: Amount in USDC to withdraw from the bot
+      type: object
+      required:
+      - amount
+      title: WithdrawBotRequest
+      description: Request to withdraw funds from a clone bot back to user's balance.
+    GoLiveRequest:
+      properties:
+        custom_name:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Custom Name
+          description: Optional name for the live bot
+      type: object
+      title: GoLiveRequest
+      description: Request to create a live bot from a paper bot's settings.
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    CloneBotResponse:
+      properties:
+        id:
+          type: string
+          title: Id
+        type:
+          type: string
+          title: Type
+        source_id:
+          type: string
+          title: Source Id
+        source_name:
+          type: string
+          title: Source Name
+        source_symbol:
+          type: string
+          title: Source Symbol
+        name:
+          type: string
+          title: Name
+        wallet_address:
+          type: string
+          title: Wallet Address
+        wallet_url:
+          type: string
+          title: Wallet Url
+        is_trading:
+          type: boolean
+          title: Is Trading
+        is_paper:
+          type: boolean
+          title: Is Paper
+          default: false
+        strategy_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Strategy Type
+        risk_profile:
+          type: string
+          title: Risk Profile
+        team:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Team
+        emoji:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Emoji
+        created_at:
+          type: string
+          title: Created At
+      type: object
+      required:
+      - id
+      - type
+      - source_id
+      - source_name
+      - source_symbol
+      - name
+      - wallet_address
+      - wallet_url
+      - is_trading
+      - strategy_type
+      - risk_profile
+      - created_at
+      title: CloneBotResponse
+      description: Response after cloning a bot.
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

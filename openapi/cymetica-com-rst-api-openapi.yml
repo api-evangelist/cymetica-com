@@ -1,0 +1,271 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Rst API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: rst
+paths:
+  /api/v1/rst/list:
+    get:
+      tags:
+      - rst
+      summary: List Rsts
+      description: 'List all RSTs with stats.
+
+
+        Args:
+
+        status: Filter by status (active, graduated, paused)
+
+        limit: Max results (default 50)
+
+        offset: Pagination offset
+
+
+        Field notes (2026-09-18 QA sweep — see ``_enrich_rst_dict`` for the full
+
+        root-cause explanation of ET10''s numbers):
+
+        - ``distributor_address`` is the raw DB column and may be a FROZEN
+
+        legacy contract (see ``distributor_status.db_distributor_frozen``).
+
+        Never treat it alone as "where rewards are paid from today" — check
+
+        ``distributor_status.live_distributor_address`` instead.
+
+        - ``total_revenue_distributed`` is a cumulative historical total, not
+
+        a live/current figure (see ``total_revenue_distributed_note``).
+
+        - ``last_synced_at`` is the last on-chain distribution time, not a
+
+        current sync heartbeat (see ``last_synced_at_note``).
+
+        - ``holder_count``/``tokens_sold``/``is_graduated``/``graduated_at``/
+
+        ``graduation_tx``/``dex_pool_address`` only populate for tokens sold
+
+        through the generic bonding-curve/direct-sale RST launch flow; ET10
+
+        (issued at a fixed peg via /exchange-crypto) is structurally 0/null
+
+        here — that is expected, not a data outage.'
+      operationId: list_rsts_api_v1_rst_list_get
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 50
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 0
+          title: Offset
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/rst/{address}/rewards:
+    get:
+      tags:
+      - rst
+      summary: Get Pending Rewards
+      description: 'Get pending claimable rewards for the authenticated user.
+
+
+        Queries the on-chain PlatformRevenueDistributor for real-time pending rewards
+
+        using the current user''s swarm wallet address.
+
+
+        Auth: requires a JWT session (Authorization: Bearer , or the
+
+        httpOnly et_access cookie from browser login) — ``get_current_user`` does
+
+        NOT accept X-API-Key, unlike most other EventTrader read endpoints.
+
+        Calling this unauthenticated returns 401 {"detail": "Not authenticated"}
+
+        (2026-09-18 QA finding: the /rst Quick Start advertised this as usable
+
+        without documenting that; fixed alongside this docstring).
+
+
+        For a public, no-auth view of ET10''s aggregate reward-delivery evidence
+
+        (distributor balance, daily-rewards payment counts, weekly on-chain
+
+        distribution status), use GET /api/v1/rst/et10-diligence instead.
+
+
+        Args:
+
+        address: RST token contract address'
+      operationId: get_pending_rewards_api_v1_rst__address__rewards_get
+      security:
+      - BearerJWT: []
+      parameters:
+      - name: address
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Address
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/rst/et10-diligence:
+    get:
+      tags:
+      - rst
+      summary: Et10 Diligence
+      description: 'Pre-purchase due-diligence evidence for ET10 (ET-21440).
+
+
+        Publishes the custody facts a buyer can verify independently: the
+
+        distributor address that funds withdrawals and reward delivery (with its
+
+        live on-chain balance), plus DB-measured delivery stats for the reward
+
+        channels — including the honest zero for the on-chain weekly holder
+
+        distribution, which has never run.'
+      operationId: et10_diligence_api_v1_rst_et10_diligence_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      security: []
+  /api/v1/rst/{address}/quote:
+    get:
+      tags:
+      - rst
+      summary: Get Rst Quote
+      description: 'Get a purchase quote for RST (public, no auth required).
+
+
+        Args:
+
+        address: RST token contract address
+
+        amount_usdc: USDC amount to spend'
+      operationId: get_rst_quote_api_v1_rst__address__quote_get
+      parameters:
+      - name: address
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Address
+      - name: amount_usdc
+        in: query
+        required: true
+        schema:
+          type: number
+          title: Amount Usdc
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+components:
+  schemas:
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

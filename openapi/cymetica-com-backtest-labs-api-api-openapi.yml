@@ -1,0 +1,303 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Backtest Labs API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: Backtest Labs API
+paths:
+  /api/v1/backtest-labs/run:
+    post:
+      tags:
+      - Backtest Labs API
+      summary: Run Backtest
+      description: 'Run a backtest and return results as JSON.
+
+
+        Body: {
+
+        "type": "cross_exchange_arb" | "funding_rate" | "dex_replay",
+
+        "params": { ... type-specific parameters ... }
+
+        }'
+      operationId: run_backtest_api_v1_backtest_labs_run_post
+      parameters:
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  methodology:
+                    type: string
+                  token_symbol:
+                    type: string
+                  token_address:
+                    type: string
+                  coin:
+                    type: string
+                  strategy:
+                    type: string
+                  strategy_params:
+                    type: object
+                    additionalProperties: true
+                  exchanges:
+                    type: array
+                    items:
+                      type: string
+                  pool:
+                    type: string
+                  pool_address:
+                    type: string
+                  period_start:
+                    type: string
+                  period_end:
+                    type: string
+                  starting_capital:
+                    type: number
+                  ending_capital:
+                    type: number
+                  total_return_pct:
+                    type: number
+                  annualized_return_pct:
+                    type: number
+                  buy_and_hold_return_pct:
+                    type: number
+                  alpha_vs_hold_pct:
+                    type: number
+                  total_trades:
+                    type: integer
+                  winning_trades:
+                    type: integer
+                  losing_trades:
+                    type: integer
+                  win_rate:
+                    type: number
+                  avg_profit_per_trade:
+                    type: number
+                  max_drawdown_pct:
+                    type: number
+                  sharpe_ratio:
+                    type: number
+                  sortino_ratio:
+                    type: number
+                  avg_spread_pct:
+                    type: number
+                  total_gas_estimate:
+                    type: number
+                  total_bridge_estimate:
+                    type: number
+                  total_slippage_estimate:
+                    type: number
+                  total_fees_paid:
+                    type: number
+                  total_funding_earned:
+                    type: number
+                  num_rebalances:
+                    type: integer
+                  avg_spread_8h_pct:
+                    type: number
+                  max_spread_8h_pct:
+                    type: number
+                  funding_periods:
+                    type: integer
+                  avg_rate_by_exchange:
+                    type: object
+                    additionalProperties:
+                      type: number
+                  pools_used:
+                    type: integer
+                  chains_covered:
+                    type: array
+                    items:
+                      type: string
+                  same_chain_trades:
+                    type: integer
+                  cross_chain_trades:
+                    type: integer
+                  pool_liquidity_usd:
+                    type: number
+                  candle_count:
+                    type: integer
+                  equity_curve:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+                  trades:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        timestamp:
+                          type: string
+                        buy:
+                          type: string
+                        sell:
+                          type: string
+                        spread_pct:
+                          type: number
+                        net_pnl:
+                          type: number
+                        size:
+                          type: number
+                        type:
+                          type: string
+                        long:
+                          type: string
+                        short:
+                          type: string
+                        spread_8h:
+                          type: number
+                        earned:
+                          type: number
+                        cum_pnl:
+                          type: number
+                        side:
+                          type: string
+                        price:
+                          type: number
+                        pnl:
+                          type: number
+                        signal:
+                          type: string
+                      additionalProperties: true
+                      description: Trade row; which keys are present depends on the backtest type.
+                  interpreted_parameters:
+                    type: object
+                    additionalProperties: true
+                  warnings:
+                    type: array
+                    items:
+                      type: string
+                  error:
+                    type: string
+                additionalProperties: true
+                description: 'Backtest Labs result. Keys vary by `type`: cross_exchange_arb → token_symbol/pools_used/chains_covered/…; funding_rate → coin/exchanges/total_funding_earned/…; dex_replay → pool/strategy/buy_and_hold_return_pct/…. `error` is only present on a 400/429 body.'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  enum:
+                  - cross_exchange_arb
+                  - funding_rate
+                  - dex_replay
+                  description: Backtest family.
+                params:
+                  type: object
+                  properties:
+                    token:
+                      type: string
+                      description: 0x token address (cross_exchange_arb, dex_replay)
+                    coin:
+                      type: string
+                      description: Perp coin symbol, e.g. BTC (funding_rate)
+                    strategy:
+                      type: string
+                      description: 'funding_rate: carry strategy; dex_replay: replay strategy name'
+                    days:
+                      type: integer
+                      minimum: 1
+                      maximum: 60
+                      default: 14
+                    capital:
+                      type: number
+                      minimum: 100
+                      maximum: 1000000
+                      default: 10000
+                    trade_size:
+                      type: number
+                      default: 500
+                    min_spread:
+                      type: number
+                      default: 0.3
+                      description: '% (cross_exchange_arb)'
+                    leverage:
+                      type: number
+                      default: 1
+                      description: funding_rate
+                  additionalProperties: true
+                  description: Type-specific parameters; out-of-range values are clamped and reported in `warnings`.
+              additionalProperties: false
+              required:
+              - type
+              - params
+components:
+  schemas:
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

@@ -22,22 +22,26 @@ tags: &id001
 - Trading
 - AI Agents
 - MCP
-- agent-native
+- Agent-Native
 - Blockchain
 - DeFi
-- Financial-Services
+- Financial Services
 - Market Data
+- A2A
+- Real-Time
 tags_raw:
 - Prediction Markets
 - Cryptocurrency Exchange
 - Trading
 - AI Agents
 - MCP
-- agent-native
+- Agent-Native
 - Blockchain
 - DeFi
-- Financial Services
+- Financial-Services
 - Market Data
+- A2A
+- Real-Time
 tags_raw: &id002
 - prediction-markets
 - cryptocurrency-exchange
@@ -50,72 +54,20 @@ tags_raw: &id002
 - financial-services
 - market-data
 apis:
-- name: EventTrader Public API
-  description: 'Curated public REST surface of EventTrader, Cymetica''s perpetual prediction market and CLOB exchange: register
-    and mint API keys, OAuth 2.0 (PKCE) token flows, list markets and exchange pairs, read orderbooks/trades/tickers, place,
-    amend and cancel CLOB and per-pair orders (Idempotency-Key on the exchange router), trade EVCDX event-card index baskets,
-    clone and fund AI trading bots, run backtests, launch and quote bonding-curve tokens, and read portfolio positions and
-    deposit addresses. OpenAPI 3.1.0, 114 operations, served from https://cymetica.com/openapi-public.json. Paper mode on
-    every order; users pay their own gas.'
-  humanURL: https://cymetica.com/api-docs
-  baseURL: https://cymetica.com/api/v1
-  tags: *id001
-  tags_raw: *id002
-  properties:
-  - type: OpenAPI
-    url: openapi/cymetica-com-eventtrader-public-api-openapi.yml
-  - type: OpenAPI
-    url: https://cymetica.com/openapi-public.json
-    name: Provider-hosted curated public OpenAPI (source of the local copy)
-  - type: Documentation
-    url: https://cymetica.com/api-docs
-  - type: APIReference
-    url: https://cymetica.com/api-docs
-  - type: GettingStarted
-    url: https://cymetica.com/getting-started
-  - type: CodeSamples
-    url: https://cymetica.com/examples
-  - type: Conventions
-    url: conventions/cymetica-com-conventions.yml
-  - type: Idempotency
-    url: conventions/cymetica-com-conventions.yml
-  - type: ErrorCatalog
-    url: errors/cymetica-com-problem-types.yml
-  - type: DataModel
-    url: data-model/cymetica-com-data-model.yml
-  - type: Overlay
-    url: overlays/cymetica-com-eventtrader-public-api-overlay.yaml
-  - type: Sandbox
-    url: sandbox/cymetica-com-sandbox.yml
-  - type: RateLimits
-    url: rate-limits/cymetica-com-rate-limits.yml
-  - type: Plans
-    url: plans/cymetica-com-plans-pricing.yml
-  - type: AsyncAPI
-    url: asyncapi/cymetica-com-websocket-asyncapi.json
-  - type: Webhooks
-    url: asyncapi/cymetica-com-webhooks.yml
-  - type: Lifecycle
-    url: lifecycle/cymetica-com-lifecycle.yml
-  - type: Conformance
-    url: conformance/cymetica-com-conformance.yml
-  - type: SDKs
-    url: packages/cymetica-com-packages.yml
-  image: https://cymetica.com/static/img/og-default.png
-  x-base-note: OpenAPI servers[0] is https://cymetica.com with /api/v1/... paths (auth at /auth, /oauth and the MCP door at
-    /mcp/v1 share the origin); baseURL names the REST prefix rather than the site root. servers[] left untouched.
 - name: EventTrader MCP Server
-  description: Hosted Streamable-HTTP MCP endpoint at https://cymetica.com/mcp/v1 (protocol 2025-03-26) answering anonymous
-    tools/list with 57 annotated tools — markets, orderbooks, funds research, ontology, agent returns board, launchpad, Build-it-Better
-    — and 35 more that unlock by agent trust tier after a free POST /mcp/v1/register. A separate local stdio package (PyPI
-    cymetica-eventtrader-mcp) ships a 160-tool inventory. X-API-Key auth; OAuth tokens are REST-only. Reachable today from
-    Claude Code, Claude Desktop, ChatGPT connectors and Gemini CLI by URL.
+  description: >-
+    Hosted Streamable-HTTP MCP endpoint at https://cymetica.com/mcp/v1 (protocol 2025-03-26) answering
+    anonymous tools/list with 57 annotated tools — markets, orderbooks, funds research, ontology, agent
+    returns board, launchpad, Build-it-Better — and 35 more that unlock by agent trust tier after a free
+    POST /mcp/v1/register. A separate local stdio package (PyPI cymetica-eventtrader-mcp) ships a 160-tool
+    inventory. X-API-Key auth; OAuth tokens are REST-only. Reachable today from Claude Code, Claude Desktop,
+    ChatGPT connectors and Gemini CLI by URL.
   humanURL: https://cymetica.com/build
   baseURL: https://cymetica.com/mcp/v1
   tags:
   - MCP
   - AI Agents
-  - agent-native
+  - Agent-Native
   - Prediction Markets
   - Trading
   - Market Data
@@ -138,12 +90,1065 @@ apis:
   - type: AgentSkill
     url: skills/_index.yml
   image: https://cymetica.com/static/img/og-default.png
+- aid: cymetica-com:cymetica-com-api-keys-api
+  name: Cymetica API Keys API
+  description: The API Keys API from Cymetica — 2 operation(s) for api keys.
+  humanURL: https://cymetica.com/api-docs
+  baseURL: https://cymetica.com/api/v1
+  tags:
+  - API Keys
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-api-keys-api-openapi.yml
+  - type: Documentation
+    url: https://cymetica.com/api-docs
+  - type: APIReference
+    url: https://cymetica.com/api-docs
+  - type: GettingStarted
+    url: https://cymetica.com/getting-started
+  - type: CodeSamples
+    url: https://cymetica.com/examples
+  - type: Conventions
+    url: conventions/cymetica-com-conventions.yml
+  - type: Idempotency
+    url: conventions/cymetica-com-conventions.yml
+  - type: ErrorCatalog
+    url: errors/cymetica-com-problem-types.yml
+  - type: DataModel
+    url: data-model/cymetica-com-data-model.yml
+  - type: Sandbox
+    url: sandbox/cymetica-com-sandbox.yml
+  - type: RateLimits
+    url: rate-limits/cymetica-com-rate-limits.yml
+  - type: Plans
+    url: plans/cymetica-com-plans-pricing.yml
+  - type: AsyncAPI
+    url: asyncapi/cymetica-com-websocket-asyncapi.json
+  - type: Webhooks
+    url: asyncapi/cymetica-com-webhooks.yml
+  - type: Lifecycle
+    url: lifecycle/cymetica-com-lifecycle.yml
+  - type: Conformance
+    url: conformance/cymetica-com-conformance.yml
+  - type: SDKs
+    url: packages/cymetica-com-packages.yml
+- aid: cymetica-com:cymetica-com-asset-universe-api
+  name: Cymetica Asset Universe API
+  description: The Asset Universe API from Cymetica — 4 operation(s) for asset universe.
+  humanURL: https://cymetica.com/api-docs
+  baseURL: https://cymetica.com/api/v1
+  tags:
+  - Asset Universe
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-asset-universe-api-openapi.yml
+  - type: Documentation
+    url: https://cymetica.com/api-docs
+  - type: APIReference
+    url: https://cymetica.com/api-docs
+  - type: GettingStarted
+    url: https://cymetica.com/getting-started
+  - type: CodeSamples
+    url: https://cymetica.com/examples
+  - type: Conventions
+    url: conventions/cymetica-com-conventions.yml
+  - type: Idempotency
+    url: conventions/cymetica-com-conventions.yml
+  - type: ErrorCatalog
+    url: errors/cymetica-com-problem-types.yml
+  - type: DataModel
+    url: data-model/cymetica-com-data-model.yml
+  - type: Sandbox
+    url: sandbox/cymetica-com-sandbox.yml
+  - type: RateLimits
+    url: rate-limits/cymetica-com-rate-limits.yml
+  - type: Plans
+    url: plans/cymetica-com-plans-pricing.yml
+  - type: AsyncAPI
+    url: asyncapi/cymetica-com-websocket-asyncapi.json
+  - type: Webhooks
+    url: asyncapi/cymetica-com-webhooks.yml
+  - type: Lifecycle
+    url: lifecycle/cymetica-com-lifecycle.yml
+  - type: Conformance
+    url: conformance/cymetica-com-conformance.yml
+  - type: SDKs
+    url: packages/cymetica-com-packages.yml
+- aid: cymetica-com:cymetica-com-authentication-api
+  name: Cymetica Authentication API
+  description: The authentication API from Cymetica — 3 operation(s) for authentication.
+  humanURL: https://cymetica.com/api-docs
+  baseURL: https://cymetica.com/api/v1
+  tags:
+  - authentication
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-authentication-api-openapi.yml
+  - type: Documentation
+    url: https://cymetica.com/api-docs
+  - type: APIReference
+    url: https://cymetica.com/api-docs
+  - type: GettingStarted
+    url: https://cymetica.com/getting-started
+  - type: CodeSamples
+    url: https://cymetica.com/examples
+  - type: Conventions
+    url: conventions/cymetica-com-conventions.yml
+  - type: Idempotency
+    url: conventions/cymetica-com-conventions.yml
+  - type: ErrorCatalog
+    url: errors/cymetica-com-problem-types.yml
+  - type: DataModel
+    url: data-model/cymetica-com-data-model.yml
+  - type: Sandbox
+    url: sandbox/cymetica-com-sandbox.yml
+  - type: RateLimits
+    url: rate-limits/cymetica-com-rate-limits.yml
+  - type: Plans
+    url: plans/cymetica-com-plans-pricing.yml
+  - type: AsyncAPI
+    url: asyncapi/cymetica-com-websocket-asyncapi.json
+  - type: Webhooks
+    url: asyncapi/cymetica-com-webhooks.yml
+  - type: Lifecycle
+    url: lifecycle/cymetica-com-lifecycle.yml
+  - type: Conformance
+    url: conformance/cymetica-com-conformance.yml
+  - type: SDKs
+    url: packages/cymetica-com-packages.yml
+- aid: cymetica-com:cymetica-com-backtest-labs-api-api
+  name: Cymetica Backtest Labs API
+  description: The Backtest Labs API API from Cymetica — 1 operation(s) for backtest labs api.
+  humanURL: https://cymetica.com/api-docs
+  baseURL: https://cymetica.com/api/v1
+  tags:
+  - Backtest Labs API
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-backtest-labs-api-api-openapi.yml
+  - type: Documentation
+    url: https://cymetica.com/api-docs
+  - type: APIReference
+    url: https://cymetica.com/api-docs
+  - type: GettingStarted
+    url: https://cymetica.com/getting-started
+  - type: CodeSamples
+    url: https://cymetica.com/examples
+  - type: Conventions
+    url: conventions/cymetica-com-conventions.yml
+  - type: Idempotency
+    url: conventions/cymetica-com-conventions.yml
+  - type: ErrorCatalog
+    url: errors/cymetica-com-problem-types.yml
+  - type: DataModel
+    url: data-model/cymetica-com-data-model.yml
+  - type: Sandbox
+    url: sandbox/cymetica-com-sandbox.yml
+  - type: RateLimits
+    url: rate-limits/cymetica-com-rate-limits.yml
+  - type: Plans
+    url: plans/cymetica-com-plans-pricing.yml
+  - type: AsyncAPI
+    url: asyncapi/cymetica-com-websocket-asyncapi.json
+  - type: Webhooks
+    url: asyncapi/cymetica-com-webhooks.yml
+  - type: Lifecycle
+    url: lifecycle/cymetica-com-lifecycle.yml
+  - type: Conformance
+    url: conformance/cymetica-com-conformance.yml
+  - type: SDKs
+    url: packages/cymetica-com-packages.yml
+- aid: cymetica-com:cymetica-com-clob-api
+  name: Cymetica CLOB API
+  description: The CLOB API from Cymetica — 2 operation(s) for clob.
+  humanURL: https://cymetica.com/api-docs
+  baseURL: https://cymetica.com/api/v1
+  tags:
+  - CLOB
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-clob-api-openapi.yml
+  - type: Documentation
+    url: https://cymetica.com/api-docs
+  - type: APIReference
+    url: https://cymetica.com/api-docs
+  - type: GettingStarted
+    url: https://cymetica.com/getting-started
+  - type: CodeSamples
+    url: https://cymetica.com/examples
+  - type: Conventions
+    url: conventions/cymetica-com-conventions.yml
+  - type: Idempotency
+    url: conventions/cymetica-com-conventions.yml
+  - type: ErrorCatalog
+    url: errors/cymetica-com-problem-types.yml
+  - type: DataModel
+    url: data-model/cymetica-com-data-model.yml
+  - type: Sandbox
+    url: sandbox/cymetica-com-sandbox.yml
+  - type: RateLimits
+    url: rate-limits/cymetica-com-rate-limits.yml
+  - type: Plans
+    url: plans/cymetica-com-plans-pricing.yml
+  - type: AsyncAPI
+    url: asyncapi/cymetica-com-websocket-asyncapi.json
+  - type: Webhooks
+    url: asyncapi/cymetica-com-webhooks.yml
+  - type: Lifecycle
+    url: lifecycle/cymetica-com-lifecycle.yml
+  - type: Conformance
+    url: conformance/cymetica-com-conformance.yml
+  - type: SDKs
+    url: packages/cymetica-com-packages.yml
+- aid: cymetica-com:cymetica-com-cloned-bots-api
+  name: Cymetica Cloned Bots API
+  description: The cloned-bots API from Cymetica — 12 operation(s) for cloned-bots.
+  humanURL: https://cymetica.com/api-docs
+  baseURL: https://cymetica.com/api/v1
+  tags:
+  - cloned-bots
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-cloned-bots-api-openapi.yml
+  - type: Documentation
+    url: https://cymetica.com/api-docs
+  - type: APIReference
+    url: https://cymetica.com/api-docs
+  - type: GettingStarted
+    url: https://cymetica.com/getting-started
+  - type: CodeSamples
+    url: https://cymetica.com/examples
+  - type: Conventions
+    url: conventions/cymetica-com-conventions.yml
+  - type: Idempotency
+    url: conventions/cymetica-com-conventions.yml
+  - type: ErrorCatalog
+    url: errors/cymetica-com-problem-types.yml
+  - type: DataModel
+    url: data-model/cymetica-com-data-model.yml
+  - type: Sandbox
+    url: sandbox/cymetica-com-sandbox.yml
+  - type: RateLimits
+    url: rate-limits/cymetica-com-rate-limits.yml
+  - type: Plans
+    url: plans/cymetica-com-plans-pricing.yml
+  - type: AsyncAPI
+    url: asyncapi/cymetica-com-websocket-asyncapi.json
+  - type: Webhooks
+    url: asyncapi/cymetica-com-webhooks.yml
+  - type: Lifecycle
+    url: lifecycle/cymetica-com-lifecycle.yml
+  - type: Conformance
+    url: conformance/cymetica-com-conformance.yml
+  - type: SDKs
+    url: packages/cymetica-com-packages.yml
+- aid: cymetica-com:cymetica-com-clones-api
+  name: Cymetica Clones API
+  description: The clones API from Cymetica — 17 operation(s) for clones.
+  humanURL: https://cymetica.com/api-docs
+  baseURL: https://cymetica.com/api/v1
+  tags:
+  - clones
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-clones-api-openapi.yml
+  - type: Documentation
+    url: https://cymetica.com/api-docs
+  - type: APIReference
+    url: https://cymetica.com/api-docs
+  - type: GettingStarted
+    url: https://cymetica.com/getting-started
+  - type: CodeSamples
+    url: https://cymetica.com/examples
+  - type: Conventions
+    url: conventions/cymetica-com-conventions.yml
+  - type: Idempotency
+    url: conventions/cymetica-com-conventions.yml
+  - type: ErrorCatalog
+    url: errors/cymetica-com-problem-types.yml
+  - type: DataModel
+    url: data-model/cymetica-com-data-model.yml
+  - type: Sandbox
+    url: sandbox/cymetica-com-sandbox.yml
+  - type: RateLimits
+    url: rate-limits/cymetica-com-rate-limits.yml
+  - type: Plans
+    url: plans/cymetica-com-plans-pricing.yml
+  - type: AsyncAPI
+    url: asyncapi/cymetica-com-websocket-asyncapi.json
+  - type: Webhooks
+    url: asyncapi/cymetica-com-webhooks.yml
+  - type: Lifecycle
+    url: lifecycle/cymetica-com-lifecycle.yml
+  - type: Conformance
+    url: conformance/cymetica-com-conformance.yml
+  - type: SDKs
+    url: packages/cymetica-com-packages.yml
+- aid: cymetica-com:cymetica-com-crypto-outlook-api
+  name: Cymetica Crypto Outlook API
+  description: The crypto-outlook API from Cymetica — 3 operation(s) for crypto-outlook.
+  humanURL: https://cymetica.com/api-docs
+  baseURL: https://cymetica.com/api/v1
+  tags:
+  - crypto-outlook
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-crypto-outlook-api-openapi.yml
+  - type: Documentation
+    url: https://cymetica.com/api-docs
+  - type: APIReference
+    url: https://cymetica.com/api-docs
+  - type: GettingStarted
+    url: https://cymetica.com/getting-started
+  - type: CodeSamples
+    url: https://cymetica.com/examples
+  - type: Conventions
+    url: conventions/cymetica-com-conventions.yml
+  - type: Idempotency
+    url: conventions/cymetica-com-conventions.yml
+  - type: ErrorCatalog
+    url: errors/cymetica-com-problem-types.yml
+  - type: DataModel
+    url: data-model/cymetica-com-data-model.yml
+  - type: Sandbox
+    url: sandbox/cymetica-com-sandbox.yml
+  - type: RateLimits
+    url: rate-limits/cymetica-com-rate-limits.yml
+  - type: Plans
+    url: plans/cymetica-com-plans-pricing.yml
+  - type: AsyncAPI
+    url: asyncapi/cymetica-com-websocket-asyncapi.json
+  - type: Webhooks
+    url: asyncapi/cymetica-com-webhooks.yml
+  - type: Lifecycle
+    url: lifecycle/cymetica-com-lifecycle.yml
+  - type: Conformance
+    url: conformance/cymetica-com-conformance.yml
+  - type: SDKs
+    url: packages/cymetica-com-packages.yml
+- aid: cymetica-com:cymetica-com-event-cards-api
+  name: Cymetica Event Cards API
+  description: The event-cards API from Cymetica — 11 operation(s) for event-cards.
+  humanURL: https://cymetica.com/api-docs
+  baseURL: https://cymetica.com/api/v1
+  tags:
+  - event-cards
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-event-cards-api-openapi.yml
+  - type: Documentation
+    url: https://cymetica.com/api-docs
+  - type: APIReference
+    url: https://cymetica.com/api-docs
+  - type: GettingStarted
+    url: https://cymetica.com/getting-started
+  - type: CodeSamples
+    url: https://cymetica.com/examples
+  - type: Conventions
+    url: conventions/cymetica-com-conventions.yml
+  - type: Idempotency
+    url: conventions/cymetica-com-conventions.yml
+  - type: ErrorCatalog
+    url: errors/cymetica-com-problem-types.yml
+  - type: DataModel
+    url: data-model/cymetica-com-data-model.yml
+  - type: Sandbox
+    url: sandbox/cymetica-com-sandbox.yml
+  - type: RateLimits
+    url: rate-limits/cymetica-com-rate-limits.yml
+  - type: Plans
+    url: plans/cymetica-com-plans-pricing.yml
+  - type: AsyncAPI
+    url: asyncapi/cymetica-com-websocket-asyncapi.json
+  - type: Webhooks
+    url: asyncapi/cymetica-com-webhooks.yml
+  - type: Lifecycle
+    url: lifecycle/cymetica-com-lifecycle.yml
+  - type: Conformance
+    url: conformance/cymetica-com-conformance.yml
+  - type: SDKs
+    url: packages/cymetica-com-packages.yml
+- aid: cymetica-com:cymetica-com-exchange-api
+  name: Cymetica Exchange API
+  description: The Exchange API from Cymetica — 6 operation(s) for exchange.
+  humanURL: https://cymetica.com/api-docs
+  baseURL: https://cymetica.com/api/v1
+  tags:
+  - Exchange
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-exchange-api-openapi.yml
+  - type: Documentation
+    url: https://cymetica.com/api-docs
+  - type: APIReference
+    url: https://cymetica.com/api-docs
+  - type: GettingStarted
+    url: https://cymetica.com/getting-started
+  - type: CodeSamples
+    url: https://cymetica.com/examples
+  - type: Conventions
+    url: conventions/cymetica-com-conventions.yml
+  - type: Idempotency
+    url: conventions/cymetica-com-conventions.yml
+  - type: ErrorCatalog
+    url: errors/cymetica-com-problem-types.yml
+  - type: DataModel
+    url: data-model/cymetica-com-data-model.yml
+  - type: Sandbox
+    url: sandbox/cymetica-com-sandbox.yml
+  - type: RateLimits
+    url: rate-limits/cymetica-com-rate-limits.yml
+  - type: Plans
+    url: plans/cymetica-com-plans-pricing.yml
+  - type: AsyncAPI
+    url: asyncapi/cymetica-com-websocket-asyncapi.json
+  - type: Webhooks
+    url: asyncapi/cymetica-com-webhooks.yml
+  - type: Lifecycle
+    url: lifecycle/cymetica-com-lifecycle.yml
+  - type: Conformance
+    url: conformance/cymetica-com-conformance.yml
+  - type: SDKs
+    url: packages/cymetica-com-packages.yml
+- aid: cymetica-com:cymetica-com-funder-rewards-api
+  name: Cymetica Funder Rewards API
+  description: The funder-rewards API from Cymetica — 1 operation(s) for funder-rewards.
+  humanURL: https://cymetica.com/api-docs
+  baseURL: https://cymetica.com/api/v1
+  tags:
+  - funder-rewards
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-funder-rewards-api-openapi.yml
+  - type: Documentation
+    url: https://cymetica.com/api-docs
+  - type: APIReference
+    url: https://cymetica.com/api-docs
+  - type: GettingStarted
+    url: https://cymetica.com/getting-started
+  - type: CodeSamples
+    url: https://cymetica.com/examples
+  - type: Conventions
+    url: conventions/cymetica-com-conventions.yml
+  - type: Idempotency
+    url: conventions/cymetica-com-conventions.yml
+  - type: ErrorCatalog
+    url: errors/cymetica-com-problem-types.yml
+  - type: DataModel
+    url: data-model/cymetica-com-data-model.yml
+  - type: Sandbox
+    url: sandbox/cymetica-com-sandbox.yml
+  - type: RateLimits
+    url: rate-limits/cymetica-com-rate-limits.yml
+  - type: Plans
+    url: plans/cymetica-com-plans-pricing.yml
+  - type: AsyncAPI
+    url: asyncapi/cymetica-com-websocket-asyncapi.json
+  - type: Webhooks
+    url: asyncapi/cymetica-com-webhooks.yml
+  - type: Lifecycle
+    url: lifecycle/cymetica-com-lifecycle.yml
+  - type: Conformance
+    url: conformance/cymetica-com-conformance.yml
+  - type: SDKs
+    url: packages/cymetica-com-packages.yml
+- aid: cymetica-com:cymetica-com-funding-api
+  name: Cymetica Funding API
+  description: The Funding API from Cymetica — 2 operation(s) for funding.
+  humanURL: https://cymetica.com/api-docs
+  baseURL: https://cymetica.com/api/v1
+  tags:
+  - Funding
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-funding-api-openapi.yml
+  - type: Documentation
+    url: https://cymetica.com/api-docs
+  - type: APIReference
+    url: https://cymetica.com/api-docs
+  - type: GettingStarted
+    url: https://cymetica.com/getting-started
+  - type: CodeSamples
+    url: https://cymetica.com/examples
+  - type: Conventions
+    url: conventions/cymetica-com-conventions.yml
+  - type: Idempotency
+    url: conventions/cymetica-com-conventions.yml
+  - type: ErrorCatalog
+    url: errors/cymetica-com-problem-types.yml
+  - type: DataModel
+    url: data-model/cymetica-com-data-model.yml
+  - type: Sandbox
+    url: sandbox/cymetica-com-sandbox.yml
+  - type: RateLimits
+    url: rate-limits/cymetica-com-rate-limits.yml
+  - type: Plans
+    url: plans/cymetica-com-plans-pricing.yml
+  - type: AsyncAPI
+    url: asyncapi/cymetica-com-websocket-asyncapi.json
+  - type: Webhooks
+    url: asyncapi/cymetica-com-webhooks.yml
+  - type: Lifecycle
+    url: lifecycle/cymetica-com-lifecycle.yml
+  - type: Conformance
+    url: conformance/cymetica-com-conformance.yml
+  - type: SDKs
+    url: packages/cymetica-com-packages.yml
+- aid: cymetica-com:cymetica-com-macromarket-api
+  name: Cymetica Macromarket API
+  description: The macromarket API from Cymetica — 2 operation(s) for macromarket.
+  humanURL: https://cymetica.com/api-docs
+  baseURL: https://cymetica.com/api/v1
+  tags:
+  - macromarket
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-macromarket-api-openapi.yml
+  - type: Documentation
+    url: https://cymetica.com/api-docs
+  - type: APIReference
+    url: https://cymetica.com/api-docs
+  - type: GettingStarted
+    url: https://cymetica.com/getting-started
+  - type: CodeSamples
+    url: https://cymetica.com/examples
+  - type: Conventions
+    url: conventions/cymetica-com-conventions.yml
+  - type: Idempotency
+    url: conventions/cymetica-com-conventions.yml
+  - type: ErrorCatalog
+    url: errors/cymetica-com-problem-types.yml
+  - type: DataModel
+    url: data-model/cymetica-com-data-model.yml
+  - type: Sandbox
+    url: sandbox/cymetica-com-sandbox.yml
+  - type: RateLimits
+    url: rate-limits/cymetica-com-rate-limits.yml
+  - type: Plans
+    url: plans/cymetica-com-plans-pricing.yml
+  - type: AsyncAPI
+    url: asyncapi/cymetica-com-websocket-asyncapi.json
+  - type: Webhooks
+    url: asyncapi/cymetica-com-webhooks.yml
+  - type: Lifecycle
+    url: lifecycle/cymetica-com-lifecycle.yml
+  - type: Conformance
+    url: conformance/cymetica-com-conformance.yml
+  - type: SDKs
+    url: packages/cymetica-com-packages.yml
+- aid: cymetica-com:cymetica-com-markets-api
+  name: Cymetica Markets API
+  description: The markets API from Cymetica — 1 operation(s) for markets.
+  humanURL: https://cymetica.com/api-docs
+  baseURL: https://cymetica.com/api/v1
+  tags:
+  - markets
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-markets-api-openapi.yml
+  - type: Documentation
+    url: https://cymetica.com/api-docs
+  - type: APIReference
+    url: https://cymetica.com/api-docs
+  - type: GettingStarted
+    url: https://cymetica.com/getting-started
+  - type: CodeSamples
+    url: https://cymetica.com/examples
+  - type: Conventions
+    url: conventions/cymetica-com-conventions.yml
+  - type: Idempotency
+    url: conventions/cymetica-com-conventions.yml
+  - type: ErrorCatalog
+    url: errors/cymetica-com-problem-types.yml
+  - type: DataModel
+    url: data-model/cymetica-com-data-model.yml
+  - type: Sandbox
+    url: sandbox/cymetica-com-sandbox.yml
+  - type: RateLimits
+    url: rate-limits/cymetica-com-rate-limits.yml
+  - type: Plans
+    url: plans/cymetica-com-plans-pricing.yml
+  - type: AsyncAPI
+    url: asyncapi/cymetica-com-websocket-asyncapi.json
+  - type: Webhooks
+    url: asyncapi/cymetica-com-webhooks.yml
+  - type: Lifecycle
+    url: lifecycle/cymetica-com-lifecycle.yml
+  - type: Conformance
+    url: conformance/cymetica-com-conformance.yml
+  - type: SDKs
+    url: packages/cymetica-com-packages.yml
+- aid: cymetica-com:cymetica-com-mcp-public-interface-api
+  name: Cymetica MCP Public Interface API
+  description: The MCP Public Interface API from Cymetica — 9 operation(s) for mcp public interface.
+  humanURL: https://cymetica.com/api-docs
+  baseURL: https://cymetica.com/api/v1
+  tags:
+  - MCP Public Interface
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-mcp-public-interface-api-openapi.yml
+  - type: Documentation
+    url: https://cymetica.com/api-docs
+  - type: APIReference
+    url: https://cymetica.com/api-docs
+  - type: GettingStarted
+    url: https://cymetica.com/getting-started
+  - type: CodeSamples
+    url: https://cymetica.com/examples
+  - type: Conventions
+    url: conventions/cymetica-com-conventions.yml
+  - type: Idempotency
+    url: conventions/cymetica-com-conventions.yml
+  - type: ErrorCatalog
+    url: errors/cymetica-com-problem-types.yml
+  - type: DataModel
+    url: data-model/cymetica-com-data-model.yml
+  - type: Sandbox
+    url: sandbox/cymetica-com-sandbox.yml
+  - type: RateLimits
+    url: rate-limits/cymetica-com-rate-limits.yml
+  - type: Plans
+    url: plans/cymetica-com-plans-pricing.yml
+  - type: AsyncAPI
+    url: asyncapi/cymetica-com-websocket-asyncapi.json
+  - type: Webhooks
+    url: asyncapi/cymetica-com-webhooks.yml
+  - type: Lifecycle
+    url: lifecycle/cymetica-com-lifecycle.yml
+  - type: Conformance
+    url: conformance/cymetica-com-conformance.yml
+  - type: SDKs
+    url: packages/cymetica-com-packages.yml
+- aid: cymetica-com:cymetica-com-oauth-api
+  name: Cymetica OAuth API
+  description: The oauth API from Cymetica — 3 operation(s) for oauth.
+  humanURL: https://cymetica.com/api-docs
+  baseURL: https://cymetica.com/api/v1
+  tags:
+  - oauth
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-oauth-api-openapi.yml
+  - type: Documentation
+    url: https://cymetica.com/api-docs
+  - type: APIReference
+    url: https://cymetica.com/api-docs
+  - type: GettingStarted
+    url: https://cymetica.com/getting-started
+  - type: CodeSamples
+    url: https://cymetica.com/examples
+  - type: Conventions
+    url: conventions/cymetica-com-conventions.yml
+  - type: Idempotency
+    url: conventions/cymetica-com-conventions.yml
+  - type: ErrorCatalog
+    url: errors/cymetica-com-problem-types.yml
+  - type: DataModel
+    url: data-model/cymetica-com-data-model.yml
+  - type: Sandbox
+    url: sandbox/cymetica-com-sandbox.yml
+  - type: RateLimits
+    url: rate-limits/cymetica-com-rate-limits.yml
+  - type: Plans
+    url: plans/cymetica-com-plans-pricing.yml
+  - type: AsyncAPI
+    url: asyncapi/cymetica-com-websocket-asyncapi.json
+  - type: Webhooks
+    url: asyncapi/cymetica-com-webhooks.yml
+  - type: Lifecycle
+    url: lifecycle/cymetica-com-lifecycle.yml
+  - type: Conformance
+    url: conformance/cymetica-com-conformance.yml
+  - type: SDKs
+    url: packages/cymetica-com-packages.yml
+- aid: cymetica-com:cymetica-com-portfolio-api
+  name: Cymetica Portfolio API
+  description: The Portfolio API from Cymetica — 2 operation(s) for portfolio.
+  humanURL: https://cymetica.com/api-docs
+  baseURL: https://cymetica.com/api/v1
+  tags:
+  - Portfolio
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-portfolio-api-openapi.yml
+  - type: Documentation
+    url: https://cymetica.com/api-docs
+  - type: APIReference
+    url: https://cymetica.com/api-docs
+  - type: GettingStarted
+    url: https://cymetica.com/getting-started
+  - type: CodeSamples
+    url: https://cymetica.com/examples
+  - type: Conventions
+    url: conventions/cymetica-com-conventions.yml
+  - type: Idempotency
+    url: conventions/cymetica-com-conventions.yml
+  - type: ErrorCatalog
+    url: errors/cymetica-com-problem-types.yml
+  - type: DataModel
+    url: data-model/cymetica-com-data-model.yml
+  - type: Sandbox
+    url: sandbox/cymetica-com-sandbox.yml
+  - type: RateLimits
+    url: rate-limits/cymetica-com-rate-limits.yml
+  - type: Plans
+    url: plans/cymetica-com-plans-pricing.yml
+  - type: AsyncAPI
+    url: asyncapi/cymetica-com-websocket-asyncapi.json
+  - type: Webhooks
+    url: asyncapi/cymetica-com-webhooks.yml
+  - type: Lifecycle
+    url: lifecycle/cymetica-com-lifecycle.yml
+  - type: Conformance
+    url: conformance/cymetica-com-conformance.yml
+  - type: SDKs
+    url: packages/cymetica-com-packages.yml
+- aid: cymetica-com:cymetica-com-posted-links-api
+  name: Cymetica Posted Links API
+  description: The posted-links API from Cymetica — 1 operation(s) for posted-links.
+  humanURL: https://cymetica.com/api-docs
+  baseURL: https://cymetica.com/api/v1
+  tags:
+  - posted-links
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-posted-links-api-openapi.yml
+  - type: Documentation
+    url: https://cymetica.com/api-docs
+  - type: APIReference
+    url: https://cymetica.com/api-docs
+  - type: GettingStarted
+    url: https://cymetica.com/getting-started
+  - type: CodeSamples
+    url: https://cymetica.com/examples
+  - type: Conventions
+    url: conventions/cymetica-com-conventions.yml
+  - type: Idempotency
+    url: conventions/cymetica-com-conventions.yml
+  - type: ErrorCatalog
+    url: errors/cymetica-com-problem-types.yml
+  - type: DataModel
+    url: data-model/cymetica-com-data-model.yml
+  - type: Sandbox
+    url: sandbox/cymetica-com-sandbox.yml
+  - type: RateLimits
+    url: rate-limits/cymetica-com-rate-limits.yml
+  - type: Plans
+    url: plans/cymetica-com-plans-pricing.yml
+  - type: AsyncAPI
+    url: asyncapi/cymetica-com-websocket-asyncapi.json
+  - type: Webhooks
+    url: asyncapi/cymetica-com-webhooks.yml
+  - type: Lifecycle
+    url: lifecycle/cymetica-com-lifecycle.yml
+  - type: Conformance
+    url: conformance/cymetica-com-conformance.yml
+  - type: SDKs
+    url: packages/cymetica-com-packages.yml
+- aid: cymetica-com:cymetica-com-research-backtest-api-api
+  name: Cymetica Research Backtest API
+  description: The Research Backtest API API from Cymetica — 7 operation(s) for research backtest api.
+  humanURL: https://cymetica.com/api-docs
+  baseURL: https://cymetica.com/api/v1
+  tags:
+  - Research Backtest API
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-research-backtest-api-api-openapi.yml
+  - type: Documentation
+    url: https://cymetica.com/api-docs
+  - type: APIReference
+    url: https://cymetica.com/api-docs
+  - type: GettingStarted
+    url: https://cymetica.com/getting-started
+  - type: CodeSamples
+    url: https://cymetica.com/examples
+  - type: Conventions
+    url: conventions/cymetica-com-conventions.yml
+  - type: Idempotency
+    url: conventions/cymetica-com-conventions.yml
+  - type: ErrorCatalog
+    url: errors/cymetica-com-problem-types.yml
+  - type: DataModel
+    url: data-model/cymetica-com-data-model.yml
+  - type: Sandbox
+    url: sandbox/cymetica-com-sandbox.yml
+  - type: RateLimits
+    url: rate-limits/cymetica-com-rate-limits.yml
+  - type: Plans
+    url: plans/cymetica-com-plans-pricing.yml
+  - type: AsyncAPI
+    url: asyncapi/cymetica-com-websocket-asyncapi.json
+  - type: Webhooks
+    url: asyncapi/cymetica-com-webhooks.yml
+  - type: Lifecycle
+    url: lifecycle/cymetica-com-lifecycle.yml
+  - type: Conformance
+    url: conformance/cymetica-com-conformance.yml
+  - type: SDKs
+    url: packages/cymetica-com-packages.yml
+- aid: cymetica-com:cymetica-com-robinhood-testnet-api
+  name: Cymetica Robinhood Testnet API
+  description: The Robinhood Testnet API from Cymetica — 1 operation(s) for robinhood testnet.
+  humanURL: https://cymetica.com/api-docs
+  baseURL: https://cymetica.com/api/v1
+  tags:
+  - Robinhood Testnet
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-robinhood-testnet-api-openapi.yml
+  - type: Documentation
+    url: https://cymetica.com/api-docs
+  - type: APIReference
+    url: https://cymetica.com/api-docs
+  - type: GettingStarted
+    url: https://cymetica.com/getting-started
+  - type: CodeSamples
+    url: https://cymetica.com/examples
+  - type: Conventions
+    url: conventions/cymetica-com-conventions.yml
+  - type: Idempotency
+    url: conventions/cymetica-com-conventions.yml
+  - type: ErrorCatalog
+    url: errors/cymetica-com-problem-types.yml
+  - type: DataModel
+    url: data-model/cymetica-com-data-model.yml
+  - type: Sandbox
+    url: sandbox/cymetica-com-sandbox.yml
+  - type: RateLimits
+    url: rate-limits/cymetica-com-rate-limits.yml
+  - type: Plans
+    url: plans/cymetica-com-plans-pricing.yml
+  - type: AsyncAPI
+    url: asyncapi/cymetica-com-websocket-asyncapi.json
+  - type: Webhooks
+    url: asyncapi/cymetica-com-webhooks.yml
+  - type: Lifecycle
+    url: lifecycle/cymetica-com-lifecycle.yml
+  - type: Conformance
+    url: conformance/cymetica-com-conformance.yml
+  - type: SDKs
+    url: packages/cymetica-com-packages.yml
+- aid: cymetica-com:cymetica-com-rst-api
+  name: Cymetica Rst API
+  description: The rst API from Cymetica — 4 operation(s) for rst.
+  humanURL: https://cymetica.com/api-docs
+  baseURL: https://cymetica.com/api/v1
+  tags:
+  - rst
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-rst-api-openapi.yml
+  - type: Documentation
+    url: https://cymetica.com/api-docs
+  - type: APIReference
+    url: https://cymetica.com/api-docs
+  - type: GettingStarted
+    url: https://cymetica.com/getting-started
+  - type: CodeSamples
+    url: https://cymetica.com/examples
+  - type: Conventions
+    url: conventions/cymetica-com-conventions.yml
+  - type: Idempotency
+    url: conventions/cymetica-com-conventions.yml
+  - type: ErrorCatalog
+    url: errors/cymetica-com-problem-types.yml
+  - type: DataModel
+    url: data-model/cymetica-com-data-model.yml
+  - type: Sandbox
+    url: sandbox/cymetica-com-sandbox.yml
+  - type: RateLimits
+    url: rate-limits/cymetica-com-rate-limits.yml
+  - type: Plans
+    url: plans/cymetica-com-plans-pricing.yml
+  - type: AsyncAPI
+    url: asyncapi/cymetica-com-websocket-asyncapi.json
+  - type: Webhooks
+    url: asyncapi/cymetica-com-webhooks.yml
+  - type: Lifecycle
+    url: lifecycle/cymetica-com-lifecycle.yml
+  - type: Conformance
+    url: conformance/cymetica-com-conformance.yml
+  - type: SDKs
+    url: packages/cymetica-com-packages.yml
+- aid: cymetica-com:cymetica-com-rst-crypto-buy-api
+  name: Cymetica Rst Crypto Buy API
+  description: The rst-crypto-buy API from Cymetica — 2 operation(s) for rst-crypto-buy.
+  humanURL: https://cymetica.com/api-docs
+  baseURL: https://cymetica.com/api/v1
+  tags:
+  - rst-crypto-buy
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-rst-crypto-buy-api-openapi.yml
+  - type: Documentation
+    url: https://cymetica.com/api-docs
+  - type: APIReference
+    url: https://cymetica.com/api-docs
+  - type: GettingStarted
+    url: https://cymetica.com/getting-started
+  - type: CodeSamples
+    url: https://cymetica.com/examples
+  - type: Conventions
+    url: conventions/cymetica-com-conventions.yml
+  - type: Idempotency
+    url: conventions/cymetica-com-conventions.yml
+  - type: ErrorCatalog
+    url: errors/cymetica-com-problem-types.yml
+  - type: DataModel
+    url: data-model/cymetica-com-data-model.yml
+  - type: Sandbox
+    url: sandbox/cymetica-com-sandbox.yml
+  - type: RateLimits
+    url: rate-limits/cymetica-com-rate-limits.yml
+  - type: Plans
+    url: plans/cymetica-com-plans-pricing.yml
+  - type: AsyncAPI
+    url: asyncapi/cymetica-com-websocket-asyncapi.json
+  - type: Webhooks
+    url: asyncapi/cymetica-com-webhooks.yml
+  - type: Lifecycle
+    url: lifecycle/cymetica-com-lifecycle.yml
+  - type: Conformance
+    url: conformance/cymetica-com-conformance.yml
+  - type: SDKs
+    url: packages/cymetica-com-packages.yml
+- aid: cymetica-com:cymetica-com-swap-api
+  name: Cymetica Swap API
+  description: The Swap API from Cymetica — 1 operation(s) for swap.
+  humanURL: https://cymetica.com/api-docs
+  baseURL: https://cymetica.com/api/v1
+  tags:
+  - Swap
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-swap-api-openapi.yml
+  - type: Documentation
+    url: https://cymetica.com/api-docs
+  - type: APIReference
+    url: https://cymetica.com/api-docs
+  - type: GettingStarted
+    url: https://cymetica.com/getting-started
+  - type: CodeSamples
+    url: https://cymetica.com/examples
+  - type: Conventions
+    url: conventions/cymetica-com-conventions.yml
+  - type: Idempotency
+    url: conventions/cymetica-com-conventions.yml
+  - type: ErrorCatalog
+    url: errors/cymetica-com-problem-types.yml
+  - type: DataModel
+    url: data-model/cymetica-com-data-model.yml
+  - type: Sandbox
+    url: sandbox/cymetica-com-sandbox.yml
+  - type: RateLimits
+    url: rate-limits/cymetica-com-rate-limits.yml
+  - type: Plans
+    url: plans/cymetica-com-plans-pricing.yml
+  - type: AsyncAPI
+    url: asyncapi/cymetica-com-websocket-asyncapi.json
+  - type: Webhooks
+    url: asyncapi/cymetica-com-webhooks.yml
+  - type: Lifecycle
+    url: lifecycle/cymetica-com-lifecycle.yml
+  - type: Conformance
+    url: conformance/cymetica-com-conformance.yml
+  - type: SDKs
+    url: packages/cymetica-com-packages.yml
+- aid: cymetica-com:cymetica-com-token-launchpad-on-chain-api
+  name: Cymetica Token Launchpad (on-chain) API
+  description: >-
+    The Token Launchpad (on-chain) API from Cymetica — 11 operation(s) for token launchpad (on-chain).
+  humanURL: https://cymetica.com/api-docs
+  baseURL: https://cymetica.com/api/v1
+  tags:
+  - Token Launchpad (on-chain)
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-token-launchpad-on-chain-api-openapi.yml
+  - type: Documentation
+    url: https://cymetica.com/api-docs
+  - type: APIReference
+    url: https://cymetica.com/api-docs
+  - type: GettingStarted
+    url: https://cymetica.com/getting-started
+  - type: CodeSamples
+    url: https://cymetica.com/examples
+  - type: Conventions
+    url: conventions/cymetica-com-conventions.yml
+  - type: Idempotency
+    url: conventions/cymetica-com-conventions.yml
+  - type: ErrorCatalog
+    url: errors/cymetica-com-problem-types.yml
+  - type: DataModel
+    url: data-model/cymetica-com-data-model.yml
+  - type: Sandbox
+    url: sandbox/cymetica-com-sandbox.yml
+  - type: RateLimits
+    url: rate-limits/cymetica-com-rate-limits.yml
+  - type: Plans
+    url: plans/cymetica-com-plans-pricing.yml
+  - type: AsyncAPI
+    url: asyncapi/cymetica-com-websocket-asyncapi.json
+  - type: Webhooks
+    url: asyncapi/cymetica-com-webhooks.yml
+  - type: Lifecycle
+    url: lifecycle/cymetica-com-lifecycle.yml
+  - type: Conformance
+    url: conformance/cymetica-com-conformance.yml
+  - type: SDKs
+    url: packages/cymetica-com-packages.yml
+- aid: cymetica-com:cymetica-com-withdrawals-api
+  name: Cymetica Withdrawals API
+  description: The withdrawals API from Cymetica — 1 operation(s) for withdrawals.
+  humanURL: https://cymetica.com/api-docs
+  baseURL: https://cymetica.com/api/v1
+  tags:
+  - withdrawals
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-withdrawals-api-openapi.yml
+  - type: Documentation
+    url: https://cymetica.com/api-docs
+  - type: APIReference
+    url: https://cymetica.com/api-docs
+  - type: GettingStarted
+    url: https://cymetica.com/getting-started
+  - type: CodeSamples
+    url: https://cymetica.com/examples
+  - type: Conventions
+    url: conventions/cymetica-com-conventions.yml
+  - type: Idempotency
+    url: conventions/cymetica-com-conventions.yml
+  - type: ErrorCatalog
+    url: errors/cymetica-com-problem-types.yml
+  - type: DataModel
+    url: data-model/cymetica-com-data-model.yml
+  - type: Sandbox
+    url: sandbox/cymetica-com-sandbox.yml
+  - type: RateLimits
+    url: rate-limits/cymetica-com-rate-limits.yml
+  - type: Plans
+    url: plans/cymetica-com-plans-pricing.yml
+  - type: AsyncAPI
+    url: asyncapi/cymetica-com-websocket-asyncapi.json
+  - type: Webhooks
+    url: asyncapi/cymetica-com-webhooks.yml
+  - type: Lifecycle
+    url: lifecycle/cymetica-com-lifecycle.yml
+  - type: Conformance
+    url: conformance/cymetica-com-conformance.yml
+  - type: SDKs
+    url: packages/cymetica-com-packages.yml
 maintainers:
 - FN: Kin Lane
   email: kin@apievangelist.com
 - FN: APIs.json
   email: info@apis.io
 common:
+- type: Overlay
+  url: overlays/cymetica-com-eventtrader-public-api-overlay.yaml
 - type: Website
   url: https://cymetica.com/
 - type: DeveloperPortal
@@ -207,3 +1212,10 @@ x-enrichment:
   status: enriched
   artifacts_added: 43
   pass: local-v3
+x-a2a:
+  verified: true
+  probed: '2026-09-26'
+  url: "https://cymetica.com/.well-known/agent-card.json"
+  grade: "conformant"
+  protocol_version: "0.3.0"
+  control: 404
