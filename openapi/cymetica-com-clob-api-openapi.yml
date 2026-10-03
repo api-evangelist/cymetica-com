@@ -150,15 +150,6 @@ components:
       - msg
       - type
       title: ValidationError
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
     src__api__routes__clob__PlaceOrderRequest:
       properties:
         side:
@@ -264,6 +255,15 @@ components:
       type: object
       title: AmendOrderRequest
       description: Amend a resting order's price and/or quantity atomically.
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

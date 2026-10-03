@@ -682,44 +682,131 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
-    ValidationError:
+    IdeaConstituent:
       properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
+        symbol:
           type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
+          maxLength: 32
+          minLength: 1
+          title: Symbol
+        coingecko_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Coingecko Id
+          description: CoinGecko id keyed into historical_prices, for a CRYPTO leg. If omitted we best-effort resolve it from the symbol; unresolvable symbols are returned in unresolved_symbols and excluded.
+        asset_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Asset Type
+          description: '''stock'' or ''crypto''. Tells the resolver which price table and catalog to use, and prevents a ticker that exists as BOTH an equity and a crypto token (e.g. REAL = The RealReal Inc. stock, also the symbol of an unrelated ''RealLink'' crypto token) from being resolved to the wrong instrument. If omitted, we best-effort detect it from event_card_assets / the catalogs; pass it explicitly whenever the symbol is a known collision.'
+        weight:
+          type: number
+          minimum: 0.0
+          title: Weight
+          description: Relative basket weight (renormalized). 0 is accepted and excluded.
       type: object
       required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-    HistoricalAnalogsRequest:
+      - symbol
+      - weight
+      title: IdeaConstituent
+      description: One leg of an ad-hoc basket idea.
+    ShortRequest:
       properties:
-        window_days:
+        margin_usdc:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Margin Usdc
+          description: USDC margin for the perp position
+        leverage:
           type: integer
-          title: Window Days
-          default: 30
-        limit:
-          type: integer
-          maximum: 20.0
+          maximum: 10.0
           minimum: 1.0
-          title: Limit
-          default: 10
+          title: Leverage
+          description: Leverage (1-10x)
+          default: 1
+        side:
+          type: string
+          title: Side
+          description: '''long'' or ''short'''
+          default: short
+        paper:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Paper
+          description: 'Per-trade paper control. On the spot-bear path (cards whose short_execution is ''spot_bear'', or execution=''broker'') it is honoured exactly like BuyRequest.paper (omitted → inherits the account''s simulation_mode). On the perp path (short_execution ''perp'') there is NO paper book: paper=true is REFUSED with 400 PERP_NO_PAPER_BOOK, and an account in simulation_mode that omits it is refused with 400 ACCOUNT_IN_PAPER_MODE — a paper request is never downgraded to a real-ledger position. Send paper=false to open a real perp on purpose. Read short_execution / perp_symbol on GET /api/v1/event-cards/{id} to know which path a card takes before sending.'
+        execution:
+          type: string
+          title: Execution
+          description: '''auto'' (default): perp when the card has an EVCDX token, spot bear otherwise. ''broker'': force the spot-bear path, which SELLS SHORT the card''s equity legs in your OWN connected brokerage account (requires a verified live stock-broker connection, an all-stock basket, and open US markets).'
+          default: auto
       type: object
-      title: HistoricalAnalogsRequest
-      description: 'Backtest how similar PAST events performed over the window FOLLOWING each
+      required:
+      - margin_usdc
+      title: ShortRequest
+    SellRequest:
+      properties:
+        position_id:
+          type: string
+          title: Position Id
+        fraction:
+          type: number
+          maximum: 1.0
+          exclusiveMinimum: 0.0
+          title: Fraction
+          default: 1.0
+        paper:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Paper
+          description: Per-trade paper override; see BuyRequest.paper
+      type: object
+      required:
+      - position_id
+      title: SellRequest
+    BuyRequest:
+      properties:
+        amount_usdc:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Amount Usdc
+          description: USDC notional to go bull with
+        paper:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Paper
+          description: Paper-trading override. True → paper (no real USDC moves, synthetic fills at registry price, position.is_paper=True). False → live (requires platform-wide live gate). None (default) → use user.simulation_mode if set, otherwise fall through to the platform-wide EVENT_CARDS_TRADING_ENABLED gate (currently paper-mode by default).
+        asset_class:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Asset Class
+          description: 'Active sub-basket: ''crypto'' or ''stock''. None = whole basket. Stock legs are paper-only unless the user has a verified live stock broker connected (then they route to that broker).'
+      type: object
+      required:
+      - amount_usdc
+      title: BuyRequest
+    PaperTradeBasketRequest:
+      properties:
+        usd_notional:
+          type: number
+          maximum: 1000000.0
+          exclusiveMinimum: 0.0
+          title: Usd Notional
+          default: 1000.0
+        side:
+          type: string
+          title: Side
+          default: buy
+      type: object
+      title: PaperTradeBasketRequest
+      description: 'Paper-trade a saved card''s whole basket — open SIMULATED positions in the
 
-        event — read-only, no money, no card creation.'
+        card''s constituents, weighted, at live spot. No real money moves.'
     BacktestIdeaRequest:
       properties:
         constituents:
@@ -758,97 +845,44 @@ components:
       description: 'Backtest an arbitrary basket the user defines — an ''event card idea'' —
 
         without creating a card or moving any money.'
-    BuyRequest:
+    ValidationError:
       properties:
-        amount_usdc:
-          type: number
-          exclusiveMinimum: 0.0
-          title: Amount Usdc
-          description: USDC notional to go bull with
-        paper:
-          anyOf:
-          - type: boolean
-          - type: 'null'
-          title: Paper
-          description: Paper-trading override. True → paper (no real USDC moves, synthetic fills at registry price, position.is_paper=True). False → live (requires platform-wide live gate). None (default) → use user.simulation_mode if set, otherwise fall through to the platform-wide EVENT_CARDS_TRADING_ENABLED gate (currently paper-mode by default).
-        asset_class:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Asset Class
-          description: 'Active sub-basket: ''crypto'' or ''stock''. None = whole basket. Stock legs are paper-only unless the user has a verified live stock broker connected (then they route to that broker).'
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
       type: object
       required:
-      - amount_usdc
-      title: BuyRequest
-    IdeaConstituent:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    HistoricalAnalogsRequest:
       properties:
-        symbol:
-          type: string
-          maxLength: 32
-          minLength: 1
-          title: Symbol
-        coingecko_id:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Coingecko Id
-          description: CoinGecko id keyed into historical_prices, for a CRYPTO leg. If omitted we best-effort resolve it from the symbol; unresolvable symbols are returned in unresolved_symbols and excluded.
-        asset_type:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Asset Type
-          description: '''stock'' or ''crypto''. Tells the resolver which price table and catalog to use, and prevents a ticker that exists as BOTH an equity and a crypto token (e.g. REAL = The RealReal Inc. stock, also the symbol of an unrelated ''RealLink'' crypto token) from being resolved to the wrong instrument. If omitted, we best-effort detect it from event_card_assets / the catalogs; pass it explicitly whenever the symbol is a known collision.'
-        weight:
-          type: number
-          minimum: 0.0
-          title: Weight
-          description: Relative basket weight (renormalized). 0 is accepted and excluded.
+        window_days:
+          type: integer
+          title: Window Days
+          default: 30
+        limit:
+          type: integer
+          maximum: 20.0
+          minimum: 1.0
+          title: Limit
+          default: 10
       type: object
-      required:
-      - symbol
-      - weight
-      title: IdeaConstituent
-      description: One leg of an ad-hoc basket idea.
-    SellRequest:
-      properties:
-        position_id:
-          type: string
-          title: Position Id
-        fraction:
-          type: number
-          maximum: 1.0
-          exclusiveMinimum: 0.0
-          title: Fraction
-          default: 1.0
-        paper:
-          anyOf:
-          - type: boolean
-          - type: 'null'
-          title: Paper
-          description: Per-trade paper override; see BuyRequest.paper
-      type: object
-      required:
-      - position_id
-      title: SellRequest
-    PaperTradeBasketRequest:
-      properties:
-        usd_notional:
-          type: number
-          maximum: 1000000.0
-          exclusiveMinimum: 0.0
-          title: Usd Notional
-          default: 1000.0
-        side:
-          type: string
-          title: Side
-          default: buy
-      type: object
-      title: PaperTradeBasketRequest
-      description: 'Paper-trade a saved card''s whole basket — open SIMULATED positions in the
+      title: HistoricalAnalogsRequest
+      description: 'Backtest how similar PAST events performed over the window FOLLOWING each
 
-        card''s constituents, weighted, at live spot. No real money moves.'
+        event — read-only, no money, no card creation.'
     HTTPValidationError:
       properties:
         detail:
@@ -858,40 +892,6 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
-    ShortRequest:
-      properties:
-        margin_usdc:
-          type: number
-          exclusiveMinimum: 0.0
-          title: Margin Usdc
-          description: USDC margin for the perp position
-        leverage:
-          type: integer
-          maximum: 10.0
-          minimum: 1.0
-          title: Leverage
-          description: Leverage (1-10x)
-          default: 1
-        side:
-          type: string
-          title: Side
-          description: '''long'' or ''short'''
-          default: short
-        paper:
-          anyOf:
-          - type: boolean
-          - type: 'null'
-          title: Paper
-          description: 'Per-trade paper control. On the spot-bear path (cards whose short_execution is ''spot_bear'', or execution=''broker'') it is honoured exactly like BuyRequest.paper (omitted → inherits the account''s simulation_mode). On the perp path (short_execution ''perp'') there is NO paper book: paper=true is REFUSED with 400 PERP_NO_PAPER_BOOK, and an account in simulation_mode that omits it is refused with 400 ACCOUNT_IN_PAPER_MODE — a paper request is never downgraded to a real-ledger position. Send paper=false to open a real perp on purpose. Read short_execution / perp_symbol on GET /api/v1/event-cards/{id} to know which path a card takes before sending.'
-        execution:
-          type: string
-          title: Execution
-          description: '''auto'' (default): perp when the card has an EVCDX token, spot bear otherwise. ''broker'': force the spot-bear path, which SELLS SHORT the card''s equity legs in your OWN connected brokerage account (requires a verified live stock-broker connection, an all-stock basket, and open US markets).'
-          default: auto
-      type: object
-      required:
-      - margin_usdc
-      title: ShortRequest
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

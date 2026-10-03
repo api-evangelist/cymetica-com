@@ -219,15 +219,24 @@ components:
       - msg
       - type
       title: ValidationError
-    HTTPValidationError:
+    BacktestRequest:
       properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
+        aib_symbol:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Aib Symbol
+        theme:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Theme
+        period_days:
+          type: integer
+          title: Period Days
+          default: 365
       type: object
-      title: HTTPValidationError
+      title: BacktestRequest
     BuildRequest:
       properties:
         theme:
@@ -270,24 +279,15 @@ components:
       required:
       - theme
       title: BuildRequest
-    BacktestRequest:
+    HTTPValidationError:
       properties:
-        aib_symbol:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Aib Symbol
-        theme:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Theme
-        period_days:
-          type: integer
-          title: Period Days
-          default: 365
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
       type: object
-      title: BacktestRequest
+      title: HTTPValidationError
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

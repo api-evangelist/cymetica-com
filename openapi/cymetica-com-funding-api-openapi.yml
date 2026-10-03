@@ -66,6 +66,62 @@ paths:
       - ApiKeyAuth: []
 components:
   schemas:
+    DepositAddressInfo:
+      properties:
+        chain_id:
+          type: integer
+          title: Chain Id
+        chain_name:
+          type: string
+          title: Chain Name
+        address:
+          type: string
+          title: Address
+        usdt_contract:
+          type: string
+          title: Usdt Contract
+        usdc_contract:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Usdc Contract
+        is_solana:
+          type: boolean
+          title: Is Solana
+          default: false
+      type: object
+      required:
+      - chain_id
+      - chain_name
+      - address
+      - usdt_contract
+      title: DepositAddressInfo
+      description: Deposit address for a specific chain.
+    DepositAddressesResponse:
+      properties:
+        user_id:
+          type: integer
+          title: User Id
+        addresses:
+          items:
+            $ref: '#/components/schemas/DepositAddressInfo'
+          type: array
+          title: Addresses
+        instructions:
+          type: string
+          title: Instructions
+        swarm_wallet_address:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Swarm Wallet Address
+      type: object
+      required:
+      - user_id
+      - addresses
+      - instructions
+      title: DepositAddressesResponse
+      description: All deposit addresses for a user.
     SwarmWalletResponse:
       properties:
         address:
@@ -103,62 +159,6 @@ components:
       - address
       title: SwarmWalletResponse
       description: Response schema for user's personal swarm wallet.
-    DepositAddressesResponse:
-      properties:
-        user_id:
-          type: integer
-          title: User Id
-        addresses:
-          items:
-            $ref: '#/components/schemas/DepositAddressInfo'
-          type: array
-          title: Addresses
-        instructions:
-          type: string
-          title: Instructions
-        swarm_wallet_address:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Swarm Wallet Address
-      type: object
-      required:
-      - user_id
-      - addresses
-      - instructions
-      title: DepositAddressesResponse
-      description: All deposit addresses for a user.
-    DepositAddressInfo:
-      properties:
-        chain_id:
-          type: integer
-          title: Chain Id
-        chain_name:
-          type: string
-          title: Chain Name
-        address:
-          type: string
-          title: Address
-        usdt_contract:
-          type: string
-          title: Usdt Contract
-        usdc_contract:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Usdc Contract
-        is_solana:
-          type: boolean
-          title: Is Solana
-          default: false
-      type: object
-      required:
-      - chain_id
-      - chain_name
-      - address
-      - usdt_contract
-      title: DepositAddressInfo
-      description: Deposit address for a specific chain.
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

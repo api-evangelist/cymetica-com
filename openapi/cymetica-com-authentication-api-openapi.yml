@@ -168,131 +168,6 @@ components:
       - user
       title: TokenResponse
       description: Token response schema.
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-    UserResponse:
-      properties:
-        id:
-          type: integer
-          title: Id
-        email:
-          type: string
-          title: Email
-        username:
-          type: string
-          title: Username
-        full_name:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Full Name
-        wallet_address:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Wallet Address
-        swarm_wallet_address:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Swarm Wallet Address
-        avatar_url:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Avatar Url
-        bio:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Bio
-        nexus_instructions:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Nexus Instructions
-        location:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Location
-        website:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Website
-        social_profiles:
-          anyOf:
-          - additionalProperties:
-              type: string
-            type: object
-          - type: 'null'
-          title: Social Profiles
-        auth_provider:
-          type: string
-          title: Auth Provider
-          default: local
-        role:
-          type: string
-          title: Role
-        is_active:
-          type: boolean
-          title: Is Active
-        is_verified:
-          type: boolean
-          title: Is Verified
-        total_trades:
-          type: integer
-          title: Total Trades
-        total_volume:
-          type: integer
-          title: Total Volume
-        created_at:
-          type: string
-          format: date-time
-          title: Created At
-        last_login:
-          anyOf:
-          - type: string
-            format: date-time
-          - type: 'null'
-          title: Last Login
-      type: object
-      required:
-      - id
-      - email
-      - username
-      - full_name
-      - avatar_url
-      - bio
-      - role
-      - is_active
-      - is_verified
-      - total_trades
-      - total_volume
-      - created_at
-      - last_login
-      title: UserResponse
-      description: User response schema.
     UserRegister:
       properties:
         email:
@@ -451,6 +326,131 @@ components:
       - password
       title: APIKeyBootstrapRequest
       description: Request to login and generate an API key in one call.
+    UserResponse:
+      properties:
+        id:
+          type: integer
+          title: Id
+        email:
+          type: string
+          title: Email
+        username:
+          type: string
+          title: Username
+        full_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Full Name
+        wallet_address:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Wallet Address
+        swarm_wallet_address:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Swarm Wallet Address
+        avatar_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Avatar Url
+        bio:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Bio
+        nexus_instructions:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Nexus Instructions
+        location:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Location
+        website:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Website
+        social_profiles:
+          anyOf:
+          - additionalProperties:
+              type: string
+            type: object
+          - type: 'null'
+          title: Social Profiles
+        auth_provider:
+          type: string
+          title: Auth Provider
+          default: local
+        role:
+          type: string
+          title: Role
+        is_active:
+          type: boolean
+          title: Is Active
+        is_verified:
+          type: boolean
+          title: Is Verified
+        total_trades:
+          type: integer
+          title: Total Trades
+        total_volume:
+          type: integer
+          title: Total Volume
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        last_login:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Last Login
+      type: object
+      required:
+      - id
+      - email
+      - username
+      - full_name
+      - avatar_url
+      - bio
+      - role
+      - is_active
+      - is_verified
+      - total_trades
+      - total_volume
+      - created_at
+      - last_login
+      title: UserResponse
+      description: User response schema.
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
     HTTPValidationError:
       properties:
         detail:

@@ -322,50 +322,55 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
-    AgentFundRequest:
+    AgentRegistrationRequest:
       properties:
-        amount:
+        name:
+          type: string
+          maxLength: 100
+          minLength: 3
+          title: Name
+        description:
           anyOf:
-          - type: number
-            exclusiveMinimum: 0.0
           - type: string
-          title: Amount
-          description: Amount to move (USDC)
-        currency:
+            maxLength: 1000
+          - type: 'null'
+          title: Description
+        contact_email:
           type: string
-          title: Currency
-          description: Only USDC is supported
-          default: USDC
-        direction:
-          type: string
-          title: Direction
-          description: 'to_agent: owner -> agent spend account; to_owner: agent -> owner'
-          default: to_agent
-      type: object
-      required:
-      - amount
-      title: AgentFundRequest
-    ValidationError:
-      properties:
-        loc:
+          title: Contact Email
+        capabilities:
           items:
-            anyOf:
-            - type: string
-            - type: integer
+            type: string
           type: array
-          title: Location
-        msg:
+          title: Capabilities
+        intended_use:
           type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
+          maxLength: 2000
+          minLength: 10
+          title: Intended Use
+        organization:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Organization
+        website:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Website
+        role:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Role
+          description: 'Agent role: market_maker, trader, liquidity_provider, arbitrageur, analyst, bot_operator, other'
       type: object
       required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
+      - name
+      - contact_email
+      - intended_use
+      title: AgentRegistrationRequest
+      description: Request to register a new MCP agent.
     ToolInvokeRequest:
       properties:
         params:
@@ -480,6 +485,50 @@ components:
         Extra keys (role guidance, welcome copy) are allowed so the documented shape
 
         is a floor, not a ceiling.'
+    AgentFundRequest:
+      properties:
+        amount:
+          anyOf:
+          - type: number
+            exclusiveMinimum: 0.0
+          - type: string
+          title: Amount
+          description: Amount to move (USDC)
+        currency:
+          type: string
+          title: Currency
+          description: Only USDC is supported
+          default: USDC
+        direction:
+          type: string
+          title: Direction
+          description: 'to_agent: owner -> agent spend account; to_owner: agent -> owner'
+          default: to_agent
+      type: object
+      required:
+      - amount
+      title: AgentFundRequest
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
     HTTPValidationError:
       properties:
         detail:
@@ -489,55 +538,6 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
-    AgentRegistrationRequest:
-      properties:
-        name:
-          type: string
-          maxLength: 100
-          minLength: 3
-          title: Name
-        description:
-          anyOf:
-          - type: string
-            maxLength: 1000
-          - type: 'null'
-          title: Description
-        contact_email:
-          type: string
-          title: Contact Email
-        capabilities:
-          items:
-            type: string
-          type: array
-          title: Capabilities
-        intended_use:
-          type: string
-          maxLength: 2000
-          minLength: 10
-          title: Intended Use
-        organization:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Organization
-        website:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Website
-        role:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Role
-          description: 'Agent role: market_maker, trader, liquidity_provider, arbitrageur, analyst, bot_operator, other'
-      type: object
-      required:
-      - name
-      - contact_email
-      - intended_use
-      title: AgentRegistrationRequest
-      description: Request to register a new MCP agent.
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

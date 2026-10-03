@@ -30,9 +30,7 @@
     "cymetica-com-rst-crypto-buy-api-openapi.yml",
     "cymetica-com-withdrawals-api-openapi.yml"
   ],
-  "archived": [
-    "deleted 1 superseded output(s) from the previous generation"
-  ],
+  "archived": [],
   "errors": [],
   "warnings": [],
   "notes": [
@@ -63,10 +61,33 @@
     "cymetica-com-eventtrader-public-api-openapi-original.json: declared missing tag: rst",
     "cymetica-com-eventtrader-public-api-openapi-original.json: declared missing tag: rst-crypto-buy",
     "cymetica-com-eventtrader-public-api-openapi-original.json: declared missing tag: withdrawals",
-    "superseded outputs removed: cymetica-com-eventtrader-public-api-openapi.yml",
-    "apis.yml register: written (+25 apis, 26 total)"
+    "apis.yml register: already-registered"
   ],
   "skipped": [
-    "cymetica-com-eventtrader-public-api-openapi.yml: previously refined output, superseded by openapi/_original/"
+    "cymetica-com-api-keys-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "cymetica-com-asset-universe-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "cymetica-com-authentication-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "cymetica-com-backtest-labs-api-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "cymetica-com-clob-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "cymetica-com-cloned-bots-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "cymetica-com-clones-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "cymetica-com-crypto-outlook-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "cymetica-com-event-cards-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "cymetica-com-exchange-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "cymetica-com-funder-rewards-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "cymetica-com-funding-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "cymetica-com-macromarket-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "cymetica-com-markets-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "cymetica-com-mcp-public-interface-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "cymetica-com-oauth-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "cymetica-com-portfolio-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "cymetica-com-posted-links-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "cymetica-com-research-backtest-api-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "cymetica-com-robinhood-testnet-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "cymetica-com-rst-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "cymetica-com-rst-crypto-buy-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "cymetica-com-swap-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "cymetica-com-token-launchpad-on-chain-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "cymetica-com-withdrawals-api-openapi.yml: previously refined output, superseded by openapi/_original/"
   ]
 }

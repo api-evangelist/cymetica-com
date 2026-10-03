@@ -573,6 +573,58 @@ components:
       - msg
       - type
       title: ValidationError
+    CrossLaunchRecordRequest:
+      properties:
+        platform:
+          type: string
+          maxLength: 32
+          title: Platform
+          description: Launcher slug, e.g. 'arcpad', 'lift', 'radian' or 'warp'
+        chain_id:
+          type: integer
+          title: Chain Id
+          description: Chain the launch happened on (5042002 / 5042)
+        tx_hash:
+          anyOf:
+          - type: string
+            pattern: ^0x[0-9a-fA-F]{64}$
+          - type: 'null'
+          title: Tx Hash
+          description: 'Factory launches we encoded (ArcPad, lift.fun, Radian): the launch tx hash — verified by receipt'
+        token_address:
+          anyOf:
+          - type: string
+            pattern: ^0x[0-9a-fA-F]{40}$
+          - type: 'null'
+          title: Token Address
+          description: 'Launches made on a platform''s OWN site (Warp, Arcodian, Archemist, Long.supply, …): the token address it minted — verified on-chain (contract + symbol matches `symbol`)'
+        creator_address:
+          type: string
+          pattern: ^0x[0-9a-fA-F]{40}$
+          title: Creator Address
+        source_token_address:
+          anyOf:
+          - type: string
+            pattern: ^0x[0-9a-fA-F]{40}$
+          - type: 'null'
+          title: Source Token Address
+          description: Your EventTrader token on the same chain
+        name:
+          type: string
+          maxLength: 100
+          title: Name
+          default: ''
+        symbol:
+          type: string
+          maxLength: 20
+          title: Symbol
+          default: ''
+      type: object
+      required:
+      - platform
+      - chain_id
+      - creator_address
+      title: CrossLaunchRecordRequest
     LaunchPrepareRequest:
       properties:
         name:
@@ -689,58 +741,6 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
-    CrossLaunchRecordRequest:
-      properties:
-        platform:
-          type: string
-          maxLength: 32
-          title: Platform
-          description: Launcher slug, e.g. 'arcpad', 'lift', 'radian' or 'warp'
-        chain_id:
-          type: integer
-          title: Chain Id
-          description: Chain the launch happened on (5042002 / 5042)
-        tx_hash:
-          anyOf:
-          - type: string
-            pattern: ^0x[0-9a-fA-F]{64}$
-          - type: 'null'
-          title: Tx Hash
-          description: 'Factory launches we encoded (ArcPad, lift.fun, Radian): the launch tx hash — verified by receipt'
-        token_address:
-          anyOf:
-          - type: string
-            pattern: ^0x[0-9a-fA-F]{40}$
-          - type: 'null'
-          title: Token Address
-          description: 'Launches made on a platform''s OWN site (Warp, Arcodian, Archemist, Long.supply, …): the token address it minted — verified on-chain (contract + symbol matches `symbol`)'
-        creator_address:
-          type: string
-          pattern: ^0x[0-9a-fA-F]{40}$
-          title: Creator Address
-        source_token_address:
-          anyOf:
-          - type: string
-            pattern: ^0x[0-9a-fA-F]{40}$
-          - type: 'null'
-          title: Source Token Address
-          description: Your EventTrader token on the same chain
-        name:
-          type: string
-          maxLength: 100
-          title: Name
-          default: ''
-        symbol:
-          type: string
-          maxLength: 20
-          title: Symbol
-          default: ''
-      type: object
-      required:
-      - platform
-      - chain_id
-      - creator_address
-      title: CrossLaunchRecordRequest
   securitySchemes:
     ApiKeyAuth:
       type: apiKey
