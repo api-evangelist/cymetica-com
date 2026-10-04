@@ -89,66 +89,36 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
-    PositionItem:
+    ValidationError:
       properties:
-        market_title:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Market Title
-        asset_symbol:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Asset Symbol
-        amount:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Amount
-        pnl:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Pnl
-        status:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Status
-        tx_hash:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Tx Hash
-        created_at:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Created At
-      type: object
-      title: PositionItem
-      description: Single position entry.
-    PositionsResponse:
-      properties:
-        positions:
+        loc:
           items:
-            $ref: '#/components/schemas/PositionItem'
+            anyOf:
+            - type: string
+            - type: integer
           type: array
-          title: Positions
-        total:
-          type: integer
-          title: Total
-        has_more:
-          type: boolean
-          title: Has More
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
       type: object
       required:
-      - positions
-      - total
-      - has_more
-      title: PositionsResponse
-      description: List of user positions.
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
     PortfolioSummaryResponse:
       properties:
         balance_usdc:
@@ -223,36 +193,66 @@ components:
       - total_volume
       title: PortfolioSummaryResponse
       description: Aggregated portfolio P&L summary.
-    ValidationError:
+    PositionItem:
       properties:
-        loc:
+        market_title:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Market Title
+        asset_symbol:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Asset Symbol
+        amount:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Amount
+        pnl:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Pnl
+        status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+        tx_hash:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Tx Hash
+        created_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Created At
+      type: object
+      title: PositionItem
+      description: Single position entry.
+    PositionsResponse:
+      properties:
+        positions:
           items:
-            anyOf:
-            - type: string
-            - type: integer
+            $ref: '#/components/schemas/PositionItem'
           type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
+          title: Positions
+        total:
+          type: integer
+          title: Total
+        has_more:
+          type: boolean
+          title: Has More
       type: object
       required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
+      - positions
+      - total
+      - has_more
+      title: PositionsResponse
+      description: List of user positions.
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

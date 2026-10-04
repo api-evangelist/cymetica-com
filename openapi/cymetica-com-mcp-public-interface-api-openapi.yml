@@ -322,6 +322,36 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
     AgentRegistrationRequest:
       properties:
         name:
@@ -371,14 +401,29 @@ components:
       - intended_use
       title: AgentRegistrationRequest
       description: Request to register a new MCP agent.
-    ToolInvokeRequest:
+    AgentFundRequest:
       properties:
-        params:
-          type: object
-          title: Params
+        amount:
+          anyOf:
+          - type: number
+            exclusiveMinimum: 0.0
+          - type: string
+          title: Amount
+          description: Amount to move (USDC)
+        currency:
+          type: string
+          title: Currency
+          description: Only USDC is supported
+          default: USDC
+        direction:
+          type: string
+          title: Direction
+          description: 'to_agent: owner -> agent spend account; to_owner: agent -> owner'
+          default: to_agent
       type: object
-      title: ToolInvokeRequest
-      description: Request to invoke a tool.
+      required:
+      - amount
+      title: AgentFundRequest
     AgentRegistrationResponse:
       properties:
         agent_id:
@@ -485,59 +530,14 @@ components:
         Extra keys (role guidance, welcome copy) are allowed so the documented shape
 
         is a floor, not a ceiling.'
-    AgentFundRequest:
+    ToolInvokeRequest:
       properties:
-        amount:
-          anyOf:
-          - type: number
-            exclusiveMinimum: 0.0
-          - type: string
-          title: Amount
-          description: Amount to move (USDC)
-        currency:
-          type: string
-          title: Currency
-          description: Only USDC is supported
-          default: USDC
-        direction:
-          type: string
-          title: Direction
-          description: 'to_agent: owner -> agent spend account; to_owner: agent -> owner'
-          default: to_agent
+        params:
+          type: object
+          title: Params
       type: object
-      required:
-      - amount
-      title: AgentFundRequest
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
+      title: ToolInvokeRequest
+      description: Request to invoke a tool.
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

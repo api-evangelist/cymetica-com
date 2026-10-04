@@ -652,30 +652,36 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
-    WithdrawBotRequest:
+    ValidationError:
       properties:
-        amount:
-          type: number
-          exclusiveMinimum: 0.0
-          title: Amount
-          description: Amount in USDC to withdraw from the bot
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
       type: object
       required:
-      - amount
-      title: WithdrawBotRequest
-      description: Request to withdraw funds from a clone bot back to user's balance.
-    GoLiveRequest:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    HTTPValidationError:
       properties:
-        custom_name:
-          anyOf:
-          - type: string
-            maxLength: 100
-          - type: 'null'
-          title: Custom Name
-          description: Optional name for the live bot
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
       type: object
-      title: GoLiveRequest
-      description: Request to create a live bot from a paper bot's settings.
+      title: HTTPValidationError
     CloneBotResponse:
       properties:
         id:
@@ -746,53 +752,6 @@ components:
       - created_at
       title: CloneBotResponse
       description: Response after cloning a bot.
-    FundBotRequest:
-      properties:
-        amount:
-          type: number
-          exclusiveMinimum: 0.0
-          title: Amount
-          description: Amount in USDC to transfer to the bot
-      type: object
-      required:
-      - amount
-      title: FundBotRequest
-      description: Request to fund a clone bot from user's balance.
-    CloneBotRequest:
-      properties:
-        source_type:
-          type: string
-          title: Source Type
-          description: 'Type: ''wta_species'' or ''perpetual_agent'''
-        source_id:
-          type: string
-          title: Source Id
-          description: ID of the species/agent to clone
-        custom_name:
-          anyOf:
-          - type: string
-            maxLength: 100
-          - type: 'null'
-          title: Custom Name
-          description: Optional custom name
-        is_paper:
-          anyOf:
-          - type: boolean
-          - type: 'null'
-          title: Is Paper
-          description: Explicit paper/live mode. If None, inherits user's simulation_mode.
-        paper:
-          anyOf:
-          - type: boolean
-          - type: 'null'
-          title: Paper
-          description: Same as is_paper (canonical name shared with the event-card endpoints). true = paper clone, false = live clone, omitted = inherits the account's simulation_mode.
-      type: object
-      required:
-      - source_type
-      - source_id
-      title: CloneBotRequest
-      description: Request to clone a bot.
     UpdateSettingsRequest:
       properties:
         stop_loss_pct:
@@ -999,36 +958,77 @@ components:
       type: object
       title: UpdateSettingsRequest
       description: Request to update bot settings.
-    ValidationError:
+    WithdrawBotRequest:
       properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
+        amount:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Amount
+          description: Amount in USDC to withdraw from the bot
       type: object
       required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-    HTTPValidationError:
+      - amount
+      title: WithdrawBotRequest
+      description: Request to withdraw funds from a clone bot back to user's balance.
+    CloneBotRequest:
       properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
+        source_type:
+          type: string
+          title: Source Type
+          description: 'Type: ''wta_species'' or ''perpetual_agent'''
+        source_id:
+          type: string
+          title: Source Id
+          description: ID of the species/agent to clone
+        custom_name:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Custom Name
+          description: Optional custom name
+        is_paper:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Paper
+          description: Explicit paper/live mode. If None, inherits user's simulation_mode.
+        paper:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Paper
+          description: Same as is_paper (canonical name shared with the event-card endpoints). true = paper clone, false = live clone, omitted = inherits the account's simulation_mode.
       type: object
-      title: HTTPValidationError
+      required:
+      - source_type
+      - source_id
+      title: CloneBotRequest
+      description: Request to clone a bot.
+    FundBotRequest:
+      properties:
+        amount:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Amount
+          description: Amount in USDC to transfer to the bot
+      type: object
+      required:
+      - amount
+      title: FundBotRequest
+      description: Request to fund a clone bot from user's balance.
+    GoLiveRequest:
+      properties:
+        custom_name:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Custom Name
+          description: Optional name for the live bot
+      type: object
+      title: GoLiveRequest
+      description: Request to create a live bot from a paper bot's settings.
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

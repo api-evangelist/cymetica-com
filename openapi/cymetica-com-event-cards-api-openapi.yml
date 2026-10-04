@@ -682,6 +682,152 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    PaperTradeBasketRequest:
+      properties:
+        usd_notional:
+          type: number
+          maximum: 1000000.0
+          exclusiveMinimum: 0.0
+          title: Usd Notional
+          default: 1000.0
+        side:
+          type: string
+          title: Side
+          default: buy
+      type: object
+      title: PaperTradeBasketRequest
+      description: 'Paper-trade a saved card''s whole basket — open SIMULATED positions in the
+
+        card''s constituents, weighted, at live spot. No real money moves.'
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    HistoricalAnalogsRequest:
+      properties:
+        window_days:
+          type: integer
+          title: Window Days
+          default: 30
+        limit:
+          type: integer
+          maximum: 20.0
+          minimum: 1.0
+          title: Limit
+          default: 10
+      type: object
+      title: HistoricalAnalogsRequest
+      description: 'Backtest how similar PAST events performed over the window FOLLOWING each
+
+        event — read-only, no money, no card creation.'
+    BacktestIdeaRequest:
+      properties:
+        constituents:
+          items:
+            $ref: '#/components/schemas/IdeaConstituent'
+          type: array
+          maxItems: 20
+          minItems: 1
+          title: Constituents
+        period_days:
+          type: integer
+          title: Period Days
+          default: 30
+        starting_capital:
+          type: number
+          maximum: 1000000.0
+          exclusiveMinimum: 0.0
+          title: Starting Capital
+          default: 1000.0
+        fee_rate:
+          type: number
+          maximum: 0.1
+          minimum: 0.0
+          title: Fee Rate
+          default: 0.0
+        slippage_bps:
+          type: number
+          maximum: 500.0
+          minimum: 0.0
+          title: Slippage Bps
+          default: 0.0
+      type: object
+      required:
+      - constituents
+      title: BacktestIdeaRequest
+      description: 'Backtest an arbitrary basket the user defines — an ''event card idea'' —
+
+        without creating a card or moving any money.'
+    SellRequest:
+      properties:
+        position_id:
+          type: string
+          title: Position Id
+        fraction:
+          type: number
+          maximum: 1.0
+          exclusiveMinimum: 0.0
+          title: Fraction
+          default: 1.0
+        paper:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Paper
+          description: Per-trade paper override; see BuyRequest.paper
+      type: object
+      required:
+      - position_id
+      title: SellRequest
+    BuyRequest:
+      properties:
+        amount_usdc:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Amount Usdc
+          description: USDC notional to go bull with
+        paper:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Paper
+          description: Paper-trading override. True → paper (no real USDC moves, synthetic fills at registry price, position.is_paper=True). False → live (requires platform-wide live gate). None (default) → use user.simulation_mode if set, otherwise fall through to the platform-wide EVENT_CARDS_TRADING_ENABLED gate (currently paper-mode by default).
+        asset_class:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Asset Class
+          description: 'Active sub-basket: ''crypto'' or ''stock''. None = whole basket. Stock legs are paper-only unless the user has a verified live stock broker connected (then they route to that broker).'
+      type: object
+      required:
+      - amount_usdc
+      title: BuyRequest
     IdeaConstituent:
       properties:
         symbol:
@@ -746,152 +892,6 @@ components:
       required:
       - margin_usdc
       title: ShortRequest
-    SellRequest:
-      properties:
-        position_id:
-          type: string
-          title: Position Id
-        fraction:
-          type: number
-          maximum: 1.0
-          exclusiveMinimum: 0.0
-          title: Fraction
-          default: 1.0
-        paper:
-          anyOf:
-          - type: boolean
-          - type: 'null'
-          title: Paper
-          description: Per-trade paper override; see BuyRequest.paper
-      type: object
-      required:
-      - position_id
-      title: SellRequest
-    BuyRequest:
-      properties:
-        amount_usdc:
-          type: number
-          exclusiveMinimum: 0.0
-          title: Amount Usdc
-          description: USDC notional to go bull with
-        paper:
-          anyOf:
-          - type: boolean
-          - type: 'null'
-          title: Paper
-          description: Paper-trading override. True → paper (no real USDC moves, synthetic fills at registry price, position.is_paper=True). False → live (requires platform-wide live gate). None (default) → use user.simulation_mode if set, otherwise fall through to the platform-wide EVENT_CARDS_TRADING_ENABLED gate (currently paper-mode by default).
-        asset_class:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Asset Class
-          description: 'Active sub-basket: ''crypto'' or ''stock''. None = whole basket. Stock legs are paper-only unless the user has a verified live stock broker connected (then they route to that broker).'
-      type: object
-      required:
-      - amount_usdc
-      title: BuyRequest
-    PaperTradeBasketRequest:
-      properties:
-        usd_notional:
-          type: number
-          maximum: 1000000.0
-          exclusiveMinimum: 0.0
-          title: Usd Notional
-          default: 1000.0
-        side:
-          type: string
-          title: Side
-          default: buy
-      type: object
-      title: PaperTradeBasketRequest
-      description: 'Paper-trade a saved card''s whole basket — open SIMULATED positions in the
-
-        card''s constituents, weighted, at live spot. No real money moves.'
-    BacktestIdeaRequest:
-      properties:
-        constituents:
-          items:
-            $ref: '#/components/schemas/IdeaConstituent'
-          type: array
-          maxItems: 20
-          minItems: 1
-          title: Constituents
-        period_days:
-          type: integer
-          title: Period Days
-          default: 30
-        starting_capital:
-          type: number
-          maximum: 1000000.0
-          exclusiveMinimum: 0.0
-          title: Starting Capital
-          default: 1000.0
-        fee_rate:
-          type: number
-          maximum: 0.1
-          minimum: 0.0
-          title: Fee Rate
-          default: 0.0
-        slippage_bps:
-          type: number
-          maximum: 500.0
-          minimum: 0.0
-          title: Slippage Bps
-          default: 0.0
-      type: object
-      required:
-      - constituents
-      title: BacktestIdeaRequest
-      description: 'Backtest an arbitrary basket the user defines — an ''event card idea'' —
-
-        without creating a card or moving any money.'
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-    HistoricalAnalogsRequest:
-      properties:
-        window_days:
-          type: integer
-          title: Window Days
-          default: 30
-        limit:
-          type: integer
-          maximum: 20.0
-          minimum: 1.0
-          title: Limit
-          default: 10
-      type: object
-      title: HistoricalAnalogsRequest
-      description: 'Backtest how similar PAST events performed over the window FOLLOWING each
-
-        event — read-only, no money, no card creation.'
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

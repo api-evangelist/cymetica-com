@@ -121,6 +121,27 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
     UpdateAPIKeyRequest:
       properties:
         name:
@@ -153,6 +174,112 @@ components:
           title: Allowed Markets
       type: object
       title: UpdateAPIKeyRequest
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    APIKeyCreatedResponse:
+      properties:
+        key:
+          type: string
+          title: Key
+        secret:
+          type: string
+          title: Secret
+        id:
+          type: string
+          title: Id
+        name:
+          type: string
+          title: Name
+        tier:
+          type: string
+          title: Tier
+        permissions:
+          type: object
+          title: Permissions
+        allowed_markets:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Allowed Markets
+        expires_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Expires At
+        rate_limit_per_minute:
+          type: integer
+          title: Rate Limit Per Minute
+        created_at:
+          type: string
+          title: Created At
+        message:
+          type: string
+          title: Message
+          default: Store this key and secret securely — they will not be shown again. Authenticate by sending the key as the X-API-Key header on every request; that alone is sufficient for all API-key-enabled endpoints today. The secret is reserved for optional HMAC request signing (X-Signature = HMAC-SHA256(secret, timestamp+method+path+body)); no endpoint currently requires it.
+      type: object
+      required:
+      - key
+      - secret
+      - id
+      - name
+      - tier
+      - permissions
+      - rate_limit_per_minute
+      - created_at
+      title: APIKeyCreatedResponse
+    CreateAPIKeyRequest:
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: Name
+        permissions:
+          type: object
+          title: Permissions
+          description: 'Key permissions: read, trade, withdraw'
+          default:
+            read: true
+            trade: false
+            withdraw: false
+        ip_whitelist:
+          anyOf:
+          - items:
+              type: string
+            type: array
+            maxItems: 20
+          - type: 'null'
+          title: Ip Whitelist
+          description: Optional IP whitelist
+        allowed_markets:
+          anyOf:
+          - items:
+              type: string
+            type: array
+            maxItems: 100
+          - type: 'null'
+          title: Allowed Markets
+          description: Optional perp market_id allowlist (restrict trading to these markets)
+        expires_in_days:
+          anyOf:
+          - type: integer
+            maximum: 3650.0
+            minimum: 1.0
+          - type: 'null'
+          title: Expires In Days
+      type: object
+      required:
+      - name
+      title: CreateAPIKeyRequest
     APIKeyListItem:
       properties:
         id:
@@ -218,133 +345,6 @@ components:
       - last_used_at
       - is_active
       title: APIKeyListItem
-    CreateAPIKeyRequest:
-      properties:
-        name:
-          type: string
-          maxLength: 100
-          minLength: 1
-          title: Name
-        permissions:
-          type: object
-          title: Permissions
-          description: 'Key permissions: read, trade, withdraw'
-          default:
-            read: true
-            trade: false
-            withdraw: false
-        ip_whitelist:
-          anyOf:
-          - items:
-              type: string
-            type: array
-            maxItems: 20
-          - type: 'null'
-          title: Ip Whitelist
-          description: Optional IP whitelist
-        allowed_markets:
-          anyOf:
-          - items:
-              type: string
-            type: array
-            maxItems: 100
-          - type: 'null'
-          title: Allowed Markets
-          description: Optional perp market_id allowlist (restrict trading to these markets)
-        expires_in_days:
-          anyOf:
-          - type: integer
-            maximum: 3650.0
-            minimum: 1.0
-          - type: 'null'
-          title: Expires In Days
-      type: object
-      required:
-      - name
-      title: CreateAPIKeyRequest
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-    APIKeyCreatedResponse:
-      properties:
-        key:
-          type: string
-          title: Key
-        secret:
-          type: string
-          title: Secret
-        id:
-          type: string
-          title: Id
-        name:
-          type: string
-          title: Name
-        tier:
-          type: string
-          title: Tier
-        permissions:
-          type: object
-          title: Permissions
-        allowed_markets:
-          anyOf:
-          - items:
-              type: string
-            type: array
-          - type: 'null'
-          title: Allowed Markets
-        expires_at:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Expires At
-        rate_limit_per_minute:
-          type: integer
-          title: Rate Limit Per Minute
-        created_at:
-          type: string
-          title: Created At
-        message:
-          type: string
-          title: Message
-          default: Store this key and secret securely — they will not be shown again. Authenticate by sending the key as the X-API-Key header on every request; that alone is sufficient for all API-key-enabled endpoints today. The secret is reserved for optional HMAC request signing (X-Signature = HMAC-SHA256(secret, timestamp+method+path+body)); no endpoint currently requires it.
-      type: object
-      required:
-      - key
-      - secret
-      - id
-      - name
-      - tier
-      - permissions
-      - rate_limit_per_minute
-      - created_at
-      title: APIKeyCreatedResponse
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

@@ -219,24 +219,6 @@ components:
       - msg
       - type
       title: ValidationError
-    BacktestRequest:
-      properties:
-        aib_symbol:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Aib Symbol
-        theme:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Theme
-        period_days:
-          type: integer
-          title: Period Days
-          default: 365
-      type: object
-      title: BacktestRequest
     BuildRequest:
       properties:
         theme:
@@ -279,6 +261,24 @@ components:
       required:
       - theme
       title: BuildRequest
+    BacktestRequest:
+      properties:
+        aib_symbol:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Aib Symbol
+        theme:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Theme
+        period_days:
+          type: integer
+          title: Period Days
+          default: 365
+      type: object
+      title: BacktestRequest
     HTTPValidationError:
       properties:
         detail:
