@@ -96,6 +96,8 @@ apis:
   humanURL: https://cymetica.com/api-docs
   baseURL: https://cymetica.com/api/v1
   tags:
+  - APIKeys
+  tags_raw:
   - API Keys
   properties:
   - type: OpenAPI
@@ -180,6 +182,8 @@ apis:
   humanURL: https://cymetica.com/api-docs
   baseURL: https://cymetica.com/api/v1
   tags:
+  - Authentication
+  tags_raw:
   - authentication
   properties:
   - type: OpenAPI
@@ -348,6 +352,8 @@ apis:
   humanURL: https://cymetica.com/api-docs
   baseURL: https://cymetica.com/api/v1
   tags:
+  - Clones
+  tags_raw:
   - clones
   properties:
   - type: OpenAPI
@@ -642,6 +648,8 @@ apis:
   humanURL: https://cymetica.com/api-docs
   baseURL: https://cymetica.com/api/v1
   tags:
+  - Markets
+  tags_raw:
   - markets
   properties:
   - type: OpenAPI
@@ -726,6 +734,8 @@ apis:
   humanURL: https://cymetica.com/api-docs
   baseURL: https://cymetica.com/api/v1
   tags:
+  - Authentication
+  tags_raw:
   - oauth
   properties:
   - type: OpenAPI
@@ -1105,6 +1115,8 @@ apis:
   humanURL: https://cymetica.com/api-docs
   baseURL: https://cymetica.com/api/v1
   tags:
+  - Withdrawals
+  tags_raw:
   - withdrawals
   properties:
   - type: OpenAPI
@@ -1147,6 +1159,9 @@ maintainers:
 - FN: APIs.json
   email: info@apis.io
 common:
+- type: CapabilityMap
+  url: capabilities/cymetica-com-capability-edges.yml
+  name: Cymetica Business Capability Map
 - type: Overlay
   url: overlays/cymetica-com-eventtrader-public-api-overlay.yaml
 - type: Website
