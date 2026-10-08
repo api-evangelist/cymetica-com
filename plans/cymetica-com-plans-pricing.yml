@@ -89,3 +89,35 @@ machine_readable_prices:
   - base
   - ethereum
   note: Declared; /api/v1/premium/* is not in the curated OpenAPI and no 402 was observed.
+x-canonical:
+  generated: '2026-10-08'
+  vocabulary: all/0-working/economics/plans-canonical.yml
+  models:
+  - free
+  - subscription
+  units: []
+  plans:
+  - name: Standard
+    access: other
+    model: free
+    model_how: derived
+    units: []
+    periods: []
+  - name: Premium
+    access: other
+    model: unstated
+    model_how: derived
+    units: []
+    periods: []
+  - name: Market Maker
+    access: other
+    model: unstated
+    model_how: derived
+    units: []
+    periods: []
+  - name: Nexus AI Premium
+    access: other
+    model: subscription
+    model_how: derived
+    units: []
+    periods: []
