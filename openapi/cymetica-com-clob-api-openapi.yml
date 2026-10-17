@@ -129,6 +129,34 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    AmendOrderRequest:
+      properties:
+        price:
+          anyOf:
+          - type: string
+            maxLength: 50
+          - type: 'null'
+          title: Price
+          description: New limit price
+        quantity:
+          anyOf:
+          - type: string
+            maxLength: 50
+          - type: 'null'
+          title: Quantity
+          description: New quantity
+      type: object
+      title: AmendOrderRequest
+      description: Amend a resting order's price and/or quantity atomically.
     ValidationError:
       properties:
         loc:
@@ -236,34 +264,6 @@ components:
         ACCOUNT_IN_PAPER_MODE) so a paper-mode caller never spends real balance by
 
         omission — pass paper=false to trade live deliberately (ET-22652).'
-    AmendOrderRequest:
-      properties:
-        price:
-          anyOf:
-          - type: string
-            maxLength: 50
-          - type: 'null'
-          title: Price
-          description: New limit price
-        quantity:
-          anyOf:
-          - type: string
-            maxLength: 50
-          - type: 'null'
-          title: Quantity
-          description: New quantity
-      type: object
-      title: AmendOrderRequest
-      description: Amend a resting order's price and/or quantity atomically.
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

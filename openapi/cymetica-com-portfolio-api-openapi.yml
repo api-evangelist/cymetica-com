@@ -89,6 +89,66 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
+    PositionsResponse:
+      properties:
+        positions:
+          items:
+            $ref: '#/components/schemas/PositionItem'
+          type: array
+          title: Positions
+        total:
+          type: integer
+          title: Total
+        has_more:
+          type: boolean
+          title: Has More
+      type: object
+      required:
+      - positions
+      - total
+      - has_more
+      title: PositionsResponse
+      description: List of user positions.
+    PositionItem:
+      properties:
+        market_title:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Market Title
+        asset_symbol:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Asset Symbol
+        amount:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Amount
+        pnl:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Pnl
+        status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+        tx_hash:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Tx Hash
+        created_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Created At
+      type: object
+      title: PositionItem
+      description: Single position entry.
     ValidationError:
       properties:
         loc:
@@ -110,15 +170,6 @@ components:
       - msg
       - type
       title: ValidationError
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
     PortfolioSummaryResponse:
       properties:
         balance_usdc:
@@ -193,66 +244,15 @@ components:
       - total_volume
       title: PortfolioSummaryResponse
       description: Aggregated portfolio P&L summary.
-    PositionItem:
+    HTTPValidationError:
       properties:
-        market_title:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Market Title
-        asset_symbol:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Asset Symbol
-        amount:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Amount
-        pnl:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Pnl
-        status:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Status
-        tx_hash:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Tx Hash
-        created_at:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Created At
-      type: object
-      title: PositionItem
-      description: Single position entry.
-    PositionsResponse:
-      properties:
-        positions:
+        detail:
           items:
-            $ref: '#/components/schemas/PositionItem'
+            $ref: '#/components/schemas/ValidationError'
           type: array
-          title: Positions
-        total:
-          type: integer
-          title: Total
-        has_more:
-          type: boolean
-          title: Has More
+          title: Detail
       type: object
-      required:
-      - positions
-      - total
-      - has_more
-      title: PositionsResponse
-      description: List of user positions.
+      title: HTTPValidationError
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

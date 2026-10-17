@@ -652,106 +652,30 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
-    ValidationError:
+    FundBotRequest:
       properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
+        amount:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Amount
+          description: Amount in USDC to transfer to the bot
       type: object
       required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-    HTTPValidationError:
+      - amount
+      title: FundBotRequest
+      description: Request to fund a clone bot from user's balance.
+    WithdrawBotRequest:
       properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
-    CloneBotResponse:
-      properties:
-        id:
-          type: string
-          title: Id
-        type:
-          type: string
-          title: Type
-        source_id:
-          type: string
-          title: Source Id
-        source_name:
-          type: string
-          title: Source Name
-        source_symbol:
-          type: string
-          title: Source Symbol
-        name:
-          type: string
-          title: Name
-        wallet_address:
-          type: string
-          title: Wallet Address
-        wallet_url:
-          type: string
-          title: Wallet Url
-        is_trading:
-          type: boolean
-          title: Is Trading
-        is_paper:
-          type: boolean
-          title: Is Paper
-          default: false
-        strategy_type:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Strategy Type
-        risk_profile:
-          type: string
-          title: Risk Profile
-        team:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Team
-        emoji:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Emoji
-        created_at:
-          type: string
-          title: Created At
+        amount:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Amount
+          description: Amount in USDC to withdraw from the bot
       type: object
       required:
-      - id
-      - type
-      - source_id
-      - source_name
-      - source_symbol
-      - name
-      - wallet_address
-      - wallet_url
-      - is_trading
-      - strategy_type
-      - risk_profile
-      - created_at
-      title: CloneBotResponse
-      description: Response after cloning a bot.
+      - amount
+      title: WithdrawBotRequest
+      description: Request to withdraw funds from a clone bot back to user's balance.
     UpdateSettingsRequest:
       properties:
         stop_loss_pct:
@@ -958,18 +882,6 @@ components:
       type: object
       title: UpdateSettingsRequest
       description: Request to update bot settings.
-    WithdrawBotRequest:
-      properties:
-        amount:
-          type: number
-          exclusiveMinimum: 0.0
-          title: Amount
-          description: Amount in USDC to withdraw from the bot
-      type: object
-      required:
-      - amount
-      title: WithdrawBotRequest
-      description: Request to withdraw funds from a clone bot back to user's balance.
     CloneBotRequest:
       properties:
         source_type:
@@ -1005,18 +917,76 @@ components:
       - source_id
       title: CloneBotRequest
       description: Request to clone a bot.
-    FundBotRequest:
+    CloneBotResponse:
       properties:
-        amount:
-          type: number
-          exclusiveMinimum: 0.0
-          title: Amount
-          description: Amount in USDC to transfer to the bot
+        id:
+          type: string
+          title: Id
+        type:
+          type: string
+          title: Type
+        source_id:
+          type: string
+          title: Source Id
+        source_name:
+          type: string
+          title: Source Name
+        source_symbol:
+          type: string
+          title: Source Symbol
+        name:
+          type: string
+          title: Name
+        wallet_address:
+          type: string
+          title: Wallet Address
+        wallet_url:
+          type: string
+          title: Wallet Url
+        is_trading:
+          type: boolean
+          title: Is Trading
+        is_paper:
+          type: boolean
+          title: Is Paper
+          default: false
+        strategy_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Strategy Type
+        risk_profile:
+          type: string
+          title: Risk Profile
+        team:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Team
+        emoji:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Emoji
+        created_at:
+          type: string
+          title: Created At
       type: object
       required:
-      - amount
-      title: FundBotRequest
-      description: Request to fund a clone bot from user's balance.
+      - id
+      - type
+      - source_id
+      - source_name
+      - source_symbol
+      - name
+      - wallet_address
+      - wallet_url
+      - is_trading
+      - strategy_type
+      - risk_profile
+      - created_at
+      title: CloneBotResponse
+      description: Response after cloning a bot.
     GoLiveRequest:
       properties:
         custom_name:
@@ -1029,6 +999,36 @@ components:
       type: object
       title: GoLiveRequest
       description: Request to create a live bot from a paper bot's settings.
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

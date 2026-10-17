@@ -121,41 +121,21 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-    UpdateAPIKeyRequest:
+    CreateAPIKeyRequest:
       properties:
         name:
-          anyOf:
-          - type: string
-            maxLength: 100
-            minLength: 1
-          - type: 'null'
+          type: string
+          maxLength: 100
+          minLength: 1
           title: Name
         permissions:
-          anyOf:
-          - type: object
-          - type: 'null'
+          type: object
           title: Permissions
+          description: 'Key permissions: read, trade, withdraw'
+          default:
+            read: true
+            trade: false
+            withdraw: false
         ip_whitelist:
           anyOf:
           - items:
@@ -164,6 +144,7 @@ components:
             maxItems: 20
           - type: 'null'
           title: Ip Whitelist
+          description: Optional IP whitelist
         allowed_markets:
           anyOf:
           - items:
@@ -172,17 +153,18 @@ components:
             maxItems: 100
           - type: 'null'
           title: Allowed Markets
+          description: Optional perp market_id allowlist (restrict trading to these markets)
+        expires_in_days:
+          anyOf:
+          - type: integer
+            maximum: 3650.0
+            minimum: 1.0
+          - type: 'null'
+          title: Expires In Days
       type: object
-      title: UpdateAPIKeyRequest
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
+      required:
+      - name
+      title: CreateAPIKeyRequest
     APIKeyCreatedResponse:
       properties:
         key:
@@ -236,50 +218,6 @@ components:
       - rate_limit_per_minute
       - created_at
       title: APIKeyCreatedResponse
-    CreateAPIKeyRequest:
-      properties:
-        name:
-          type: string
-          maxLength: 100
-          minLength: 1
-          title: Name
-        permissions:
-          type: object
-          title: Permissions
-          description: 'Key permissions: read, trade, withdraw'
-          default:
-            read: true
-            trade: false
-            withdraw: false
-        ip_whitelist:
-          anyOf:
-          - items:
-              type: string
-            type: array
-            maxItems: 20
-          - type: 'null'
-          title: Ip Whitelist
-          description: Optional IP whitelist
-        allowed_markets:
-          anyOf:
-          - items:
-              type: string
-            type: array
-            maxItems: 100
-          - type: 'null'
-          title: Allowed Markets
-          description: Optional perp market_id allowlist (restrict trading to these markets)
-        expires_in_days:
-          anyOf:
-          - type: integer
-            maximum: 3650.0
-            minimum: 1.0
-          - type: 'null'
-          title: Expires In Days
-      type: object
-      required:
-      - name
-      title: CreateAPIKeyRequest
     APIKeyListItem:
       properties:
         id:
@@ -345,6 +283,68 @@ components:
       - last_used_at
       - is_active
       title: APIKeyListItem
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    UpdateAPIKeyRequest:
+      properties:
+        name:
+          anyOf:
+          - type: string
+            maxLength: 100
+            minLength: 1
+          - type: 'null'
+          title: Name
+        permissions:
+          anyOf:
+          - type: object
+          - type: 'null'
+          title: Permissions
+        ip_whitelist:
+          anyOf:
+          - items:
+              type: string
+            type: array
+            maxItems: 20
+          - type: 'null'
+          title: Ip Whitelist
+        allowed_markets:
+          anyOf:
+          - items:
+              type: string
+            type: array
+            maxItems: 100
+          - type: 'null'
+          title: Allowed Markets
+      type: object
+      title: UpdateAPIKeyRequest
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

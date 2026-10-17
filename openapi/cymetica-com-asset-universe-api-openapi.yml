@@ -156,6 +156,28 @@ paths:
       - ApiKeyAuth: []
 components:
   schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    TournamentEntryRequest:
+      properties:
+        symbols:
+          items:
+            type: string
+          type: array
+          maxItems: 20
+          minItems: 1
+          title: Symbols
+      type: object
+      required:
+      - symbols
+      title: TournamentEntryRequest
     ValidationError:
       properties:
         loc:
@@ -177,28 +199,6 @@ components:
       - msg
       - type
       title: ValidationError
-    TournamentEntryRequest:
-      properties:
-        symbols:
-          items:
-            type: string
-          type: array
-          maxItems: 20
-          minItems: 1
-          title: Symbols
-      type: object
-      required:
-      - symbols
-      title: TournamentEntryRequest
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
   securitySchemes:
     ApiKeyAuth:
       type: apiKey
