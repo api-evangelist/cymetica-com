@@ -1,0 +1,249 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Headlines API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: headlines
+paths:
+  /api/v1/headlines:
+    get:
+      tags:
+      - headlines
+      summary: List Headlines
+      description: 'Bootstrap/pagination for the feed, or a semantic search when `q` is set.
+
+
+        Two distinct modes, deliberately not blended:
+
+        - no `q` -> reverse-chronological feed, keyset-paginated by `before_id`
+
+        - with `q` -> vector nearest-neighbour search over the PERMANENT archive,
+
+        ordered by relevance. Paging by `before_id` is meaningless against a
+
+        relevance ordering, so it is ignored in this mode.'
+      operationId: list_headlines_api_v1_headlines_get
+      parameters:
+      - name: filter
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^(all|ma|stocks|crypto|global|hot)$
+          default: all
+          title: Filter
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 500
+          minimum: 1
+          default: 200
+          title: Limit
+      - name: before_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+            minimum: 1
+          - type: 'null'
+          title: Before Id
+      - name: q
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+          title: Q
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        source:
+                          type: string
+                        headline:
+                          type: string
+                        url:
+                          type:
+                          - string
+                          - 'null'
+                        published_at:
+                          type:
+                          - string
+                          - 'null'
+                          description: ISO-8601 instant.
+                        tags:
+                          type: array
+                          items:
+                            type: string
+                        tickers:
+                          type: array
+                          items:
+                            type: string
+                        value:
+                          type:
+                          - string
+                          - 'null'
+                          description: Formatted deal size, e.g. "$1.2B".
+                        value_usd:
+                          type:
+                          - number
+                          - 'null'
+                          description: Numeric deal size in USD.
+                        aib:
+                          type:
+                          - object
+                          - 'null'
+                          properties:
+                            symbol:
+                              type: string
+                            display:
+                              type: string
+                          description: Managed AIB fund this headline correlates to (the Trade link).
+                        gains:
+                          type: object
+                          additionalProperties:
+                            type: number
+                          description: '{SYMBOL: % move since the headline}.'
+                        hotidx:
+                          type:
+                          - object
+                          - 'null'
+                          properties:
+                            stock_ret_24h:
+                              type: number
+                            crypto_ret_24h:
+                              type: number
+                            hot:
+                              type: number
+                            stock_px:
+                              type: number
+                            crypto_px:
+                              type: number
+                            hot_class:
+                              type: string
+                              enum:
+                              - stocks
+                              - crypto
+                            stock_members:
+                              type: array
+                              items:
+                                type: string
+                            crypto_members:
+                              type: array
+                              items:
+                                type: string
+                          description: Impact-index returns (%) and index prices; null until enriched.
+                        event_card_id:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: false
+                      required:
+                      - id
+                      - headline
+                  filters:
+                    type: array
+                    items:
+                      type: string
+                  mode:
+                    type: string
+                    enum:
+                    - feed
+                    - hot
+                    - big
+                    - search
+                    description: feed = newest first (page with before_id=<last id>); hot/big = ranked; search = relevance order for `q` (before_id ignored).
+                  query:
+                    type: string
+                    description: Echo of `q` (search mode only).
+                additionalProperties: false
+                required:
+                - items
+                - filters
+                - mode
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+components:
+  schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

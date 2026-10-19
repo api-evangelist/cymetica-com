@@ -86,13 +86,213 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  offset:
+                    type: integer
+                  limit:
+                    type: integer
+                  tokens:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        token_address:
+                          type:
+                          - string
+                          - 'null'
+                        curve_address:
+                          type:
+                          - string
+                          - 'null'
+                        distributor_address:
+                          type:
+                          - string
+                          - 'null'
+                          description: Raw DB column; may be a FROZEN legacy contract — see distributor_status.
+                        router_address:
+                          type:
+                          - string
+                          - 'null'
+                        factory_address:
+                          type:
+                          - string
+                          - 'null'
+                        name:
+                          type: string
+                        symbol:
+                          type: string
+                        total_supply:
+                          type:
+                          - string
+                          - 'null'
+                        liquidity_target:
+                          type:
+                          - string
+                          - 'null'
+                        is_graduated:
+                          type:
+                          - boolean
+                          - 'null'
+                        graduated_at:
+                          type:
+                          - string
+                          - 'null'
+                        dex_pool_address:
+                          type:
+                          - string
+                          - 'null'
+                        revenue_streams:
+                          description: Stored JSON list/object of revenue streams (may be null).
+                        total_revenue_distributed:
+                          type:
+                          - string
+                          - 'null'
+                          description: Cumulative historical total, decimal string.
+                        holder_count:
+                          type:
+                          - integer
+                          - 'null'
+                        current_price:
+                          type:
+                          - string
+                          - 'null'
+                        total_raised:
+                          type:
+                          - string
+                          - 'null'
+                        tokens_sold:
+                          type:
+                          - string
+                          - 'null'
+                        graduation_progress:
+                          type:
+                          - integer
+                          - 'null'
+                          description: Basis points 0-10000.
+                        sale_mode:
+                          type:
+                          - string
+                          - 'null'
+                        direct_sale_price:
+                          type:
+                          - string
+                          - 'null'
+                        status:
+                          type:
+                          - string
+                          - 'null'
+                        creator_address:
+                          type:
+                          - string
+                          - 'null'
+                        creation_tx:
+                          type:
+                          - string
+                          - 'null'
+                        graduation_tx:
+                          type:
+                          - string
+                          - 'null'
+                        chain_id:
+                          type:
+                          - integer
+                          - 'null'
+                        created_at:
+                          type:
+                          - string
+                          - 'null'
+                        updated_at:
+                          type:
+                          - string
+                          - 'null'
+                        last_synced_at:
+                          type:
+                          - string
+                          - 'null'
+                        distributor_status:
+                          type: object
+                          properties:
+                            db_distributor_address:
+                              type:
+                              - string
+                              - 'null'
+                            db_distributor_frozen:
+                              type: boolean
+                            note:
+                              type: string
+                            live_distributor_address:
+                              type:
+                              - string
+                              - 'null'
+                            live_distributor_note:
+                              type:
+                              - string
+                              - 'null'
+                          additionalProperties: false
+                          required:
+                          - db_distributor_address
+                          - db_distributor_frozen
+                          - note
+                        total_revenue_distributed_note:
+                          type: string
+                        last_synced_at_note:
+                          type: string
+                      additionalProperties: true
+                      required:
+                      - id
+                      - symbol
+                      - distributor_status
+                      description: Revenue-share token row plus explanatory notes on what the raw DB columns mean.
+                additionalProperties: false
+                required:
+                - total
+                - offset
+                - limit
+                - tokens
+                description: Paginated revenue-share tokens, newest first; `total` is the full match count.
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '400':
+          description: limit outside 1-200, negative offset, or unknown status filter.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
       security: []
   /api/v1/rst/{address}/rewards:
     get:
@@ -107,17 +307,13 @@ paths:
         using the current user''s swarm wallet address.
 
 
-        Auth: requires a JWT session (Authorization: Bearer , or the
+        Auth: X-API-Key, Bearer JWT or the et_access cookie, like sibling reads
 
-        httpOnly et_access cookie from browser login) — ``get_current_user`` does
+        (a valid X-API-Key used to 401 here). Unauthenticated -> 401.
 
-        NOT accept X-API-Key, unlike most other EventTrader read endpoints.
+        ``address`` is the RST token contract; the pending amount is always read
 
-        Calling this unauthenticated returns 401 {"detail": "Not authenticated"}
-
-        (2026-09-18 QA finding: the /rst Quick Start advertised this as usable
-
-        without documenting that; fixed alongside this docstring).
+        for the caller''s own wallet, never another holder''s.
 
 
         For a public, no-auth view of ET10''s aggregate reward-delivery evidence
@@ -133,6 +329,7 @@ paths:
       operationId: get_pending_rewards_api_v1_rst__address__rewards_get
       security:
       - BearerJWT: []
+      - ApiKeyAuth: []
       parameters:
       - name: address
         in: path
@@ -145,13 +342,117 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  rst_address:
+                    type: string
+                  pending_rewards_usdc:
+                    type: string
+                    description: Claimable USDC read on-chain from the distributor; "0" when the caller has no wallet.
+                additionalProperties: false
+                required:
+                - rst_address
+                - pending_rewards_usdc
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '400':
+          description: Malformed token/wallet address, or no distributor configured for this RST.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: No RST with that token address.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: On-chain rewards could not be read (RPC unavailable); never shown as zero.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
   /api/v1/rst/et10-diligence:
     get:
       tags:
@@ -175,7 +476,115 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  token_address:
+                    type: string
+                  chain:
+                    type: string
+                  distributor_address:
+                    type: string
+                  distributor_balance_et10:
+                    type:
+                    - string
+                    - 'null'
+                    description: Live on-chain ET10 balance of the distributor; null = could not be read (unknown, not zero).
+                  daily_holder_rewards:
+                    type: object
+                    properties:
+                      live:
+                        type: boolean
+                      payments_delivered:
+                        type: integer
+                      distinct_holders_paid:
+                        type: integer
+                      reward_tokens:
+                        type: integer
+                      reward_token_symbols_30d:
+                        type: array
+                        items:
+                          type: string
+                        description: Tokens holders were credited in over the last 30 days, most-paid first.
+                      first_payment_date:
+                        type:
+                        - string
+                        - 'null'
+                      last_payment_date:
+                        type:
+                        - string
+                        - 'null'
+                      note:
+                        type: string
+                    additionalProperties: false
+                  trading_fee_revenue_share:
+                    type: object
+                    properties:
+                      live:
+                        type: boolean
+                      usdc_payouts_to_date:
+                        type: integer
+                      note:
+                        type: string
+                    additionalProperties: false
+                  bug_rewards:
+                    type: object
+                    properties:
+                      live:
+                        type: boolean
+                      payments:
+                        type: integer
+                      total_et10:
+                        type: string
+                    additionalProperties: false
+                  et10rwd_accruals:
+                    type: object
+                    properties:
+                      unit:
+                        type: string
+                      status:
+                        type: string
+                      paid:
+                        type: boolean
+                      withdrawable:
+                        type: boolean
+                      accrual_entries:
+                        type: integer
+                      holders_with_accruals:
+                        type: integer
+                      last_accrual_at:
+                        type:
+                        - string
+                        - 'null'
+                      unit_note:
+                        type: string
+                      generated_by:
+                        type: string
+                      note:
+                        type: string
+                    additionalProperties: false
+                    description: Internal unpaid accrual records (counts only); never a payout.
+                  onchain_weekly_holder_distribution:
+                    type: object
+                    properties:
+                      live:
+                        type: boolean
+                      payouts_to_date:
+                        type: integer
+                      note:
+                        type: string
+                    additionalProperties: false
+                additionalProperties: false
+                required:
+                - token_address
+                - chain
+                - distributor_address
+                - distributor_balance_et10
+                - daily_holder_rewards
+                - bug_rewards
+                - trading_fee_revenue_share
+                - onchain_weekly_holder_distribution
+                description: ET10 pre-purchase due-diligence evidence (cached 60 s).
       security: []
   /api/v1/rst/{address}/quote:
     get:
@@ -209,13 +618,89 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  rst_amount:
+                    type: string
+                  price_per_rst:
+                    type: string
+                  total_usdc:
+                    type: string
+                additionalProperties: false
+                required:
+                - rst_amount
+                - price_per_rst
+                - total_usdc
+                description: Direct-sale purchase quote; amounts are decimal strings.
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '400':
+          description: Malformed address, amount_usdc outside (0, 10,000,000], or the RST has no quotable sale.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: No RST with that token address.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
       security: []
 components:
   schemas:
@@ -243,6 +728,11 @@ components:
         type:
           type: string
           title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
       type: object
       required:
       - loc

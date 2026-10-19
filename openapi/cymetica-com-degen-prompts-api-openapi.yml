@@ -1,0 +1,129 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Degen prompts API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: Degen prompts
+paths:
+  /api/v1/degen-prompts:
+    get:
+      tags:
+      - Degen prompts
+      summary: Degen Prompts Json
+      description: The same prompt set the page shows, with the anchors it was built from.
+      operationId: degen_prompts_json_api_v1_degen_prompts_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: string
+                  paper:
+                    type: boolean
+                  anchors:
+                    type: object
+                    properties:
+                      cards:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            title:
+                              type: string
+                          additionalProperties: true
+                      species:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            symbol:
+                              type: string
+                            name:
+                              type: string
+                          additionalProperties: true
+                      funds:
+                        type: array
+                        items:
+                          type: string
+                      gems:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            symbol:
+                              type: string
+                            name:
+                              type: string
+                          additionalProperties: true
+                      arena:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                          title:
+                            type: string
+                        additionalProperties: true
+                    additionalProperties: true
+                    description: The live objects the prompts were built from.
+                  sections:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        product:
+                          type: string
+                        slug:
+                          type: string
+                        prompts:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              title:
+                                type: string
+                              text:
+                                type: string
+                            additionalProperties: true
+                      additionalProperties: true
+                additionalProperties: true
+                required:
+                - page
+                - anchors
+                - sections
+                description: The degen prompt set, per product (paper trading).
+      security: []
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

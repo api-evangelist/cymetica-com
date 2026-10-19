@@ -1,0 +1,186 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Perpetual Binary Markets API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: Perpetual Binary Markets
+paths:
+  /api/v1/perpetual/markets/{symbol}/status:
+    get:
+      tags:
+      - Perpetual Binary Markets
+      summary: Get Market Status
+      description: 'Get current market status for an asset.
+
+
+        Uses Redis caching (5s TTL) to reduce RPC calls.
+
+        On-chain data is fetched when cache misses.'
+      operationId: get_market_status_api_v1_perpetual_markets__symbol__status_get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      - name: skip_cache
+        in: query
+        required: false
+        schema:
+          type: boolean
+          description: Skip cache and fetch fresh data
+          default: false
+          title: Skip Cache
+        description: Skip cache and fetch fresh data
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/src__api__routes__perpetual_binary__MarketStatus'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+components:
+  schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    src__api__routes__perpetual_binary__MarketStatus:
+      properties:
+        symbol:
+          type: string
+          title: Symbol
+        market_address:
+          type: string
+          title: Market Address
+        collateral:
+          type: string
+          title: Collateral
+          default: USDC
+        epoch:
+          type: integer
+          title: Epoch
+        start_price:
+          type: string
+          title: Start Price
+        current_price:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Current Price
+        time_remaining:
+          type: integer
+          title: Time Remaining
+        trading_active:
+          type: boolean
+          title: Trading Active
+        yes_price:
+          type: string
+          title: Yes Price
+        no_price:
+          type: string
+          title: No Price
+        yes_supply:
+          type: string
+          title: Yes Supply
+        no_supply:
+          type: string
+          title: No Supply
+        timestamp:
+          type: string
+          title: Timestamp
+        session_gated:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Session Gated
+        session_open:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Session Open
+        closed_reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Closed Reason
+      type: object
+      required:
+      - symbol
+      - market_address
+      - epoch
+      - start_price
+      - time_remaining
+      - trading_active
+      - yes_price
+      - no_price
+      - yes_supply
+      - no_supply
+      - timestamp
+      title: MarketStatus
+      description: Current market status.
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

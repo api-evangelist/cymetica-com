@@ -23,7 +23,73 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  count:
+                    type: integer
+                  generated_at:
+                    type: string
+                  titles_pending:
+                    type: integer
+                    description: Links whose title is still derived from the path (title_source=path).
+                  groups:
+                    type: array
+                    items:
+                      type: string
+                  links:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        path:
+                          type: string
+                        url:
+                          type: string
+                        title:
+                          type: string
+                        title_source:
+                          type: string
+                          enum:
+                          - db
+                          - page
+                          - path
+                        group:
+                          type: string
+                        first_posted:
+                          type:
+                          - string
+                          - 'null'
+                        last_posted:
+                          type:
+                          - string
+                          - 'null'
+                        posts:
+                          type: integer
+                        channels:
+                          type: array
+                          items:
+                            type: string
+                            enum:
+                            - telegram
+                            - discord
+                      additionalProperties: false
+                      required:
+                      - path
+                      - url
+                      - title
+                      - group
+                  source:
+                    type: string
+                additionalProperties: true
+                required:
+                - ok
+                - count
+                - links
+                - groups
+                description: Directory of every cymetica.com page the platform has shared on Telegram/Discord. If the directory cannot be built the route answers 503 with `{ok:false, count:0, links:[], groups:[], error}`.
       security: []
 components:
   securitySchemes:

@@ -1,0 +1,198 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public FTA Fund API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: FTAFund
+paths:
+  /api/v1/ma-ripple/live-deals:
+    get:
+      tags:
+      - FTAFund
+      summary: Ripple Live Deals
+      description: 'Seed for the /fund-performance live-deals table (R92: one REST
+
+        fetch, then /ws/ripple/deals takes over). Deal-level, percent-only
+
+        payload — no dollar amounts, no constituent tickers (standing
+
+        operator rules on this surface).'
+      operationId: ripple_live_deals_api_v1_ma_ripple_live_deals_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    enum:
+                    - ripple_deals
+                  ts:
+                    type: string
+                  deals:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        deal_id:
+                          type: integer
+                        event:
+                          type: string
+                          description: '"Acquirer → Target".'
+                        legs:
+                          type: integer
+                        entry_at:
+                          type:
+                          - string
+                          - 'null'
+                        pnl_pct:
+                          type: number
+                          description: Percent; no dollar amounts are published.
+                        marks_stale:
+                          type: boolean
+                      additionalProperties: false
+                      required:
+                      - deal_id
+                      - event
+                      - legs
+                      - pnl_pct
+                  track:
+                    type: string
+                    enum:
+                    - live
+                  live_open:
+                    type: integer
+                  model_open:
+                    type: integer
+                additionalProperties: true
+                required:
+                - type
+                - ts
+                - deals
+                description: Live M&A Ripple deal table seed; /ws/ripple/deals pushes the same shape afterwards.
+      security: []
+  /api/v1/ma-fund/history:
+    get:
+      tags:
+      - FTAFund
+      summary: Ma Fund History
+      operationId: ma_fund_history_api_v1_ma_fund_history_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  points:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        t:
+                          type: string
+                          description: ISO date.
+                        v:
+                          type: number
+                          description: Index price.
+                      additionalProperties: false
+                      required:
+                      - t
+                      - v
+                  inception:
+                    type: string
+                  live_since:
+                    type:
+                    - string
+                    - 'null'
+                    description: First live broker fill (null until one exists).
+                additionalProperties: false
+                required:
+                - points
+                - inception
+                description: M&A Ripple Fund index-price series.
+      security: []
+  /api/v1/fta-fund/history:
+    get:
+      tags:
+      - FTAFund
+      summary: Fta Fund History
+      operationId: fta_fund_history_api_v1_fta_fund_history_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  kind:
+                    type: string
+                    enum:
+                    - price_weighted
+                  divisor:
+                    type: integer
+                  window_days:
+                    type: integer
+                  inception:
+                    type:
+                    - string
+                    - 'null'
+                    description: Oldest current leg's added date.
+                  inception_meaning:
+                    type: string
+                  fund_inception:
+                    type: string
+                  points:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        t:
+                          type: string
+                          description: ISO date.
+                        v:
+                          type: number
+                          description: Index price.
+                      additionalProperties: false
+                      required:
+                      - t
+                      - v
+                    description: Daily; empty when the price venue is unavailable.
+                additionalProperties: false
+                required:
+                - kind
+                - points
+                description: 30-day FTA fund index-price series (aggregate only).
+      security: []
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

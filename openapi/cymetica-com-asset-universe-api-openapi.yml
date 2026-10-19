@@ -60,7 +60,181 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  window:
+                    type: string
+                    enum:
+                    - 1d
+                    - 7d
+                    - 30d
+                  direction:
+                    type: string
+                    description: '`losers` = worst returns first; anything else = gainers.'
+                  movers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        rank:
+                          type: integer
+                        symbol:
+                          type: string
+                        name:
+                          type: string
+                        asset_class:
+                          type:
+                          - string
+                          - 'null'
+                        ontology_class:
+                          type:
+                          - string
+                          - 'null'
+                        ret_1d:
+                          type:
+                          - number
+                          - 'null'
+                        ret_7d:
+                          type:
+                          - number
+                          - 'null'
+                        ret_30d:
+                          type:
+                          - number
+                          - 'null'
+                        last_price_usd:
+                          type:
+                          - number
+                          - 'null'
+                        vehicle_url:
+                          type: string
+                      additionalProperties: false
+                      required:
+                      - rank
+                      - symbol
+                      description: Trailing returns are percentages.
+                  ranked_count:
+                    type: integer
+                    description: Vehicles with fresh history for this window (NOT the catalog total).
+                  as_of:
+                    type:
+                    - string
+                    - 'null'
+                additionalProperties: false
+                required:
+                - window
+                - direction
+                - movers
+                - ranked_count
+                - as_of
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/universe/movers/community:
+    get:
+      tags:
+      - Asset Universe
+      summary: Community Movers
+      description: 'Top 30-day crypto movers that have a Telegram/Discord community, with the
+
+        pro-terminal URL for each. Same stored closes as /movers; never live-priced.'
+      operationId: community_movers_api_v1_universe_movers_community_get
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 25
+          minimum: 1
+          default: 10
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  window:
+                    type: string
+                    enum:
+                    - 30d
+                  movers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        rank:
+                          type: integer
+                        symbol:
+                          type: string
+                        name:
+                          type:
+                          - string
+                          - 'null'
+                        ontology_class:
+                          type:
+                          - string
+                          - 'null'
+                        ret_30d:
+                          type: number
+                          description: 30-day return, %.
+                        last_price_usd:
+                          type:
+                          - number
+                          - 'null'
+                        telegram:
+                          anyOf:
+                          - type: object
+                            properties:
+                              handle:
+                                type: string
+                              url:
+                                type: string
+                              join_state:
+                                type: string
+                            additionalProperties: false
+                          - type: 'null'
+                        discord:
+                          anyOf:
+                          - type: object
+                            properties:
+                              handle:
+                                type: string
+                              url:
+                                type: string
+                              join_state:
+                                type: string
+                            additionalProperties: false
+                          - type: 'null'
+                        vehicle_url:
+                          type: string
+                        terminal_registered:
+                          type: boolean
+                        terminal_url:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: false
+                      required:
+                      - rank
+                      - symbol
+                      - ret_30d
+                  count:
+                    type: integer
+                additionalProperties: false
+                required:
+                - window
+                - movers
+                - count
+                description: Top 30-day crypto movers that have a Telegram/Discord community.
         '422':
           description: Validation Error
           content:
@@ -93,7 +267,203 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  screen:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      rule:
+                        type: string
+                      top_n:
+                        type: integer
+                      hit_threshold_pct:
+                        type: number
+                      soft_hit_threshold_pct:
+                        type: number
+                    additionalProperties: false
+                  as_of:
+                    type:
+                    - string
+                    - 'null'
+                  source:
+                    type:
+                    - string
+                    - 'null'
+                  universe_n:
+                    type: integer
+                  picks:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        rank:
+                          type: integer
+                        symbol:
+                          type: string
+                        name:
+                          type: string
+                        asset_class:
+                          type:
+                          - string
+                          - 'null'
+                        score:
+                          type:
+                          - number
+                          - 'null'
+                        entry_price_usd:
+                          type:
+                          - number
+                          - 'null'
+                        ret_1d:
+                          type:
+                          - number
+                          - 'null'
+                        ret_7d:
+                          type:
+                          - number
+                          - 'null'
+                        ret_30d:
+                          type:
+                          - number
+                          - 'null'
+                        fwd_7d_ret:
+                          type:
+                          - number
+                          - 'null'
+                        vehicle_url:
+                          type: string
+                      additionalProperties: true
+                      required:
+                      - rank
+                      - symbol
+                  track_record:
+                    type: object
+                    properties:
+                      live:
+                        type: object
+                        properties:
+                          scored:
+                            type: integer
+                          hit100:
+                            type: integer
+                          hit50:
+                            type: integer
+                          hit100_pct:
+                            type:
+                            - number
+                            - 'null'
+                          hit50_pct:
+                            type:
+                            - number
+                            - 'null'
+                          median_pct:
+                            type:
+                            - number
+                            - 'null'
+                          mean_pct:
+                            type:
+                            - number
+                            - 'null'
+                          runs_scored:
+                            type: integer
+                          first_anchor:
+                            type:
+                            - string
+                            - 'null'
+                          last_anchor:
+                            type:
+                            - string
+                            - 'null'
+                          runs_with_a_double:
+                            type: integer
+                          pending_picks:
+                            type: integer
+                          base_hit100_pct:
+                            type:
+                            - number
+                            - 'null'
+                          base_hit50_pct:
+                            type:
+                            - number
+                            - 'null'
+                          base_median_pct:
+                            type:
+                            - number
+                            - 'null'
+                        additionalProperties: true
+                        description: Measured forward 7-day outcomes of scored picks vs the whole-universe base rate.
+                      backtest:
+                        type: object
+                        properties:
+                          scored:
+                            type: integer
+                          hit100:
+                            type: integer
+                          hit50:
+                            type: integer
+                          hit100_pct:
+                            type:
+                            - number
+                            - 'null'
+                          hit50_pct:
+                            type:
+                            - number
+                            - 'null'
+                          median_pct:
+                            type:
+                            - number
+                            - 'null'
+                          mean_pct:
+                            type:
+                            - number
+                            - 'null'
+                          runs_scored:
+                            type: integer
+                          first_anchor:
+                            type:
+                            - string
+                            - 'null'
+                          last_anchor:
+                            type:
+                            - string
+                            - 'null'
+                          runs_with_a_double:
+                            type: integer
+                          pending_picks:
+                            type: integer
+                          base_hit100_pct:
+                            type:
+                            - number
+                            - 'null'
+                          base_hit50_pct:
+                            type:
+                            - number
+                            - 'null'
+                          base_median_pct:
+                            type:
+                            - number
+                            - 'null'
+                        additionalProperties: true
+                        description: Measured forward 7-day outcomes of scored picks vs the whole-universe base rate.
+                    additionalProperties: false
+                    description: Empty object when the record cannot be read.
+                  liquid:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: The liquidity-floored variant of the screen (screen, picks, track_record, disclaimer); empty when unavailable.
+                  disclaimer:
+                    type: string
+                additionalProperties: true
+                required:
+                - screen
+                - picks
+                - track_record
+                - disclaimer
+                description: The day's screened picks plus their measured track record. Returns are percentages.
       security: []
   /api/v1/universe/movers/tournament:
     get:
@@ -115,7 +485,115 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  rules:
+                    type: object
+                    properties:
+                      max_picks:
+                        type: integer
+                      window_days:
+                        type: integer
+                      text:
+                        type: string
+                    additionalProperties: false
+                  round:
+                    type: object
+                    properties:
+                      round_anchor:
+                        type:
+                        - string
+                        - 'null'
+                      entries:
+                        type: integer
+                      traders:
+                        type: integer
+                      scores_after:
+                        type: string
+                      closes_at:
+                        type:
+                        - string
+                        - 'null'
+                      entries_close_at:
+                        type:
+                        - string
+                        - 'null'
+                      entries_open:
+                        type: boolean
+                    additionalProperties: false
+                    required:
+                    - round_anchor
+                    - entries
+                    - traders
+                  leaderboard:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        handle:
+                          type: string
+                        picks:
+                          type: integer
+                        rounds:
+                          type: integer
+                        avg_pct:
+                          type: number
+                        median_pct:
+                          type: number
+                        best_pct:
+                          type: number
+                        doublers:
+                          type: integer
+                        hit50:
+                          type: integer
+                        basis:
+                          type: string
+                          enum:
+                          - live
+                          - backtest
+                        rank:
+                          type: integer
+                        is_house:
+                          type: boolean
+                      additionalProperties: false
+                  my_entries:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        round_anchor:
+                          type: string
+                        symbol:
+                          type: string
+                        asset_class:
+                          type:
+                          - string
+                          - 'null'
+                        name:
+                          type: string
+                        entry_price_usd:
+                          type:
+                          - number
+                          - 'null'
+                        fwd_7d_ret:
+                          type:
+                          - number
+                          - 'null'
+                          description: Forward 7-day return, %; null until scored.
+                        vehicle_url:
+                          type: string
+                      additionalProperties: false
+                      required:
+                      - round_anchor
+                      - symbol
+                additionalProperties: false
+                required:
+                - rules
+                - round
+                - leaderboard
+                - my_entries
+                description: Movers Tournament scoreboard; `my_entries` is filled only for a signed-in caller or user API key.
       security: []
   /api/v1/universe/movers/tournament/enter:
     post:
@@ -144,13 +622,93 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  round_anchor:
+                    type: string
+                  added:
+                    type: array
+                    items:
+                      type: string
+                  already_entered:
+                    type: array
+                    items:
+                      type: string
+                  entries:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        round_anchor:
+                          type: string
+                        symbol:
+                          type: string
+                        asset_class:
+                          type:
+                          - string
+                          - 'null'
+                        name:
+                          type: string
+                        entry_price_usd:
+                          type:
+                          - number
+                          - 'null'
+                        fwd_7d_ret:
+                          type:
+                          - number
+                          - 'null'
+                          description: Forward 7-day return, %; null until scored.
+                        vehicle_url:
+                          type: string
+                      additionalProperties: false
+                      required:
+                      - round_anchor
+                      - symbol
+                additionalProperties: false
+                required:
+                - round_anchor
+                - added
+                - already_entered
+                - entries
+                description: Picks locked into the current round. Unknown/unpriced symbols answer 422 with the reason.
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '503':
+          description: Tournament temporarily unavailable.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
       security:
       - BearerJWT: []
       - ApiKeyAuth: []
@@ -165,19 +723,6 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
-    TournamentEntryRequest:
-      properties:
-        symbols:
-          items:
-            type: string
-          type: array
-          maxItems: 20
-          minItems: 1
-          title: Symbols
-      type: object
-      required:
-      - symbols
-      title: TournamentEntryRequest
     ValidationError:
       properties:
         loc:
@@ -193,12 +738,30 @@ components:
         type:
           type: string
           title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
       type: object
       required:
       - loc
       - msg
       - type
       title: ValidationError
+    TournamentEntryRequest:
+      properties:
+        symbols:
+          items:
+            type: string
+          type: array
+          maxItems: 20
+          minItems: 1
+          title: Symbols
+      type: object
+      required:
+      - symbols
+      title: TournamentEntryRequest
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

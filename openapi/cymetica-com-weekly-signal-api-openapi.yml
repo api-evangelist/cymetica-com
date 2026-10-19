@@ -1,0 +1,535 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Weekly Signal API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: Weekly Signal
+paths:
+  /api/v1/weekly-signal:
+    get:
+      tags:
+      - Weekly Signal
+      summary: Weekly Signal
+      operationId: weekly_signal_api_v1_weekly_signal_get
+      parameters:
+      - name: all
+        in: query
+        required: false
+        schema:
+          type: boolean
+          description: Include every analysed asset, firing or not
+          default: false
+          title: All
+        description: Include every analysed asset, firing or not
+      - name: class
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 10
+          description: stocks or crypto
+          default: ''
+          title: Class
+        description: stocks or crypto
+      - name: min_rate
+        in: query
+        required: false
+        schema:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          description: Keep firing assets whose OWN record is at least this (0-1)
+          default: 0.0
+          title: Min Rate
+        description: Keep firing assets whose OWN record is at least this (0-1)
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  week_end:
+                    type: object
+                    properties:
+                      stocks:
+                        type: string
+                      crypto:
+                        type: string
+                    additionalProperties: false
+                  scanned_at:
+                    type: string
+                  universe:
+                    type: object
+                    properties:
+                      built_at: {}
+                      requested:
+                        type: object
+                        properties:
+                          stocks:
+                            type: integer
+                          crypto:
+                            type: integer
+                        additionalProperties: true
+                      analysed:
+                        type: object
+                        properties:
+                          stocks:
+                            type: integer
+                          crypto:
+                            type: integer
+                        additionalProperties: true
+                      not_current:
+                        type: integer
+                    additionalProperties: true
+                  firing_count:
+                    type: integer
+                  firing:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        symbol:
+                          type: string
+                        class:
+                          type: string
+                          enum:
+                          - stocks
+                          - crypto
+                        fires:
+                          type: boolean
+                        conditions_met:
+                          type: boolean
+                        signal_week:
+                          type:
+                          - string
+                          - 'null'
+                        close:
+                          type:
+                          - number
+                          - 'null'
+                        rsi:
+                          type:
+                          - number
+                          - 'null'
+                        signals:
+                          type: integer
+                        successes:
+                          type: integer
+                        rate:
+                          type:
+                          - number
+                          - 'null'
+                          description: This asset's own success rate, 0-1.
+                        pending:
+                          type: integer
+                        first_bar:
+                          type:
+                          - string
+                          - 'null'
+                        last_bar:
+                          type:
+                          - string
+                          - 'null'
+                        weeks:
+                          type: integer
+                        current:
+                          type: boolean
+                      additionalProperties: true
+                      required:
+                      - symbol
+                      - class
+                      - fires
+                  min_rate:
+                    type: number
+                  pooled:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: 'What the headline rate is made of: assets_with_a_record, successes, signals, rate, per_asset spread, reading.'
+                  assets:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        symbol:
+                          type: string
+                        class:
+                          type: string
+                          enum:
+                          - stocks
+                          - crypto
+                        fires:
+                          type: boolean
+                        conditions_met:
+                          type: boolean
+                        signal_week:
+                          type:
+                          - string
+                          - 'null'
+                        close:
+                          type:
+                          - number
+                          - 'null'
+                        rsi:
+                          type:
+                          - number
+                          - 'null'
+                        signals:
+                          type: integer
+                        successes:
+                          type: integer
+                        rate:
+                          type:
+                          - number
+                          - 'null'
+                          description: This asset's own success rate, 0-1.
+                        pending:
+                          type: integer
+                        first_bar:
+                          type:
+                          - string
+                          - 'null'
+                        last_bar:
+                          type:
+                          - string
+                          - 'null'
+                        weeks:
+                          type: integer
+                        current:
+                          type: boolean
+                      additionalProperties: true
+                      required:
+                      - symbol
+                      - class
+                      - fires
+                    description: Every analysed asset; present only with ?all=true.
+                  versions:
+                    type: object
+                    properties:
+                      v80:
+                        type: object
+                        properties: {}
+                        additionalProperties: true
+                      v90:
+                        type: object
+                        properties: {}
+                        additionalProperties: true
+                    additionalProperties: false
+                    description: The published v80 signal (rates before/from 2022) and why no v90 exists.
+                  limits:
+                    type: array
+                    items:
+                      type: string
+                  behind_by_a_week:
+                    type: boolean
+                  refresh_started:
+                    type: boolean
+                  as_of:
+                    type: string
+                  sources:
+                    type: array
+                    items:
+                      type: string
+                additionalProperties: false
+                required:
+                - week_end
+                - firing_count
+                - firing
+                - versions
+                - limits
+                - as_of
+                description: What fires on the last completed week. `rate` values are 0-1.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '503':
+          description: The weekly scan has not finished yet (`SCAN_NOT_READY`).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+  /api/v1/weekly-signal/{symbol}/chart:
+    get:
+      tags:
+      - Weekly Signal
+      summary: Weekly Signal Chart
+      description: Completed weekly closes with the signal's exact indicators, and every past signal with its outcome.
+      operationId: weekly_signal_chart_api_v1_weekly_signal__symbol__chart_get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  symbol:
+                    type: string
+                  class:
+                    type: string
+                    enum:
+                    - stocks
+                    - crypto
+                  version:
+                    type: string
+                  signal:
+                    type: string
+                  success_definition:
+                    type: string
+                  settings:
+                    type: object
+                    properties:
+                      rsi_period:
+                        type: integer
+                      rsi_below:
+                        type: number
+                      macd:
+                        type: array
+                        items:
+                          type: integer
+                      gap_weeks:
+                        type: integer
+                      bar:
+                        type: string
+                    additionalProperties: false
+                  bars:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        t:
+                          type: string
+                        close:
+                          type:
+                          - number
+                          - 'null'
+                        rsi:
+                          type:
+                          - number
+                          - 'null'
+                        macd_hist:
+                          type:
+                          - number
+                          - 'null'
+                      additionalProperties: false
+                  signals:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        t:
+                          type: string
+                        close:
+                          type:
+                          - number
+                          - 'null'
+                        outcome:
+                          type: string
+                          enum:
+                          - pending
+                          - success
+                          - failure
+                      additionalProperties: false
+                  record:
+                    type: object
+                    properties:
+                      signals:
+                        type: integer
+                      successes:
+                        type: integer
+                      rate:
+                        type:
+                        - number
+                        - 'null'
+                      pending:
+                        type: integer
+                      first_bar:
+                        type:
+                        - string
+                        - 'null'
+                      last_bar:
+                        type:
+                        - string
+                        - 'null'
+                      weeks:
+                        type: integer
+                    additionalProperties: false
+                  as_of:
+                    type: string
+                additionalProperties: true
+                required:
+                - symbol
+                - bars
+                - signals
+                - record
+                description: Completed weekly closes with RSI / MACD histogram and every past signal with its outcome.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '404':
+          description: Symbol not in the scanned universe (`NOT_IN_UNIVERSE`) or too little history (`TOO_LITTLE_HISTORY`).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: Stored history could not be read just now.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+components:
+  schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

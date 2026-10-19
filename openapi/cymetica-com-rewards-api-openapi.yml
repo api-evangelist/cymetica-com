@@ -1,0 +1,224 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Rewards API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: Rewards
+paths:
+  /api/v1/rewards/me/bugs:
+    get:
+      tags:
+      - Rewards
+      summary: My Bug Rewards
+      description: 'Your bug reports with verified/duplicate flags, the ET10 reward, whether
+
+        it was paid, when, and by which on-chain transaction (``txid``) or ledger
+
+        credit (``ledger_ref`` / ``ledger_entry_id``), plus totals of verified,
+
+        paid and owed. ``owed`` is computed from the records: verified,
+
+        non-duplicate reports with no payment record.'
+      operationId: my_bug_rewards_api_v1_rewards_me_bugs_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: integer
+                  currency:
+                    type: string
+                  amount_per_verified_bug:
+                    type: string
+                  program_since:
+                    type: string
+                  submissions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          description: Report (issue) id.
+                        submitted_at:
+                          type:
+                          - string
+                          - 'null'
+                        channel:
+                          type:
+                          - string
+                          - 'null'
+                        title:
+                          type:
+                          - string
+                          - 'null'
+                        verified:
+                          type: boolean
+                          description: Marked a true, non-duplicate bug.
+                        judged:
+                          type: boolean
+                          description: A verified/not-verified decision was recorded.
+                        duplicate:
+                          type: boolean
+                        amount_et10:
+                          type: string
+                        paid:
+                          type: boolean
+                          description: A payment record exists and its delivery completed.
+                        paid_at:
+                          type:
+                          - string
+                          - 'null'
+                        delivery:
+                          type:
+                          - string
+                          - 'null'
+                          description: credited / sent (on-chain batch), ledger_credit, or the failed state.
+                        txid:
+                          type:
+                          - string
+                          - 'null'
+                          description: On-chain delivery transaction hash (payments before 2026-09-07).
+                        ledger_ref:
+                          type:
+                          - string
+                          - 'null'
+                          description: Ledger payment reference (payments since 2026-09-07).
+                        ledger_entry_id:
+                          type:
+                          - integer
+                          - 'null'
+                        owed:
+                          type: boolean
+                          description: Verified, non-duplicate, in the programme window, no payment record.
+                      additionalProperties: true
+                      required:
+                      - id
+                      - verified
+                      - duplicate
+                      - paid
+                      - owed
+                  totals:
+                    type: object
+                    properties:
+                      verified:
+                        type: integer
+                      paid:
+                        type: integer
+                      paid_et10:
+                        type: string
+                      owed:
+                        type: integer
+                      owed_et10:
+                        type: string
+                    additionalProperties: true
+                    required:
+                    - verified
+                    - paid
+                    - owed
+                  definitions:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                additionalProperties: true
+                required:
+                - user_id
+                - submissions
+                - totals
+                description: Your own bug reports and ET10 bug-reward payments, with totals computed from the records.
+        '401':
+          description: Not authenticated (send X-API-Key or a session).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: Your bug-reward history could not be read just now.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

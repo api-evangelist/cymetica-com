@@ -124,7 +124,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/BacktestRequest'
+              $ref: '#/components/schemas/src__api__routes__macromarket__BacktestRequest'
         required: true
       responses:
         '200':
@@ -198,24 +198,6 @@ paths:
       - BearerJWT: []
 components:
   schemas:
-    BacktestRequest:
-      properties:
-        aib_symbol:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Aib Symbol
-        theme:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Theme
-        period_days:
-          type: integer
-          title: Period Days
-          default: 365
-      type: object
-      title: BacktestRequest
     BuildRequest:
       properties:
         theme:
@@ -258,6 +240,15 @@ components:
       required:
       - theme
       title: BuildRequest
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
     ValidationError:
       properties:
         loc:
@@ -273,21 +264,35 @@ components:
         type:
           type: string
           title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
       type: object
       required:
       - loc
       - msg
       - type
       title: ValidationError
-    HTTPValidationError:
+    src__api__routes__macromarket__BacktestRequest:
       properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
+        aib_symbol:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Aib Symbol
+        theme:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Theme
+        period_days:
+          type: integer
+          title: Period Days
+          default: 365
       type: object
-      title: HTTPValidationError
+      title: BacktestRequest
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

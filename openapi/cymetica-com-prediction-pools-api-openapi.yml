@@ -1,0 +1,96 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Prediction Pools API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: prediction-pools
+paths:
+  /api/v1/prediction-pools/wta-funding-stats:
+    get:
+      tags:
+      - prediction-pools
+      summary: Get Wta Funding Stats Endpoint
+      description: Get funding stats for the VAIX WTA prediction market from token launches.
+      operationId: get_wta_funding_stats_endpoint_api_v1_prediction_pools_wta_funding_stats_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  launch_count:
+                    type: integer
+                  total_usdc_funded:
+                    type: number
+                  recent_fundings:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type:
+                          - integer
+                          - string
+                        token_address:
+                          type:
+                          - string
+                          - 'null'
+                        token_symbol:
+                          type:
+                          - string
+                          - 'null'
+                        source_type:
+                          type:
+                          - string
+                          - 'null'
+                        usdc_amount:
+                          type: number
+                        tx_hash:
+                          type:
+                          - string
+                          - 'null'
+                        wta_market_address:
+                          type:
+                          - string
+                          - 'null'
+                        created_at:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: false
+                additionalProperties: false
+                required:
+                - launch_count
+                - total_usdc_funded
+                - recent_fundings
+                description: Token-launch funding into the VAIX WTA market; `recent_fundings` = newest 10.
+      security: []
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

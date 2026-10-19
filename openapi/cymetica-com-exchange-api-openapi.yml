@@ -23,7 +23,389 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  pairs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        pair:
+                          type: string
+                        base_symbol:
+                          type: string
+                        quote_symbol:
+                          type: string
+                        enabled:
+                          type: boolean
+                        dexscreener_chain:
+                          type:
+                          - string
+                          - 'null'
+                        coingecko_id:
+                          type:
+                          - string
+                          - 'null'
+                          description: CoinGecko id of the base token; null when the pair has none.
+                        tick_size:
+                          type: string
+                          description: Decimal string.
+                        lot_size:
+                          type: string
+                          description: Decimal string.
+                        min_order_size:
+                          type: string
+                          description: Decimal string.
+                      additionalProperties: false
+                      required:
+                      - pair
+                      - base_symbol
+                      - quote_symbol
+                      - enabled
+                additionalProperties: false
+                required:
+                - pairs
+                description: Every listed exchange pair.
+      security: []
+  /api/v1/exchange/markets:
+    get:
+      tags:
+      - Exchange
+      summary: Exchange Markets
+      description: 'All exchange pairs with live market data.
+
+
+        Non-blocking strategy:
+
+        - Cache fresh → return cached data (~ms).
+
+        - Cache cold → return fast-path snapshot (CLOB BBO + DB, no RPC, ~5ms)
+
+        and kick off the full RPC build in background so the
+
+        next request gets a warm cache.
+
+        - Cache stale → still return cached (it''s labeled with timestamp) +
+
+        refresh in background.
+
+
+        Users never block on the 20+s cold build. The WS update loop + this
+
+        background refresh keep the cache warm for subsequent requests.'
+      operationId: exchange_markets_api_v1_exchange_markets_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  markets:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        symbol:
+                          type: string
+                        pair:
+                          type: string
+                        price_usd:
+                          type: string
+                          description: Display price in USD as a decimal string ("0" = no price).
+                        price_source:
+                          type: string
+                          description: Which input the display price came from.
+                        price_change_24h:
+                          type: number
+                          description: Percent.
+                        volume_24h_usd:
+                          type: number
+                        liquidity_usd:
+                          type: number
+                        market_cap_usd:
+                          type: number
+                        fdv_usd:
+                          type: number
+                        high_24h:
+                          type: string
+                        low_24h:
+                          type: string
+                        spread:
+                          type: string
+                        chains:
+                          type: array
+                          items:
+                            type: string
+                        logo_url:
+                          type: string
+                        enabled:
+                          type: boolean
+                        category:
+                          type: string
+                          description: Empty for the main table; otherwise the listing section (e.g. "New").
+                      additionalProperties: true
+                      required:
+                      - symbol
+                      - pair
+                      - price_usd
+                      description: One listed pair with live market data.
+                    description: Sorted by 24h volume, then market cap.
+                  stale:
+                    type: boolean
+                    description: Present (true) when a cached listing is served while it refreshes.
+                additionalProperties: false
+                required:
+                - markets
+      security: []
+  /api/v1/exchange/{symbol}/market-order/preview:
+    get:
+      tags:
+      - Exchange
+      summary: Market Order Preview
+      description: 'What a MARKET order on this book would be placed as, right now. Public, read-only.
+
+
+        A market order is never sent to the book open-ended: it is converted to an immediate-or-cancel
+
+        limit at the reference price plus (buy) or minus (sell) the protection percentage, and it is
+
+        refused outright when the book''s own top is further than the sanity band from an independent
+
+        reference. This runs that same conversion and places nothing, so the worst price an order can
+
+        fill at is known before it is sent (ET-26151). The answer is a snapshot: the order itself
+
+        re-runs the conversion when it arrives.'
+      operationId: market_order_preview_api_v1_exchange__symbol__market_order_preview_get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      - name: side
+        in: query
+        required: false
+        schema:
+          type: string
+          default: buy
+          title: Side
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  symbol:
+                    type: string
+                  pair:
+                    type: string
+                  side:
+                    type: string
+                    enum:
+                    - buy
+                    - sell
+                  places_nothing:
+                    type: boolean
+                  as_of:
+                    type: string
+                  sanity_band_bps:
+                    type: integer
+                  how_it_works:
+                    type: string
+                  would_be_accepted:
+                    type: boolean
+                  refusal_code:
+                    type:
+                    - string
+                    - 'null'
+                  refusal:
+                    type:
+                    - string
+                    - 'null'
+                  max_fill_price:
+                    type: string
+                    description: 'buy only: the worst price the IOC can fill at; never above reference_price x (1 + protection_pct/100). When no tick fits that band the order is refused (refusal_code NO_TICK_IN_BAND), never rounded outward.'
+                  min_fill_price:
+                    type: string
+                    description: 'sell only: the worst price the IOC can fill at; never below reference_price x (1 - protection_pct/100).'
+                  reference_price:
+                    type:
+                    - string
+                    - 'null'
+                  reference_source:
+                    type:
+                    - string
+                    - 'null'
+                  protection_pct:
+                    type:
+                    - string
+                    - 'null'
+                  time_in_force:
+                    type: string
+                    enum:
+                    - IOC
+                  book_has_resting_opposite:
+                    type: boolean
+                    description: 'true when an order rests on this book on the opposite side. false: the reference is an on-chain quote and any fill is an on-chain swap, not an immediate book fill.'
+                additionalProperties: false
+                required:
+                - symbol
+                - pair
+                - side
+                - places_nothing
+                - would_be_accepted
+                description: What a market order would be converted to right now; nothing is placed. Refusal fields appear when `would_be_accepted` is false.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '404':
+          description: Unknown or unlisted pair symbol.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+  /api/v1/exchange/{symbol}/stats:
+    get:
+      tags:
+      - Exchange
+      summary: Exchange Stats
+      description: Token stats, served through the cross-worker SWR boot cache.
+      operationId: exchange_stats_api_v1_exchange__symbol__stats_get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      - name: chain
+        in: query
+        required: false
+        schema:
+          type: string
+          default: all
+          title: Chain
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  symbol:
+                    type: string
+                  pair:
+                    type: string
+                  price_usd:
+                    type: string
+                    description: Decimal string; "0" = no price.
+                  price_change_24h:
+                    type: number
+                    description: Percent.
+                  price_change_1h:
+                    type: number
+                    description: Percent.
+                  total_liquidity_usd:
+                    type: number
+                  volume_24h_usd:
+                    type: number
+                  pools:
+                    type: integer
+                  chains:
+                    type: array
+                    items:
+                      type: string
+                  spread_pct:
+                    type: number
+                    description: Percent; present when both sides of the CLOB book exist.
+                  book_source:
+                    type: string
+                    enum:
+                    - clob
+                  best_bid:
+                    type: string
+                  best_ask:
+                    type: string
+                additionalProperties: true
+                required:
+                - symbol
+                - pair
+                - price_usd
+                description: Token stats (cached a few seconds).
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '404':
+          description: Unknown or unlisted pair symbol.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
       security: []
   /api/v1/exchange/{symbol}/orders:
     post:
@@ -70,13 +452,305 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  order_id:
+                    type: string
+                  pair:
+                    type: string
+                  status:
+                    type: string
+                    description: 'Engine status: open, partial, filled, cancelled.'
+                  total_filled:
+                    type: string
+                  remaining:
+                    type: string
+                  avg_fill_price:
+                    type:
+                    - string
+                    - 'null'
+                  fills:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        pair:
+                          type: string
+                        price:
+                          type: string
+                        quantity:
+                          type: string
+                        maker_order_id:
+                          type: string
+                        taker_order_id:
+                          type: string
+                        maker_user_id:
+                          type: integer
+                        taker_user_id:
+                          type: integer
+                        taker_side:
+                          type: string
+                        maker_fee:
+                          type: string
+                        taker_fee:
+                          type: string
+                        maker_rebate:
+                          type: string
+                        timestamp:
+                          type: integer
+                          description: Epoch microseconds.
+                        is_amm_fill:
+                          type: boolean
+                        is_amm_poster_fill:
+                          type: boolean
+                        chain:
+                          type:
+                          - string
+                          - 'null'
+                        amm_dex:
+                          type:
+                          - string
+                          - 'null'
+                        amm_pool_address:
+                          type:
+                          - string
+                          - 'null'
+                        tx_hash:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: true
+                      description: One fill of the order (decimal strings).
+                  reject_reason:
+                    type: string
+                  market_protection:
+                    type: object
+                    properties:
+                      converted_from:
+                        type: string
+                      reference_price:
+                        type: string
+                      reference_source:
+                        type: string
+                      protection_pct:
+                        type: string
+                      protection_price:
+                        type: string
+                      book_top:
+                        type:
+                        - string
+                        - 'null'
+                      note:
+                        type: string
+                    additionalProperties: true
+                    description: 'Present for a market order: the protected IOC limit it was placed as.'
+                  amm_pending:
+                    type: string
+                    description: Quantity still executing on-chain in the background.
+                  amm_note:
+                    type: string
+                  ioc_cancelled:
+                    type: boolean
+                  ioc_note:
+                    type: string
+                  order_state:
+                    type: string
+                    enum:
+                    - new
+                    - partially_filled
+                    - filled
+                    - cancelled
+                    - expired
+                    - rejected
+                    - pending_swap
+                  order_state_label:
+                    type: string
+                  execution:
+                    type: object
+                    properties:
+                      filled:
+                        type: string
+                      quantity:
+                        type:
+                        - string
+                        - 'null'
+                      remaining:
+                        type:
+                        - string
+                        - 'null'
+                      fully_filled:
+                        type: boolean
+                      resting:
+                        type: boolean
+                      on_chain_swap_pending:
+                        type: boolean
+                    additionalProperties: true
+                additionalProperties: true
+                description: Order result. Live CLOB orders return this shape; paper orders (`mode=paper`) and AIB index-basket market orders return their own service's result object instead.
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '403':
+          description: Trading temporarily paused for this account.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: Unknown or unlisted pair symbol.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '409':
+          description: Order refused before trading (e.g. market-order pre-trade check or AIB band); `detail` says why.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '428':
+          description: 'DEX swap confirmation required (any limit on a DEX-backed market, a market order on the on-chain quote, or route_mode=dex): resend with `dex_ack`, `dex_ack_price` and `dex_fee_ack_usd`.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: Order routing unavailable or timed out; retry.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
     delete:
       tags:
       - Exchange
@@ -113,13 +787,290 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  pair:
+                    type: string
+                  cancelled_count:
+                    type: integer
+                  side_filter:
+                    type:
+                    - string
+                    - 'null'
+                    description: The `?side=` filter applied (null = both sides).
+                additionalProperties: true
+                required:
+                - pair
+                - cancelled_count
+                description: Cancelled every open order of yours on this pair.
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '404':
+          description: Unknown or unlisted pair symbol.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: Could not route cancel-all; retry.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '504':
+          description: Cancel-all timed out; orders may still be open.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/exchange/{symbol}/orderbook:
+    get:
+      tags:
+      - Exchange
+      summary: Orderbook
+      description: L2 CLOB-only orderbook snapshot (+ best-exec DEX levels for opted-in pairs).
+      operationId: orderbook_api_v1_exchange__symbol__orderbook_get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      - name: depth
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 30
+          title: Depth
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pair:
+                    type: string
+                  bids:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        price:
+                          type: string
+                        quantity:
+                          type: string
+                        order_count:
+                          type: integer
+                        is_amm:
+                          type: boolean
+                          description: True = on-chain/virtual depth, not resting CLOB orders.
+                        chain:
+                          type: string
+                          description: '"clob" for resting orders; a chain or "aib" for injected levels.'
+                        dex:
+                          type: string
+                          description: Injected level source, e.g. bestexec:<venue>, creation, redemption.
+                        fillable:
+                          type: boolean
+                        reference_only:
+                          type: boolean
+                          description: True = price reference only, not executable here.
+                        sized:
+                          type: string
+                          description: 'On-chain pool levels: "quote" = the live pool quoter fills this quantity inside this price (firm); "estimate" = modelled from pool liquidity.'
+                      additionalProperties: true
+                      required:
+                      - price
+                      - quantity
+                      description: Aggregated price level (decimal strings).
+                    description: Best (highest) first.
+                  asks:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        price:
+                          type: string
+                        quantity:
+                          type: string
+                        order_count:
+                          type: integer
+                        is_amm:
+                          type: boolean
+                          description: True = on-chain/virtual depth, not resting CLOB orders.
+                        chain:
+                          type: string
+                          description: '"clob" for resting orders; a chain or "aib" for injected levels.'
+                        dex:
+                          type: string
+                          description: Injected level source, e.g. bestexec:<venue>, creation, redemption.
+                        fillable:
+                          type: boolean
+                        reference_only:
+                          type: boolean
+                          description: True = price reference only, not executable here.
+                        sized:
+                          type: string
+                          description: 'On-chain pool levels: "quote" = the live pool quoter fills this quantity inside this price (firm); "estimate" = modelled from pool liquidity.'
+                      additionalProperties: true
+                      required:
+                      - price
+                      - quantity
+                      description: Aggregated price level (decimal strings).
+                    description: Best (lowest) first.
+                  best_bid:
+                    type:
+                    - string
+                    - 'null'
+                  best_ask:
+                    type:
+                    - string
+                    - 'null'
+                  spread:
+                    type:
+                    - string
+                    - 'null'
+                  mid_price:
+                    type:
+                    - string
+                    - 'null'
+                  last_trade_price:
+                    type: string
+                  sequence:
+                    type: integer
+                  volume_24h_usd:
+                    type: number
+                  crossed_external:
+                    type: boolean
+                    description: Present when external levels crossed the book.
+                additionalProperties: true
+                required:
+                - pair
+                - bids
+                - asks
+                description: L2 order book snapshot (`?depth=` up to 100 levels a side); live updates stream over the book WebSocket.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '404':
+          description: Unknown or unlisted pair symbol.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
   /api/v1/exchange/{symbol}/book:
     get:
       tags:
@@ -146,13 +1097,147 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  pair:
+                    type: string
+                  bids:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        price:
+                          type: string
+                        quantity:
+                          type: string
+                        order_count:
+                          type: integer
+                        is_amm:
+                          type: boolean
+                          description: True = on-chain/virtual depth, not resting CLOB orders.
+                        chain:
+                          type: string
+                          description: '"clob" for resting orders; a chain or "aib" for injected levels.'
+                        dex:
+                          type: string
+                          description: Injected level source, e.g. bestexec:<venue>, creation, redemption.
+                        fillable:
+                          type: boolean
+                        reference_only:
+                          type: boolean
+                          description: True = price reference only, not executable here.
+                        sized:
+                          type: string
+                          description: 'On-chain pool levels: "quote" = the live pool quoter fills this quantity inside this price (firm); "estimate" = modelled from pool liquidity.'
+                      additionalProperties: true
+                      required:
+                      - price
+                      - quantity
+                      description: Aggregated price level (decimal strings).
+                    description: Best (highest) first.
+                  asks:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        price:
+                          type: string
+                        quantity:
+                          type: string
+                        order_count:
+                          type: integer
+                        is_amm:
+                          type: boolean
+                          description: True = on-chain/virtual depth, not resting CLOB orders.
+                        chain:
+                          type: string
+                          description: '"clob" for resting orders; a chain or "aib" for injected levels.'
+                        dex:
+                          type: string
+                          description: Injected level source, e.g. bestexec:<venue>, creation, redemption.
+                        fillable:
+                          type: boolean
+                        reference_only:
+                          type: boolean
+                          description: True = price reference only, not executable here.
+                        sized:
+                          type: string
+                          description: 'On-chain pool levels: "quote" = the live pool quoter fills this quantity inside this price (firm); "estimate" = modelled from pool liquidity.'
+                      additionalProperties: true
+                      required:
+                      - price
+                      - quantity
+                      description: Aggregated price level (decimal strings).
+                    description: Best (lowest) first.
+                  best_bid:
+                    type:
+                    - string
+                    - 'null'
+                  best_ask:
+                    type:
+                    - string
+                    - 'null'
+                  spread:
+                    type:
+                    - string
+                    - 'null'
+                  mid_price:
+                    type:
+                    - string
+                    - 'null'
+                  last_trade_price:
+                    type: string
+                  sequence:
+                    type: integer
+                  volume_24h_usd:
+                    type: number
+                  crossed_external:
+                    type: boolean
+                    description: Present when external levels crossed the book.
+                additionalProperties: true
+                required:
+                - pair
+                - bids
+                - asks
+                description: L2 order book snapshot (`?depth=` up to 100 levels a side); live updates stream over the book WebSocket.
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '404':
+          description: Unknown or unlisted pair symbol.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
       security: []
   /api/v1/exchange/{symbol}/trades:
     get:
@@ -189,13 +1274,93 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  pair:
+                    type: string
+                  trades:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        price:
+                          type: string
+                        quantity:
+                          type: string
+                        taker_side:
+                          type: string
+                        is_amm_fill:
+                          type: boolean
+                        venue:
+                          type: string
+                          enum:
+                          - AMM
+                          - CLOB
+                        chain:
+                          type:
+                          - string
+                          - 'null'
+                        tx_hash:
+                          type:
+                          - string
+                          - 'null'
+                        timestamp:
+                          type:
+                          - string
+                          - number
+                          - 'null'
+                          description: ISO-8601 from the database; epoch microseconds on the in-memory fallback.
+                      additionalProperties: true
+                      required:
+                      - id
+                      - price
+                      - quantity
+                      - taker_side
+                    description: Newest first, `?limit=` up to 500.
+                additionalProperties: false
+                required:
+                - pair
+                - trades
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '404':
+          description: Unknown or unlisted pair symbol.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
       security: []
   /api/v1/exchange/{symbol}/bbo:
     get:
@@ -217,13 +1382,73 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  pair:
+                    type: string
+                  best_bid:
+                    type:
+                    - string
+                    - 'null'
+                  best_ask:
+                    type:
+                    - string
+                    - 'null'
+                  bid_size:
+                    type: string
+                  ask_size:
+                    type: string
+                  mid_price:
+                    type: string
+                    description: '"0" when the book is empty.'
+                  spread:
+                    type: string
+                  last_trade_price:
+                    type: string
+                additionalProperties: false
+                required:
+                - pair
+                - best_bid
+                - best_ask
+                description: Best bid/offer over executable liquidity (decimal strings).
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '404':
+          description: Unknown or unlisted pair symbol.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
   /api/v1/exchange/{symbol}/ticker:
     get:
       tags:
@@ -243,13 +1468,87 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  pair:
+                    type: string
+                  open:
+                    type: string
+                  high:
+                    type: string
+                  low:
+                    type: string
+                  last:
+                    type: string
+                  volume:
+                    type: string
+                    description: Base-asset volume over 24h.
+                  quote_volume:
+                    type: string
+                    description: Quote-asset volume over 24h.
+                  change_pct:
+                    type: number
+                    description: Percent.
+                  best_bid:
+                    type:
+                    - string
+                    - 'null'
+                  best_ask:
+                    type:
+                    - string
+                    - 'null'
+                  timestamp:
+                    type: integer
+                    description: Epoch milliseconds.
+                additionalProperties: false
+                required:
+                - pair
+                - open
+                - high
+                - low
+                - last
+                - volume
+                - change_pct
+                - timestamp
+                description: 24-hour ticker (decimal strings; zeros when no trades in 24h).
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '404':
+          description: Unknown or unlisted pair symbol.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
       security: []
 components:
   schemas:
@@ -262,6 +1561,32 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
     src__api__routes__exchange__PlaceOrderRequest:
       properties:
         side:
@@ -339,32 +1664,30 @@ components:
           title: Route Mode
           description: 'Execution venue: ''auto'' (default — CLOB, then the displayed DEX levels for anything marketable), ''cex'' (explicit opt-out: CLOB only), ''dex'' (AMM only)'
           default: auto
+        dex_ack:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Dex Ack
+          description: On-chain swap acknowledgement. An order that would execute through an on-chain swap from your own wallet (a market order whose reference is the on-chain quote, ANY limit on a DEX-backed market — it executes as a swap the moment the on-chain price reaches it — or route_mode=dex) is refused with HTTP 428 DEX_SWAP_CONFIRMATION_REQUIRED carrying the swap's price_now / worst_price / chain / venue until it is resent with dex_ack=true. Without it the order only ever trades against orders resting on this book (a market remainder is cancelled, a limit rests).
+          default: false
+        dex_ack_price:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Dex Ack Price
+          description: The price_now you confirmed (from the 428 detail). If the on-chain price has moved more than 1% against you by the time the order arrives it is refused again with DEX_SWAP_PRICE_MOVED and the new price.
+        dex_fee_ack_usd:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Dex Fee Ack Usd
+          description: The most network (gas) fee in USD you approve for the swap — send fee.max_network_fee_usd from the 428 detail. A DEX match settles on-chain and needs time to settle; it is never sent without this approval, and a resting remainder is never swapped while the current network fee is above it (DEX_SWAP_FEE_APPROVAL_REQUIRED).
       type: object
       required:
       - side
       - quantity
       title: PlaceOrderRequest
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

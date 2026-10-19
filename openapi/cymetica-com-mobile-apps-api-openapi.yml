@@ -1,0 +1,635 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Mobile Apps API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: mobile-apps
+paths:
+  /api/v1/mobile-apps/apps:
+    get:
+      tags:
+      - mobile-apps
+      summary: Platform Apps
+      operationId: platform_apps_api_v1_mobile_apps_apps_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  apps:
+                    type: array
+                    items:
+                      type: object
+                      properties: {}
+                      additionalProperties: true
+                additionalProperties: true
+                required:
+                - apps
+                description: The platform's own published apps and their store listings.
+      security: []
+  /api/v1/mobile-apps/guide:
+    get:
+      tags:
+      - mobile-apps
+      summary: Guide Json
+      operationId: guide_json_api_v1_mobile_apps_guide_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: string
+                  guide:
+                    type: string
+                    description: The whole guide as Markdown (same as /mobile-apps/guide.md).
+                  rules: {}
+                  fastest_order: {}
+                  steps: {}
+                  agent_prompt:
+                    type: string
+                  testers_group:
+                    type:
+                    - string
+                    - 'null'
+                additionalProperties: true
+                required:
+                - page
+                - guide
+                - steps
+      security: []
+  /api/v1/mobile-apps/creator/{platform}:
+    post:
+      tags:
+      - mobile-apps
+      summary: Creator Build
+      operationId: creator_build_api_v1_mobile_apps_creator__platform__post
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: platform
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Platform
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatorBuildIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  platform:
+                    type: string
+                    enum:
+                    - android
+                    - ios
+                  status:
+                    type: string
+                  package_id:
+                    type: string
+                  app_name:
+                    type: string
+                  start_url:
+                    type: string
+                  note:
+                    type: string
+                    description: 'Android only: the bundle builds in about 5 minutes.'
+                  download:
+                    type: string
+                    description: GET this path once status is ready (kept 24 hours).
+                additionalProperties: true
+                required:
+                - id
+                - platform
+                - status
+                - download
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '400':
+          description: Unknown platform, a missing attestation, or a start_url the builder refuses; the message says which.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '401':
+          description: Sign in or pass an API key.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      description: 'Make your page an app. `platform` is `android` (queues a signed bundle build, about 5 minutes) or `ios` (the iPhone project, ready at once). Body: app_name, start_url and attest_no_restricted_features: true.'
+  /api/v1/mobile-apps/creator:
+    get:
+      tags:
+      - mobile-apps
+      summary: Creator List
+      operationId: creator_list_api_v1_mobile_apps_creator_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  builds:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        platform:
+                          type: string
+                        app_name:
+                          type: string
+                        start_url:
+                          type: string
+                        package_id:
+                          type: string
+                        status:
+                          type: string
+                        error:
+                          type:
+                          - string
+                          - 'null'
+                        created_at:
+                          type:
+                          - string
+                          - 'null'
+                        download:
+                          type:
+                          - string
+                          - 'null'
+                          description: Set once the build is ready or downloaded.
+                      additionalProperties: true
+                      required:
+                      - id
+                      - platform
+                      - status
+                additionalProperties: true
+                required:
+                - builds
+        '401':
+          description: Sign in or pass an API key.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+  /api/v1/mobile-apps/creator/{build_id}/download:
+    get:
+      tags:
+      - mobile-apps
+      summary: Creator Download
+      operationId: creator_download_api_v1_mobile_apps_creator__build_id__download_get
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: build_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Build Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+                description: The build as a zip, once status is ready.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Sign in or pass an API key.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: No such build of yours, not ready yet, or older than 24 hours.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/mobile-apps/progress:
+    get:
+      tags:
+      - mobile-apps
+      summary: Progress Get
+      operationId: progress_get_api_v1_mobile_apps_progress_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  logged_in:
+                    type: boolean
+                  page:
+                    type: string
+                  guide:
+                    type: string
+                  rules: {}
+                  done:
+                    type: array
+                    items:
+                      type: string
+                  android_next: {}
+                  ios_next: {}
+                  next_step: {}
+                  note:
+                    type: string
+                additionalProperties: true
+                required:
+                - logged_in
+                - page
+                - guide
+                - next_step
+                description: 'Anonymous: the first step and the guide. Signed in: the steps you marked done, the next step on each platform and the Android closed-test clock.'
+      security:
+      - {}
+      - ApiKeyAuth: []
+      - OAuth2: []
+    post:
+      tags:
+      - mobile-apps
+      summary: Progress Post
+      operationId: progress_post_api_v1_mobile_apps_progress_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProgressIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  logged_in:
+                    type: boolean
+                  page:
+                    type: string
+                  guide:
+                    type: string
+                  rules: {}
+                  done:
+                    type: array
+                    items:
+                      type: string
+                  android_next: {}
+                  ios_next: {}
+                  next_step: {}
+                  note:
+                    type: string
+                additionalProperties: true
+                required:
+                - logged_in
+                - page
+                - guide
+                - next_step
+                description: 'Anonymous: the first step and the guide. Signed in: the steps you marked done, the next step on each platform and the Android closed-test clock.'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '400':
+          description: Unknown step, or a date that is not YYYY-MM-DD.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '401':
+          description: Sign in or pass an API key.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      description: Mark a step done or undone (`step`, `done`), and record `closed_test_started_on` (YYYY-MM-DD) and `tester_count`. Returns your progress.
+components:
+  schemas:
+    CreatorBuildIn:
+      properties:
+        app_name:
+          type: string
+          maxLength: 60
+          title: App Name
+        start_url:
+          type: string
+          maxLength: 500
+          title: Start Url
+        attest_no_restricted_features:
+          type: boolean
+          title: Attest No Restricted Features
+          default: false
+      type: object
+      required:
+      - app_name
+      - start_url
+      title: CreatorBuildIn
+    ProgressIn:
+      properties:
+        step:
+          anyOf:
+          - type: string
+            maxLength: 40
+          - type: 'null'
+          title: Step
+        done:
+          type: boolean
+          title: Done
+          default: true
+        closed_test_started_on:
+          anyOf:
+          - type: string
+            maxLength: 10
+          - type: 'null'
+          title: Closed Test Started On
+        tester_count:
+          anyOf:
+          - type: integer
+            maximum: 100000.0
+            minimum: 0.0
+          - type: 'null'
+          title: Tester Count
+      type: object
+      title: ProgressIn
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

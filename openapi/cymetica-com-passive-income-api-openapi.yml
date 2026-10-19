@@ -1,0 +1,259 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Passive Income API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: Passive Income
+paths:
+  /api/v1/passive-income/estimate:
+    get:
+      summary: Passive Income Estimate
+      description: 'Hypothetical monthly USDC estimate from assumed volume + holdings, or the reverse
+
+        (solve=holdings / solve=volume). Not an earnings statement. Public, no credential,
+
+        60 requests/min/IP. Bounds: daily_volume_usd 0..1,000,000,000; holdings 0..total
+
+        supply; target_monthly_usd >0..1,000,000,000. Out-of-range input returns 422 whose
+
+        detail names the limit.'
+      operationId: passive_income_estimate_api_v1_passive_income_estimate_get
+      parameters:
+      - name: daily_volume_usd
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: number
+          - type: 'null'
+          description: ASSUMED average platform daily volume, USD. Allowed range 0 to 1,000,000,000 (maximum); a larger value returns 422 naming the maximum. Required for solve=estimate and solve=holdings.
+          minimum: 0
+          maximum: 1000000000
+          title: Daily Volume Usd
+        description: ASSUMED average platform daily volume, USD. Allowed range 0 to 1,000,000,000 (maximum); a larger value returns 422 naming the maximum. Required for solve=estimate and solve=holdings.
+      - name: et10
+        in: query
+        required: false
+        schema:
+          type: number
+          description: ET10 held (0 up to ET10 total supply)
+          minimum: 0
+          default: 0
+          title: Et10
+        description: ET10 held (0 up to ET10 total supply)
+      - name: sbio
+        in: query
+        required: false
+        schema:
+          type: number
+          description: SBIO held (0 up to SBIO total supply)
+          minimum: 0
+          default: 0
+          title: Sbio
+        description: SBIO held (0 up to SBIO total supply)
+      - name: vaix
+        in: query
+        required: false
+        schema:
+          type: number
+          description: VAIX held (0 up to VAIX total supply)
+          minimum: 0
+          default: 0
+          title: Vaix
+        description: VAIX held (0 up to VAIX total supply)
+      - name: solve
+        in: query
+        required: false
+        schema:
+          type: string
+          description: estimate | holdings (target+volume → holdings) | volume (target+holdings → volume)
+          enum:
+          - estimate
+          - holdings
+          - volume
+          default: estimate
+          title: Solve
+        description: estimate | holdings (target+volume → holdings) | volume (target+holdings → volume)
+      - name: target_monthly_usd
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: number
+          - type: 'null'
+          description: Target monthly USD (solve=holdings|volume). Must be above 0 and at most 1,000,000,000 (maximum).
+          exclusiveMinimum: 0
+          maximum: 1000000000
+          title: Target Monthly Usd
+        description: Target monthly USD (solve=holdings|volume). Must be above 0 and at most 1,000,000,000 (maximum).
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  daily_volume_usd:
+                    type: string
+                  per_token:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: 'Per token (ET10, SBIO, VAIX): holdings, total_supply, leg_pct, monthly_usd_at_standard_fee.'
+                  monthly_usd_at_standard_fee:
+                    type: string
+                  monthly_usd_today:
+                    type: string
+                  zero_fee_promo_active:
+                    type: boolean
+                  rates:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  hypothetical:
+                    type: boolean
+                  disclaimer:
+                    type: string
+                  floor_note:
+                    type: string
+                additionalProperties: true
+                required:
+                - ok
+                description: Hypothetical monthly USDC from assumed volume and holdings (or the solved holdings/volume for a target when solve is set).
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '429':
+          description: Rate limited.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: Token supplies could not be read on-chain just now.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+      tags:
+      - Passive Income
+components:
+  schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

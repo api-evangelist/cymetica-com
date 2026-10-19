@@ -16,21 +16,147 @@ paths:
       tags:
       - rst-crypto-buy
       summary: Get Supported Tokens
-      description: 'List all accepted tokens for RST purchase with metadata.
-
-
-        Public endpoint — no auth required, rate-limited to 30/min/IP.
-
-        67 tokens available now (EVM + Solana), 33 coming soon (native chain integration).
-
-        Cacheable for 5 minutes — token list changes rarely.'
+      description: Every token accepted for ET10 purchase. Each entry carries `comingSoon` (true = not yet payable) and `paymentMethod`; the available and coming-soon counts change with the live registry, so count them from the response rather than from this document.
       operationId: get_supported_tokens_api_v1_rst_supported_tokens_get
       responses:
         '200':
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  tokens:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        rank:
+                          type:
+                          - integer
+                          - 'null'
+                        symbol:
+                          type: string
+                        name:
+                          type: string
+                        address:
+                          type:
+                          - string
+                          - 'null'
+                        decimals:
+                          type: integer
+                        chain:
+                          type: string
+                        chain_id:
+                          type:
+                          - integer
+                          - 'null'
+                        category:
+                          type: string
+                        coingeckoId:
+                          type:
+                          - string
+                          - 'null'
+                        comingSoon:
+                          type: boolean
+                        paymentMethod:
+                          type: string
+                          description: e.g. evm_swap; pending/native_chain = not yet payable.
+                        logoUrl:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: false
+                      required:
+                      - symbol
+                      - name
+                      - decimals
+                      - chain
+                      - comingSoon
+                      - paymentMethod
+                  rst_price_usd:
+                    type: string
+                    description: Current ET10 sale price in USD (promo price while a promo is open).
+                  et10_promo:
+                    type: object
+                    properties:
+                      active:
+                        type: boolean
+                      price_usd:
+                        type: string
+                      base_price_usd:
+                        type: string
+                      et10_per_usdc:
+                        type: string
+                      base_et10_per_usdc:
+                        type: string
+                      discount_pct:
+                        type: string
+                      ends_at:
+                        type: string
+                      starts_at:
+                        type:
+                        - string
+                        - 'null'
+                      purpose:
+                        type: string
+                      topup_bonus:
+                        type: object
+                        properties:
+                          active:
+                            type: boolean
+                          summary:
+                            type: string
+                        additionalProperties: false
+                        required:
+                        - active
+                        - summary
+                        description: Buying during the promo reprices the buyer's earlier full-price ET10 (credited once).
+                    additionalProperties: false
+                    required:
+                    - active
+                    - price_usd
+                    - base_price_usd
+                    - et10_per_usdc
+                    - base_et10_per_usdc
+                    description: ET10 sale-price promo. discount_pct/ends_at/starts_at/purpose/topup_bonus are present only while `active` is true.
+                additionalProperties: false
+                required:
+                - tokens
+                - rst_price_usd
+                - et10_promo
+                description: Tokens accepted for ET10 purchase (cacheable 5 min).
+        '429':
+          description: Too many requests (30/min per IP).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
       security: []
   /api/v1/rst/exchange-address/{token_symbol}:
     get:
@@ -68,13 +194,128 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  deposit_address:
+                    type: string
+                  chain:
+                    type: string
+                  chain_id:
+                    type: integer
+                  token_symbol:
+                    type: string
+                  rst_price_usd:
+                    type: string
+                  paymentMethod:
+                    type: string
+                additionalProperties: false
+                required:
+                - deposit_address
+                - chain
+                - chain_id
+                - token_symbol
+                - rst_price_usd
+                description: 'Collection address for this token''s chain: send the token there and ET10 is sent back to the sender.'
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '400':
+          description: Invalid or unsupported token symbol, or the token is not payable yet (coming soon).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '429':
+          description: Too many requests (30/min per IP).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: No collection address is available for that chain right now.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
       security: []
 components:
   schemas:
@@ -102,6 +343,11 @@ components:
         type:
           type: string
           title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
       type: object
       required:
       - loc

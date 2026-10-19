@@ -1,0 +1,1223 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Personal Trading Station API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: Personal Trading Station
+paths:
+  /api/v1/station/apps:
+    get:
+      tags:
+      - Personal Trading Station
+      summary: Station Apps
+      description: 'Every tab the station can hold: apps that are already live on the platform.'
+      operationId: station_apps_api_v1_station_apps_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  apps:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        title:
+                          type: string
+                        group:
+                          type: string
+                        desc:
+                          type: string
+                        url:
+                          type: string
+                          description: Page template; {sym} / {sym_lower} take the station's symbol.
+                        takes_symbol:
+                          type: boolean
+                        base:
+                          type: boolean
+                          description: True for the chart base layer, always first.
+                      additionalProperties: false
+                      required:
+                      - id
+                      - title
+                      - url
+                  default_tabs:
+                    type: array
+                    items:
+                      type: string
+                  default_symbol:
+                    type: string
+                  max_tabs:
+                    type: number
+                  not_yet_live:
+                    type: array
+                    items:
+                      type: string
+                  clob_symbols:
+                    type: array
+                    items:
+                      type: string
+                    description: Symbols with a CLOB market; any other symbol's order-book tab opens the exchange directory scoped to it (clob_fallback).
+                  clob_fallback:
+                    type: string
+                  rule:
+                    type: string
+                  presets:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        desc:
+                          type: string
+                        workspace:
+                          type: object
+                          properties:
+                            cols:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  w:
+                                    type: number
+                                    description: Width share, percent.
+                                  tiles:
+                                    type: array
+                                    items:
+                                      type: object
+                                      properties:
+                                        app:
+                                          type: string
+                                        h:
+                                          type: number
+                                          description: Height share of the column, percent.
+                                        sym:
+                                          type:
+                                          - string
+                                          - 'null'
+                                          description: Panel locked to this symbol; null follows the layout's symbol.
+                                      additionalProperties: false
+                                      required:
+                                      - app
+                                      - h
+                                additionalProperties: false
+                                required:
+                                - w
+                                - tiles
+                          additionalProperties: false
+                          required:
+                          - cols
+                          description: 1-4 columns of 1-4 panels, at most max_tabs panels; sizes are re-scaled to 100.
+                      additionalProperties: false
+                      required:
+                      - id
+                      - name
+                      - workspace
+                  default_workspace:
+                    type: object
+                    properties:
+                      cols:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            w:
+                              type: number
+                              description: Width share, percent.
+                            tiles:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  app:
+                                    type: string
+                                  h:
+                                    type: number
+                                    description: Height share of the column, percent.
+                                  sym:
+                                    type:
+                                    - string
+                                    - 'null'
+                                    description: Panel locked to this symbol; null follows the layout's symbol.
+                                additionalProperties: false
+                                required:
+                                - app
+                                - h
+                          additionalProperties: false
+                          required:
+                          - w
+                          - tiles
+                    additionalProperties: false
+                    required:
+                    - cols
+                    description: 1-4 columns of 1-4 panels, at most max_tabs panels; sizes are re-scaled to 100.
+                  max_cols:
+                    type: number
+                  max_panels_per_col:
+                    type: number
+                  page_app:
+                    type: string
+                    description: 'The app id of a page panel: {"app": "page", "path": "/markets"}.'
+                  pages:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        path:
+                          type: string
+                        title:
+                          type: string
+                        area:
+                          type: string
+                        desc:
+                          type: string
+                      additionalProperties: true
+                      required:
+                      - path
+                      - title
+                    description: Every public platform page a panel can open, by path.
+                additionalProperties: true
+                required:
+                - apps
+                - default_tabs
+                - default_symbol
+                - max_tabs
+                description: 'Every tab the station can hold: apps already live on the platform. Open /station?symbol=X&tabs=a,b to deep-link one.'
+      security: []
+  /api/v1/station/layouts:
+    get:
+      tags:
+      - Personal Trading Station
+      summary: List Layouts
+      operationId: list_layouts_api_v1_station_layouts_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  layouts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: number
+                        name:
+                          type: string
+                        symbol:
+                          type: string
+                        tabs:
+                          type: array
+                          items:
+                            type: string
+                        workspace:
+                          type: object
+                          properties:
+                            cols:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  w:
+                                    type: number
+                                    description: Width share, percent.
+                                  tiles:
+                                    type: array
+                                    items:
+                                      type: object
+                                      properties:
+                                        app:
+                                          type: string
+                                        h:
+                                          type: number
+                                          description: Height share of the column, percent.
+                                        sym:
+                                          type:
+                                          - string
+                                          - 'null'
+                                          description: Panel locked to this symbol; null follows the layout's symbol.
+                                      additionalProperties: false
+                                      required:
+                                      - app
+                                      - h
+                                additionalProperties: false
+                                required:
+                                - w
+                                - tiles
+                          additionalProperties: false
+                          required:
+                          - cols
+                          description: 1-4 columns of 1-4 panels, at most max_tabs panels; sizes are re-scaled to 100.
+                        is_default:
+                          type: boolean
+                        updated_at:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: false
+                      required:
+                      - name
+                      - symbol
+                      - tabs
+                      description: 'One saved layout: the base tab first, then the app ids, and the panel workspace.'
+                additionalProperties: true
+                required:
+                - layouts
+        '401':
+          description: Sign in or pass an API key.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: Saved layouts are not available yet.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+    put:
+      tags:
+      - Personal Trading Station
+      summary: Save Layout
+      operationId: save_layout_api_v1_station_layouts_put
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LayoutIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  layout:
+                    type: object
+                    properties:
+                      id:
+                        type: number
+                      name:
+                        type: string
+                      symbol:
+                        type: string
+                      tabs:
+                        type: array
+                        items:
+                          type: string
+                      workspace:
+                        type: object
+                        properties:
+                          cols:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                w:
+                                  type: number
+                                  description: Width share, percent.
+                                tiles:
+                                  type: array
+                                  items:
+                                    type: object
+                                    properties:
+                                      app:
+                                        type: string
+                                      h:
+                                        type: number
+                                        description: Height share of the column, percent.
+                                      sym:
+                                        type:
+                                        - string
+                                        - 'null'
+                                        description: Panel locked to this symbol; null follows the layout's symbol.
+                                    additionalProperties: false
+                                    required:
+                                    - app
+                                    - h
+                              additionalProperties: false
+                              required:
+                              - w
+                              - tiles
+                        additionalProperties: false
+                        required:
+                        - cols
+                        description: 1-4 columns of 1-4 panels, at most max_tabs panels; sizes are re-scaled to 100.
+                      is_default:
+                        type: boolean
+                      updated_at:
+                        type:
+                        - string
+                        - 'null'
+                    additionalProperties: false
+                    required:
+                    - name
+                    - symbol
+                    - tabs
+                    description: 'One saved layout: the base tab first, then the app ids, and the panel workspace.'
+                additionalProperties: true
+                required:
+                - layout
+                description: 'Create or replace the layout of that name (body: name, symbol, tabs or workspace, is_default).'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '400':
+          description: Bad name, symbol or tab id; the message says which.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '401':
+          description: Sign in or pass an API key.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: Saved layouts are not available yet.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+  /api/v1/station/layouts/{name}:
+    delete:
+      tags:
+      - Personal Trading Station
+      summary: Delete Layout
+      operationId: delete_layout_api_v1_station_layouts__name__delete
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Name
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: string
+                additionalProperties: true
+                required:
+                - deleted
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Sign in or pass an API key.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: No layout of that name.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: Saved layouts are not available yet.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/station/nexus-desk:
+    get:
+      tags:
+      - Personal Trading Station
+      summary: Get Nexus Desk
+      description: The caller's Nexus Panel desk, or the default one when nothing is saved yet.
+      operationId: get_nexus_desk_api_v1_station_nexus_desk_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  desk:
+                    type: object
+                    properties:
+                      tabs:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            path:
+                              type: string
+                              description: Same-site path; '' = a blank view.
+                            title:
+                              type: string
+                          additionalProperties: false
+                          required:
+                          - path
+                          - title
+                      active:
+                        type: number
+                        description: Index of the view on screen.
+                      quick:
+                        type: array
+                        items:
+                          type: string
+                        description: Quick launch ids, in the user's order.
+                      pinned:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            path:
+                              type: string
+                              description: Same-site path; '' = a blank view.
+                            title:
+                              type: string
+                          additionalProperties: false
+                          required:
+                          - path
+                          - title
+                      recent:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            path:
+                              type: string
+                              description: Same-site path; '' = a blank view.
+                            title:
+                              type: string
+                          additionalProperties: false
+                          required:
+                          - path
+                          - title
+                      updated_at:
+                        type:
+                        - string
+                        - 'null'
+                    additionalProperties: false
+                    required:
+                    - tabs
+                    - active
+                    - quick
+                    - pinned
+                    - recent
+                    description: The Nexus Start desk (ET-31577), kept per account beside the saved layouts.
+                  saved:
+                    type: boolean
+                    description: False = nothing saved yet; desk is the default.
+                  quick_launch:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        title:
+                          type: string
+                        url:
+                          type: string
+                          description: '{sym} = the panel''s symbol.'
+                      additionalProperties: false
+                      required:
+                      - id
+                      - title
+                      - url
+                additionalProperties: true
+                required:
+                - desk
+                - saved
+                - quick_launch
+        '401':
+          description: Sign in or pass an API key.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: Saved layouts are not available yet.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+    put:
+      tags:
+      - Personal Trading Station
+      summary: Save Nexus Desk
+      operationId: save_nexus_desk_api_v1_station_nexus_desk_put
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeskIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  desk:
+                    type: object
+                    properties:
+                      tabs:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            path:
+                              type: string
+                              description: Same-site path; '' = a blank view.
+                            title:
+                              type: string
+                          additionalProperties: false
+                          required:
+                          - path
+                          - title
+                      active:
+                        type: number
+                        description: Index of the view on screen.
+                      quick:
+                        type: array
+                        items:
+                          type: string
+                        description: Quick launch ids, in the user's order.
+                      pinned:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            path:
+                              type: string
+                              description: Same-site path; '' = a blank view.
+                            title:
+                              type: string
+                          additionalProperties: false
+                          required:
+                          - path
+                          - title
+                      recent:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            path:
+                              type: string
+                              description: Same-site path; '' = a blank view.
+                            title:
+                              type: string
+                          additionalProperties: false
+                          required:
+                          - path
+                          - title
+                      updated_at:
+                        type:
+                        - string
+                        - 'null'
+                    additionalProperties: false
+                    required:
+                    - tabs
+                    - active
+                    - quick
+                    - pinned
+                    - recent
+                    description: The Nexus Start desk (ET-31577), kept per account beside the saved layouts.
+                additionalProperties: true
+                required:
+                - desk
+                description: Replace the caller's desk; unusable entries are dropped, never an error.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Sign in or pass an API key.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: Saved layouts are not available yet.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+components:
+  schemas:
+    WorkspaceColumnIn:
+      properties:
+        w:
+          anyOf:
+          - type: number
+            maximum: 100.0
+            minimum: 0.0
+          - type: 'null'
+          title: W
+          description: Width, percent of the workspace. Omit to share equally; widths are normalised to 100.
+        tiles:
+          items:
+            $ref: '#/components/schemas/WorkspaceTileIn'
+          type: array
+          maxItems: 4
+          minItems: 1
+          title: Tiles
+          description: 1 to 4 panels, top to bottom.
+      type: object
+      required:
+      - tiles
+      title: WorkspaceColumnIn
+    LayoutIn:
+      properties:
+        name:
+          type: string
+          maxLength: 60
+          minLength: 1
+          title: Name
+        symbol:
+          type: string
+          maxLength: 20
+          minLength: 1
+          title: Symbol
+        tabs:
+          items:
+            type: string
+          type: array
+          maxItems: 12
+          title: Tabs
+        is_default:
+          type: boolean
+          title: Is Default
+          default: false
+        workspace:
+          anyOf:
+          - $ref: '#/components/schemas/WorkspaceIn'
+          - type: 'null'
+          description: 'Panel workspace: columns of panels. When present the tab list is derived from it and `tabs` is ignored.'
+      type: object
+      required:
+      - name
+      - symbol
+      title: LayoutIn
+    DeskLinkIn:
+      properties:
+        path:
+          type: string
+          maxLength: 200
+          title: Path
+          description: Same-site path, e.g. /gem-screener; '' = a blank view.
+          default: ''
+        title:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+          title: Title
+      type: object
+      title: DeskLinkIn
+    DeskIn:
+      properties:
+        tabs:
+          items:
+            $ref: '#/components/schemas/DeskLinkIn'
+          type: array
+          maxItems: 50
+          title: Tabs
+          description: Open views, left to right (at most 12 kept).
+        active:
+          type: integer
+          maximum: 100.0
+          minimum: 0.0
+          title: Active
+          description: Index of the view on screen.
+          default: 0
+        quick:
+          items:
+            type: string
+          type: array
+          maxItems: 50
+          title: Quick
+          description: Quick launch ids in the user's order (GET returns the catalogue).
+        pinned:
+          items:
+            $ref: '#/components/schemas/DeskLinkIn'
+          type: array
+          maxItems: 50
+          title: Pinned
+          description: Pinned tiles in the user's order.
+        recent:
+          items:
+            $ref: '#/components/schemas/DeskLinkIn'
+          type: array
+          maxItems: 50
+          title: Recent
+          description: Recent pages, newest first.
+        rail:
+          additionalProperties:
+            type: string
+          type: object
+          title: Rail
+          description: 'ET-31729: your own names for the panel''s rail tabs (companion, files, bots, settings); blank = the standard name.'
+      type: object
+      title: DeskIn
+      description: The Nexus Panel desk (ET-31577 BB-CHANGE C1/C3). Unusable entries are dropped, never an error.
+    WorkspaceTileIn:
+      properties:
+        app:
+          type: string
+          maxLength: 40
+          minLength: 1
+          title: App
+          description: App id from GET /api/v1/station/apps (e.g. chart, clob, news), or `page` for any platform page by path.
+        path:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+          title: Path
+          description: 'For app `page`: the same-site path to mount (e.g. /markets, /leaderboard/features). GET /api/v1/station/apps lists every page under `pages`; any same-site path is accepted.'
+        h:
+          anyOf:
+          - type: number
+            maximum: 100.0
+            minimum: 0.0
+          - type: 'null'
+          title: H
+          description: Height, percent of the column. Omit to share the column equally; heights are normalised to 100.
+        sym:
+          anyOf:
+          - type: string
+            maxLength: 20
+          - type: 'null'
+          title: Sym
+          description: Symbol this panel is locked to, for apps that take one; null = the layout's symbol.
+      type: object
+      required:
+      - app
+      title: WorkspaceTileIn
+      description: 'One panel: an app id from GET /api/v1/station/apps, its height as a percent of
+
+        the column, and the symbol it is locked to (apps that take one).'
+    WorkspaceIn:
+      properties:
+        cols:
+          items:
+            $ref: '#/components/schemas/WorkspaceColumnIn'
+          type: array
+          maxItems: 4
+          minItems: 1
+          title: Cols
+          description: 1 to 4 columns, left to right; at most 12 panels in all.
+      type: object
+      required:
+      - cols
+      title: WorkspaceIn
+      description: 'Columns of resizable panels (ET-30827). ET-30936 item 1 (QA 2026-10-11): typed so a
+
+        schema-generated client discovers columns, widths, panels, app ids, heights and symbols
+
+        from OpenAPI alone. The server still normalises and validates every value
+
+        (``trading_station.validate_workspace``).'
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

@@ -1,0 +1,93 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Trading Models API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: trading-models
+paths:
+  /api/v1/trading-models/combinations:
+    get:
+      tags:
+      - trading-models
+      summary: List Combinations
+      description: List all named model combinations and their design targets (not measured, not applied).
+      operationId: list_combinations_api_v1_trading_models_combinations_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  combinations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        description:
+                          type: string
+                        required_model_ids:
+                          type: array
+                          items:
+                            type: string
+                          description: Models that must all be equipped for the combination.
+                        bonus_type:
+                          type:
+                          - string
+                          - 'null'
+                        bonus_value:
+                          type:
+                          - string
+                          - 'null'
+                          description: Decimal string. A design target, not a measured or applied figure; read `bonus_status`.
+                        bonus_status:
+                          type: string
+                          description: 'Says what `bonus_value` is: "Design target — not measured, not applied to trade outcomes".'
+                        icon:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: true
+                      required:
+                      - id
+                      - name
+                      - bonus_status
+                  total:
+                    type: integer
+                additionalProperties: false
+                required:
+                - combinations
+                - total
+      security: []
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

@@ -1,0 +1,240 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Economic Calendar API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: economic-calendar
+paths:
+  /api/v1/economic-calendar:
+    get:
+      tags:
+      - economic-calendar
+      summary: Economic Calendar Api
+      description: 'Forward-looking macro release schedule (CPI, NFP, FOMC, GDP, PCE, central
+
+        banks) with consensus, prior, and the actual once printed. Keyless.'
+      operationId: economic_calendar_api_api_v1_economic_calendar_get
+      parameters:
+      - name: days
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 60
+          minimum: 1
+          description: Days ahead from today (ignored if from+to given)
+          default: 7
+          title: Days
+        description: Days ahead from today (ignored if from+to given)
+      - name: from
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Start date YYYY-MM-DD
+          title: From
+        description: Start date YYYY-MM-DD
+      - name: to
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: End date YYYY-MM-DD
+          title: To
+        description: End date YYYY-MM-DD
+      - name: impact
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: 'Filter: high | medium | low | none'
+          title: Impact
+        description: 'Filter: high | medium | low | none'
+      - name: country
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Filter by country/currency code, e.g. US, EUR
+          title: Country
+        description: Filter by country/currency code, e.g. US, EUR
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  generated_at:
+                    type:
+                    - string
+                    - 'null'
+                  source:
+                    type:
+                    - string
+                    - 'null'
+                  source_status:
+                    type: string
+                  from:
+                    type:
+                    - string
+                    - 'null'
+                  to:
+                    type:
+                    - string
+                    - 'null'
+                  count:
+                    type: integer
+                  releases:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        event:
+                          type: string
+                        datetime_utc:
+                          type: string
+                          description: ISO-8601 UTC
+                        country:
+                          type:
+                          - string
+                          - 'null'
+                          description: Currency/country code, e.g. USD, EUR
+                        currency:
+                          type:
+                          - string
+                          - 'null'
+                        impact:
+                          type: string
+                          description: high | medium | low | none
+                        consensus:
+                          type:
+                          - number
+                          - 'null'
+                        prior:
+                          type:
+                          - number
+                          - 'null'
+                        actual:
+                          type:
+                          - number
+                          - 'null'
+                          description: Null until the print lands.
+                        asset_classes:
+                          type: array
+                          items:
+                            type: string
+                        source:
+                          type: string
+                      additionalProperties: true
+                      required:
+                      - event
+                      - datetime_utc
+                      - impact
+                additionalProperties: true
+                required:
+                - count
+                - releases
+                description: Forward macro release schedule. Keyless.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '503':
+          description: 'Calendar feed temporarily unavailable: the same envelope with `count` 0 and an empty `releases`.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  generated_at:
+                    type: 'null'
+                  source:
+                    type: 'null'
+                  source_status:
+                    type: string
+                  count:
+                    type: integer
+                  releases:
+                    type: array
+                    items: {}
+                additionalProperties: false
+                required:
+                - source_status
+                - count
+                - releases
+      security: []
+components:
+  schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

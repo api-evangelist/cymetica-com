@@ -1,0 +1,5480 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Build a Company API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: Build a Company
+paths:
+  /api/v1/company/templates:
+    get:
+      tags:
+      - Build a Company
+      summary: Get Templates
+      operationId: get_templates_api_v1_company_templates_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  departments:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                        name:
+                          type: string
+                        charter:
+                          type: string
+                        experts:
+                          type: array
+                          items:
+                            type: string
+                      additionalProperties: true
+                  experts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                        name:
+                          type: string
+                        fits:
+                          type: array
+                          items:
+                            type: string
+                        description:
+                          type: string
+                          description: One line on what the expert does; on the Auditor it also says how it differs from the built-in company-wide weekly audit.
+                        brief:
+                          type: string
+                          description: The full role brief the expert is prompted with.
+                        tools:
+                          type: array
+                          items:
+                            type: string
+                          description: Tools the expert brings (empty = none).
+                        capabilities:
+                          type: array
+                          items:
+                            type: string
+                          description: What the expert can and cannot do, in plain words.
+                        permissions_by_department:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              department:
+                                type: string
+                              approvals:
+                                type: array
+                                items:
+                                  type: string
+                              paper_experiments:
+                                type: boolean
+                            additionalProperties: false
+                            required:
+                            - department
+                            - approvals
+                            - paper_experiments
+                      additionalProperties: false
+                      required:
+                      - key
+                      - name
+                      - fits
+                  report_styles:
+                    type: array
+                    items:
+                      type: string
+                additionalProperties: true
+                required:
+                - departments
+                - experts
+                - report_styles
+                description: Department templates, the expert catalog and report styles for POST /api/v1/company.
+      security: []
+  /api/v1/company/:
+    post:
+      tags:
+      - Build a Company
+      summary: Create
+      description: 'Create your company — one per account (409 when you already have one).
+
+
+        Body: ``{"name", "mission", "departments": [...], "report_style"?, "token_chain"?}``.
+
+        Each department is a template (``{"key": "testing"}`` — development, design, testing,
+
+        testing_lab, trading_desk; override ``name`` / ``charter`` / ``experts`` freely) or your own
+
+        (``{"name", "charter", "experts": [...]}``). The charter (up to 2,000 characters) is the
+
+        department''s standing brief: put your rules, notes and lessons there and every task it runs
+
+        starts from them. Experts come from GET /templates (qa_tester, researcher, trader, developer,
+
+        lab_scientist, auditor, designer). Departments can be added, edited or removed later with
+
+        POST/PATCH/DELETE /{id}/departments. Returns the same shape as GET /mine (201).
+
+        Paper by default: the company never spends, trades real money, publishes or submits without
+
+        your approval, and every agent turn is metered to YOUR NEXUS build plan, never the platform.'
+      operationId: create_api_v1_company__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyIn'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  mission:
+                    type: string
+                  status:
+                    type: string
+                  created_at:
+                    type:
+                    - string
+                    - 'null'
+                  report_style:
+                    type: string
+                  departments:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        key:
+                          type: string
+                        name:
+                          type: string
+                        charter:
+                          type: string
+                        experts:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              key:
+                                type: string
+                              name:
+                                type: string
+                            additionalProperties: true
+                        status:
+                          type: string
+                          description: working (a task runs now), blocked (escalated / waiting for approval), queued (work waits; `waits` says why and until when) or idle.
+                        waits:
+                          type:
+                          - object
+                          - 'null'
+                          additionalProperties: true
+                          description: 'Why queued work waits: {code, text, until}. code: paused | plan_limit | free_plan | daily_cap | capacity | usage_unavailable | retry | next_pass.'
+                        units_7d:
+                          type: string
+                          description: Plan units this department's turns were metered in the last 7 days.
+                        tasks:
+                          type: object
+                          properties: {}
+                          additionalProperties: true
+                          description: Task counts by status.
+                        recent_results:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              task_id:
+                                type: integer
+                              title:
+                                type: string
+                              outcome:
+                                type:
+                                - string
+                                - 'null'
+                              finished_at:
+                                type:
+                                - string
+                                - 'null'
+                            additionalProperties: true
+                        cost_usd_7d:
+                          type:
+                          - number
+                          - 'null'
+                        memory_count:
+                          type: integer
+                      additionalProperties: true
+                      required:
+                      - id
+                      - key
+                      - name
+                      - status
+                      description: One department with its hired experts and task state.
+                  approvals:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        department:
+                          type:
+                          - string
+                          - 'null'
+                        kind:
+                          type: string
+                        summary:
+                          type: string
+                        details:
+                          type: object
+                          properties: {}
+                          additionalProperties: true
+                        status:
+                          type: string
+                        created_at:
+                          type:
+                          - string
+                          - 'null'
+                        executable:
+                          type: boolean
+                          description: True when approving performs the action itself.
+                      additionalProperties: true
+                      required:
+                      - id
+                      - kind
+                      - status
+                  tasks_recent:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        department:
+                          type:
+                          - string
+                          - 'null'
+                        title:
+                          type: string
+                        status:
+                          type: string
+                        attempts:
+                          type: integer
+                        updated_at:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: true
+                  manager_messages:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        role:
+                          type: string
+                        text:
+                          type: string
+                        created_at:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: true
+                      required:
+                      - id
+                      - role
+                      - text
+                  last_audit:
+                    oneOf:
+                    - type: object
+                      properties:
+                        id:
+                          type: integer
+                        created_at:
+                          type:
+                          - string
+                          - 'null'
+                        findings:
+                          type: array
+                          items:
+                            type: object
+                            properties: {}
+                            additionalProperties: true
+                            description: One finding with its proposed fix.
+                      additionalProperties: true
+                      required:
+                      - id
+                      - findings
+                      description: One built-in company-wide audit run.
+                    - type: 'null'
+                  budget:
+                    type: object
+                    properties:
+                      turns_today:
+                        type: integer
+                      turns_cap:
+                        type: integer
+                    additionalProperties: true
+                  billing:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: Plan / usage state for the company's agent turns.
+                  events_recent:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        kind:
+                          type: string
+                        department_id:
+                          type:
+                          - integer
+                          - 'null'
+                        task_id:
+                          type:
+                          - integer
+                          - 'null'
+                        title:
+                          type: string
+                        detail:
+                          type: string
+                        created_at:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: true
+                      required:
+                      - id
+                      - kind
+                      description: One live-office event (what the agents did).
+                  token_launch:
+                    type:
+                    - object
+                    - 'null'
+                    description: The standing token-launch offer, or null.
+                  investable:
+                    type: object
+                    properties:
+                      investable:
+                        type: boolean
+                      mode:
+                        type: string
+                      since:
+                        type:
+                        - string
+                        - 'null'
+                      terms:
+                        type: object
+                        properties:
+                          backer_share_pct:
+                            type: number
+                          backer_cap_x:
+                            type: number
+                          locked:
+                            type: boolean
+                          locked_at:
+                            type:
+                            - string
+                            - 'null'
+                          version:
+                            type: string
+                          url:
+                            type: string
+                        additionalProperties: true
+                        required:
+                        - backer_share_pct
+                        - backer_cap_x
+                        - locked
+                      public_url:
+                        type:
+                        - string
+                        - 'null'
+                      backers:
+                        type: integer
+                      pledged_usdc:
+                        type: number
+                      available_usdc:
+                        type: number
+                      covered_usdc:
+                        type: number
+                      proceeds_shared_usdc:
+                        type: number
+                    additionalProperties: true
+                    required:
+                    - investable
+                    - mode
+                    - terms
+                    description: The owner's Investable switch and backing totals.
+                  entity:
+                    oneOf:
+                    - type: object
+                      properties:
+                        id:
+                          type: integer
+                        domicile_code:
+                          type: string
+                        domicile_name:
+                          type: string
+                        off_world:
+                          type: boolean
+                        registered_via:
+                          type:
+                          - string
+                          - 'null'
+                        registered_via_name:
+                          type:
+                          - string
+                          - 'null'
+                        entity_type_key:
+                          type:
+                          - string
+                          - 'null'
+                        entity_type_name:
+                          type:
+                          - string
+                          - 'null'
+                        legal_name:
+                          type:
+                          - string
+                          - 'null'
+                        status:
+                          type: string
+                        next_step:
+                          type: string
+                        registration_number:
+                          type:
+                          - string
+                          - 'null'
+                        incorporated_at:
+                          type:
+                          - string
+                          - 'null'
+                        share_currency:
+                          type:
+                          - string
+                          - 'null'
+                        share_classes:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                              code:
+                                type: string
+                              name:
+                                type: string
+                              authorized:
+                                type: number
+                              issued:
+                                type: number
+                              par_value:
+                                type: number
+                              votes_per_share:
+                                type: number
+                              liquidation_preference_x:
+                                type: number
+                              dividend_pref_pct:
+                                type: number
+                              participating:
+                                type: boolean
+                              convertible:
+                                type: boolean
+                              for_backers:
+                                type: boolean
+                              issue_price_usdc:
+                                type:
+                                - number
+                                - 'null'
+                            additionalProperties: true
+                        shares_issued_total:
+                          type: number
+                        ownership_by_source:
+                          type: object
+                          properties: {}
+                          additionalProperties: true
+                        editable:
+                          type: boolean
+                        off_world_note:
+                          type: string
+                        registered_office:
+                          type:
+                          - string
+                          - 'null'
+                        fiscal_year_end:
+                          type:
+                          - string
+                          - 'null'
+                        directors:
+                          type: array
+                          items:
+                            type: object
+                            properties: {}
+                            additionalProperties: true
+                        governance:
+                          type: object
+                          properties: {}
+                          additionalProperties: true
+                        quote:
+                          type:
+                          - object
+                          - 'null'
+                        formation_paid_usdc:
+                          type: number
+                        notes:
+                          type:
+                          - string
+                          - 'null'
+                        requested_at:
+                          type:
+                          - string
+                          - 'null'
+                        quoted_at:
+                          type:
+                          - string
+                          - 'null'
+                        paid_at:
+                          type:
+                          - string
+                          - 'null'
+                        filed_at:
+                          type:
+                          - string
+                          - 'null'
+                        desk_issue_id:
+                          type:
+                          - integer
+                          - 'null'
+                        register:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              class:
+                                type:
+                                - string
+                                - 'null'
+                              holder:
+                                type:
+                                - string
+                                - 'null'
+                              user_id:
+                                type:
+                                - integer
+                                - 'null'
+                              shares:
+                                type: number
+                              paid_usdc:
+                                type: number
+                              source:
+                                type: string
+                              status:
+                                type: string
+                              vesting:
+                                type:
+                                - object
+                                - 'null'
+                            additionalProperties: true
+                        events:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              kind:
+                                type: string
+                              detail:
+                                type:
+                                - string
+                                - 'null'
+                              actor:
+                                type:
+                                - string
+                                - 'null'
+                              at:
+                                type:
+                                - string
+                                - 'null'
+                            additionalProperties: true
+                      additionalProperties: true
+                      required:
+                      - id
+                      - domicile_code
+                      - status
+                      description: 'The company''s legal entity: domicile, equity structure, formation status.'
+                    - type: 'null'
+                    description: null until the owner drafts an entity.
+                  equity_perp:
+                    type:
+                    - object
+                    - 'null'
+                    description: The founder's pre-IPO equity perp on the company, or the offer.
+                additionalProperties: true
+                required:
+                - id
+                - name
+                - mission
+                - status
+                - departments
+                description: Full status of the owner's company.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 'Not signed in: send a Bearer JWT or an X-API-Key.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+  /api/v1/company/mine:
+    get:
+      tags:
+      - Build a Company
+      summary: Mine
+      operationId: mine_api_v1_company_mine_get
+      responses:
+        '200':
+          description: 'Your company: departments, tasks and run_state.'
+          content:
+            application/json:
+              schema:
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  mission:
+                    type: string
+                  status:
+                    type: string
+                  report_style:
+                    type: string
+                  created_at:
+                    type:
+                    - string
+                    - 'null'
+                  departments:
+                    items:
+                      type: object
+                    type: array
+                  approvals:
+                    items:
+                      type: object
+                    type: array
+                  manager_messages:
+                    items:
+                      type: object
+                    type: array
+                  tasks_recent:
+                    items:
+                      type: object
+                    type: array
+                  events_recent:
+                    items:
+                      type: object
+                    type: array
+                  last_audit:
+                    type:
+                    - object
+                    - 'null'
+                  budget:
+                    properties:
+                      turns_today:
+                        type: integer
+                      turns_cap:
+                        type: integer
+                        description: The daily ceiling.
+                      units_per_turn:
+                        type:
+                        - string
+                        - 'null'
+                        description: Measured average plan units of the last 20 company turns.
+                      units_per_turn_basis:
+                        type: string
+                      turns_measured:
+                        type: integer
+                      extra_usage:
+                        type: boolean
+                      at_zero:
+                        type:
+                        - string
+                        - 'null'
+                        description: What happens when a window runs out.
+                      usage_url:
+                        type: string
+                      windows:
+                        properties:
+                          five_hour:
+                            properties:
+                              units_used:
+                                type: string
+                              units_cap:
+                                type: string
+                              units_left:
+                                type: string
+                              turns_left:
+                                type:
+                                - integer
+                                - 'null'
+                                description: units_left / units_per_turn, rounded down; null before a measured turn.
+                              resets_at:
+                                type:
+                                - string
+                                - 'null'
+                                format: date-time
+                            type: object
+                          weekly:
+                            properties:
+                              units_used:
+                                type: string
+                              units_cap:
+                                type: string
+                              units_left:
+                                type: string
+                              turns_left:
+                                type:
+                                - integer
+                                - 'null'
+                                description: units_left / units_per_turn, rounded down; null before a measured turn.
+                              resets_at:
+                                type:
+                                - string
+                                - 'null'
+                                format: date-time
+                            type: object
+                          extra:
+                            properties:
+                              enabled:
+                                type: boolean
+                              usdc_left:
+                                type:
+                                - string
+                                - 'null'
+                              usdc_per_turn:
+                                type:
+                                - string
+                                - 'null'
+                              turns_left:
+                                type:
+                                - integer
+                                - 'null'
+                              monthly_cap_usdc:
+                                type:
+                                - string
+                                - 'null'
+                              month_spend_usdc:
+                                type:
+                                - string
+                                - 'null'
+                              limited_by:
+                                type:
+                                - string
+                                - 'null'
+                                enum:
+                                - balance
+                                - monthly_cap
+                                - null
+                            type: object
+                            description: Turns left on extra usage (own USDC, within the monthly cap).
+                        type:
+                        - object
+                        - 'null'
+                    type: object
+                    required:
+                    - turns_today
+                    - turns_cap
+                    description: Turns left on the owner's plan; read-only, nothing reserved or charged.
+                  plan:
+                    items:
+                      type: object
+                    type: array
+                    description: The Manager's plan (GET /{id}/plan).
+                  turn_strip:
+                    items:
+                      properties:
+                        state:
+                          type: string
+                          enum:
+                          - done
+                          - failed
+                          - running
+                      type: object
+                    type: array
+                    description: One cell per agent turn today, up to turns_cap.
+                  totals_7d:
+                    properties:
+                      tasks_done:
+                        type: integer
+                      tasks_failed:
+                        type: integer
+                      units:
+                        type: string
+                      approvals_approved:
+                        type: integer
+                    type: object
+                  heartbeat:
+                    properties:
+                      last_pass_at:
+                        type:
+                        - string
+                        - 'null'
+                      next_pass_at:
+                        type:
+                        - string
+                        - 'null'
+                        description: 'Null while paused or when the runner has stopped passing: no pass is promised.'
+                      pass_every_s:
+                        type:
+                        - integer
+                        - 'null'
+                    type: object
+                  message_notice:
+                    type:
+                    - object
+                    - 'null'
+                    description: When the Manager answers a waiting message.
+                  investable:
+                    type:
+                    - object
+                    - 'null'
+                  entity:
+                    type:
+                    - object
+                    - 'null'
+                  token_launch:
+                    type:
+                    - object
+                    - 'null'
+                  run_state:
+                    properties:
+                      state:
+                        type: string
+                        enum:
+                        - paused
+                        - blocked
+                        - running
+                        - stale
+                        - waiting
+                        - idle
+                      code:
+                        type: string
+                        description: paused | daily_cap | capacity | running | runner_stale | waiting | idle | a plan wall code (lower case)
+                      message:
+                        type: string
+                        description: Plain sentence the owner can act on.
+                      can_run:
+                        type: boolean
+                        description: true for running, waiting and idle.
+                      reason:
+                        type: string
+                        description: Plan wall reason, when code is a plan wall.
+                      resets_at:
+                        type: string
+                        format: date-time
+                        description: 'When a wall that clears by itself clears (daily cap: 00:00 UTC).'
+                      upgrade_url:
+                        type: string
+                        description: Where to get a paid plan, for a plan wall.
+                      open:
+                        properties:
+                          queued:
+                            type: integer
+                          running:
+                            type: integer
+                          escalated:
+                            type: integer
+                          waiting_approval:
+                            type: integer
+                          messages_pending:
+                            type: integer
+                        type: object
+                      last_pass_at:
+                        type: string
+                        format: date-time
+                        nullable: true
+                      pass_every_s:
+                        type: integer
+                      turns_today:
+                        type: integer
+                      turns_cap:
+                        type: integer
+                    type: object
+                    required:
+                    - state
+                    - code
+                    - message
+                    - can_run
+                    - open
+                    - pass_every_s
+                    - turns_today
+                    - turns_cap
+                    description: Why the company is or is not running right now; read-only, nothing is charged.
+                additionalProperties: true
+                type: object
+        '404':
+          description: '{"detail": "no company"} when you have none.'
+        '401':
+          description: 'Not signed in: send a Bearer JWT or an X-API-Key.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+  /api/v1/company/{company_id}:
+    delete:
+      tags:
+      - Build a Company
+      summary: Delete
+      operationId: delete_api_v1_company__company_id__delete
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Company Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  deleted:
+                    type: boolean
+                additionalProperties: true
+                required:
+                - id
+                - deleted
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 'Not signed in: send a Bearer JWT or an X-API-Key.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/company/{company_id}/message:
+    post:
+      tags:
+      - Build a Company
+      summary: Message
+      operationId: message_api_v1_company__company_id__message_post
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Company Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reply:
+                    type:
+                    - string
+                    - 'null'
+                    description: The Manager's reply when it answered inline; null when queued.
+                  queued:
+                    type: boolean
+                  message_id:
+                    type: integer
+                  notice:
+                    type: string
+                additionalProperties: true
+                required:
+                - reply
+                - queued
+                - message_id
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 'Not signed in: send a Bearer JWT or an X-API-Key.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/company/{company_id}/messages:
+    get:
+      tags:
+      - Build a Company
+      summary: Messages
+      operationId: messages_api_v1_company__company_id__messages_get
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Company Id
+      - name: after
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: After
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messages:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        role:
+                          type: string
+                        text:
+                          type: string
+                        created_at:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: true
+                      required:
+                      - id
+                      - role
+                      - text
+                additionalProperties: true
+                required:
+                - messages
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 'Not signed in: send a Bearer JWT or an X-API-Key.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/company/{company_id}/approvals/{approval_id}:
+    post:
+      tags:
+      - Build a Company
+      summary: Decide
+      operationId: decide_api_v1_company__company_id__approvals__approval_id__post
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Company Id
+      - name: approval_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Approval Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecisionIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  kind:
+                    type: string
+                  status:
+                    type: string
+                  result:
+                    type:
+                    - object
+                    - 'null'
+                  error:
+                    type:
+                    - string
+                    - 'null'
+                  already_decided:
+                    type: boolean
+                additionalProperties: true
+                required:
+                - id
+                - kind
+                - status
+                - already_decided
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 'Not signed in: send a Bearer JWT or an X-API-Key.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/company/{company_id}/pause:
+    post:
+      tags:
+      - Build a Company
+      summary: Pause
+      operationId: pause_api_v1_company__company_id__pause_post
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Company Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  status:
+                    type: string
+                additionalProperties: true
+                required:
+                - id
+                - status
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 'Not signed in: send a Bearer JWT or an X-API-Key.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/company/{company_id}/resume:
+    post:
+      tags:
+      - Build a Company
+      summary: Resume
+      operationId: resume_api_v1_company__company_id__resume_post
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Company Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  status:
+                    type: string
+                additionalProperties: true
+                required:
+                - id
+                - status
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 'Not signed in: send a Bearer JWT or an X-API-Key.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/company/{company_id}/departments:
+    post:
+      tags:
+      - Build a Company
+      summary: Add Dept
+      operationId: add_dept_api_v1_company__company_id__departments_post
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Company Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepartmentIn'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  key:
+                    type: string
+                  name:
+                    type: string
+                  charter:
+                    type: string
+                  experts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                        name:
+                          type: string
+                      additionalProperties: true
+                  status:
+                    type: string
+                    description: working (a task runs now), blocked (escalated / waiting for approval), queued (work waits; `waits` says why and until when) or idle.
+                  waits:
+                    type:
+                    - object
+                    - 'null'
+                    additionalProperties: true
+                    description: 'Why queued work waits: {code, text, until}. code: paused | plan_limit | free_plan | daily_cap | capacity | usage_unavailable | retry | next_pass.'
+                  units_7d:
+                    type: string
+                    description: Plan units this department's turns were metered in the last 7 days.
+                  tasks:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: Task counts by status.
+                  recent_results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        task_id:
+                          type: integer
+                        title:
+                          type: string
+                        outcome:
+                          type:
+                          - string
+                          - 'null'
+                        finished_at:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: true
+                  cost_usd_7d:
+                    type:
+                    - number
+                    - 'null'
+                  memory_count:
+                    type: integer
+                additionalProperties: true
+                required:
+                - id
+                - key
+                - name
+                - status
+                description: One department with its hired experts and task state.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 'Not signed in: send a Bearer JWT or an X-API-Key.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/company/{company_id}/departments/{dept_id}:
+    patch:
+      tags:
+      - Build a Company
+      summary: Edit Dept
+      operationId: edit_dept_api_v1_company__company_id__departments__dept_id__patch
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Company Id
+      - name: dept_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Dept Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepartmentIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  key:
+                    type: string
+                  name:
+                    type: string
+                  charter:
+                    type: string
+                  experts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                        name:
+                          type: string
+                      additionalProperties: true
+                  status:
+                    type: string
+                    description: working (a task runs now), blocked (escalated / waiting for approval), queued (work waits; `waits` says why and until when) or idle.
+                  waits:
+                    type:
+                    - object
+                    - 'null'
+                    additionalProperties: true
+                    description: 'Why queued work waits: {code, text, until}. code: paused | plan_limit | free_plan | daily_cap | capacity | usage_unavailable | retry | next_pass.'
+                  units_7d:
+                    type: string
+                    description: Plan units this department's turns were metered in the last 7 days.
+                  tasks:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: Task counts by status.
+                  recent_results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        task_id:
+                          type: integer
+                        title:
+                          type: string
+                        outcome:
+                          type:
+                          - string
+                          - 'null'
+                        finished_at:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: true
+                  cost_usd_7d:
+                    type:
+                    - number
+                    - 'null'
+                  memory_count:
+                    type: integer
+                additionalProperties: true
+                required:
+                - id
+                - key
+                - name
+                - status
+                description: One department with its hired experts and task state.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 'Not signed in: send a Bearer JWT or an X-API-Key.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+    delete:
+      tags:
+      - Build a Company
+      summary: Remove Dept
+      operationId: remove_dept_api_v1_company__company_id__departments__dept_id__delete
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Company Id
+      - name: dept_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Dept Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  removed:
+                    type: boolean
+                additionalProperties: true
+                required:
+                - id
+                - removed
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 'Not signed in: send a Bearer JWT or an X-API-Key.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/company/{company_id}/audits:
+    get:
+      tags:
+      - Build a Company
+      summary: Audits
+      operationId: audits_api_v1_company__company_id__audits_get
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Company Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  audits:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        created_at:
+                          type:
+                          - string
+                          - 'null'
+                        findings:
+                          type: array
+                          items:
+                            type: object
+                            properties: {}
+                            additionalProperties: true
+                            description: One finding with its proposed fix.
+                      additionalProperties: true
+                      required:
+                      - id
+                      - findings
+                      description: One built-in company-wide audit run.
+                additionalProperties: true
+                required:
+                - audits
+                description: The built-in weekly audits, newest first.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 'Not signed in: send a Bearer JWT or an X-API-Key.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/company/{company_id}/tasks:
+    get:
+      tags:
+      - Build a Company
+      summary: Tasks Log
+      description: 'The task log (ET-31114): every task with its brief, who queued it (owner | manager |
+
+        system), status, attempts, the agent''s one-line outcome, its ``result`` summary, the last
+
+        error and the ids of the approval / experiment it raised. Newest first; ``after=``
+
+        resumes ascending past a task id. Filter by ``department_id`` and ``status`` (queued |
+
+        running | done | failed | escalated | waiting_approval | cancelled).'
+      operationId: tasks_log_api_v1_company__company_id__tasks_get
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Company Id
+      - name: department_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+            minimum: 1
+          - type: 'null'
+          title: Department Id
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 20
+          - type: 'null'
+          title: Status
+      - name: after
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: After
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 40
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tasks:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        department_id:
+                          type:
+                          - integer
+                          - 'null'
+                        department:
+                          type:
+                          - string
+                          - 'null'
+                          description: Department key, e.g. testing, trading_desk, or your own.
+                        department_name:
+                          type:
+                          - string
+                          - 'null'
+                        title:
+                          type: string
+                        brief:
+                          type: string
+                        origin:
+                          type: string
+                          description: 'Who queued it: owner | manager | system.'
+                        status:
+                          type: string
+                          description: queued | running | done | failed | escalated | waiting_approval | cancelled.
+                        attempts:
+                          type: integer
+                        outcome:
+                          type:
+                          - string
+                          - 'null'
+                          description: The agent's one-line outcome.
+                        result:
+                          type:
+                          - object
+                          - 'null'
+                          additionalProperties: true
+                          description: 'The agent''s output: summary, findings, approval_id / experiment_id when raised.'
+                        last_error:
+                          type:
+                          - string
+                          - 'null'
+                        approval_id:
+                          type:
+                          - integer
+                          - 'null'
+                        experiment_id:
+                          type:
+                          - integer
+                          - 'null'
+                        created_at:
+                          type:
+                          - string
+                          - 'null'
+                        started_at:
+                          type:
+                          - string
+                          - 'null'
+                        finished_at:
+                          type:
+                          - string
+                          - 'null'
+                        updated_at:
+                          type:
+                          - string
+                          - 'null'
+                        next_attempt_at:
+                          type:
+                          - string
+                          - 'null'
+                        turns:
+                          type: integer
+                          description: Agent turns this task used.
+                        units:
+                          type:
+                          - string
+                          - 'null'
+                          description: Plan units its turns were metered (6 dp); null before a metered turn.
+                      additionalProperties: true
+                      required:
+                      - id
+                      - title
+                      - status
+                additionalProperties: true
+                required:
+                - tasks
+                description: The task log, newest first (after=<id> resumes ascending). Owner only.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 'Not signed in: send a Bearer JWT or an X-API-Key.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: No company (or not yours).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: Build a Company is not ready yet.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/company/{company_id}/tasks/{task_id}:
+    get:
+      tags:
+      - Build a Company
+      summary: Task Detail
+      description: 'One task in full: the task row plus ``approvals`` (each with ``details.payload`` — the
+
+        drafted bug report or Build it Better request exactly as approve would submit it, its
+
+        status, result and error), ``experiments`` (the paper experiment it opened, with the frozen
+
+        rule and both real prices), ``memory`` (the lessons it left) and ``events``.'
+      operationId: task_detail_api_v1_company__company_id__tasks__task_id__get
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Company Id
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Task Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  department_id:
+                    type:
+                    - integer
+                    - 'null'
+                  department:
+                    type:
+                    - string
+                    - 'null'
+                    description: Department key, e.g. testing, trading_desk, or your own.
+                  department_name:
+                    type:
+                    - string
+                    - 'null'
+                  title:
+                    type: string
+                  brief:
+                    type: string
+                  origin:
+                    type: string
+                    description: 'Who queued it: owner | manager | system.'
+                  status:
+                    type: string
+                    description: queued | running | done | failed | escalated | waiting_approval | cancelled.
+                  attempts:
+                    type: integer
+                  outcome:
+                    type:
+                    - string
+                    - 'null'
+                    description: The agent's one-line outcome.
+                  result:
+                    type:
+                    - object
+                    - 'null'
+                    additionalProperties: true
+                    description: 'The agent''s output: summary, findings, approval_id / experiment_id when raised.'
+                  last_error:
+                    type:
+                    - string
+                    - 'null'
+                  approval_id:
+                    type:
+                    - integer
+                    - 'null'
+                  experiment_id:
+                    type:
+                    - integer
+                    - 'null'
+                  created_at:
+                    type:
+                    - string
+                    - 'null'
+                  started_at:
+                    type:
+                    - string
+                    - 'null'
+                  finished_at:
+                    type:
+                    - string
+                    - 'null'
+                  updated_at:
+                    type:
+                    - string
+                    - 'null'
+                  next_attempt_at:
+                    type:
+                    - string
+                    - 'null'
+                  turns:
+                    type: integer
+                    description: Agent turns this task used.
+                  units:
+                    type:
+                    - string
+                    - 'null'
+                    description: Plan units its turns were metered (6 dp); null before a metered turn.
+                  approvals:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        kind:
+                          type: string
+                        summary:
+                          type:
+                          - string
+                          - 'null'
+                        status:
+                          type: string
+                        details:
+                          type: object
+                          additionalProperties: true
+                          description: details.payload is the drafted bug report or Build it Better request exactly as approve submits it.
+                      additionalProperties: true
+                      required:
+                      - id
+                      - kind
+                      - status
+                  experiments:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+                  memory:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        department_id:
+                          type:
+                          - integer
+                          - 'null'
+                        department:
+                          type:
+                          - string
+                          - 'null'
+                        kind:
+                          type: string
+                          description: knows | how | mistake.
+                        text:
+                          type: string
+                        uses:
+                          type: integer
+                        active:
+                          type: boolean
+                        source_task_id:
+                          type:
+                          - integer
+                          - 'null'
+                        last_used:
+                          type:
+                          - string
+                          - 'null'
+                        created_at:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: true
+                      required:
+                      - id
+                      - kind
+                      - text
+                  events:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        kind:
+                          type: string
+                        department_id:
+                          type:
+                          - integer
+                          - 'null'
+                        task_id:
+                          type:
+                          - integer
+                          - 'null'
+                        title:
+                          type: string
+                        detail:
+                          type: string
+                        created_at:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: true
+                      required:
+                      - id
+                      - kind
+                      description: One live-office event (what the agents did).
+                additionalProperties: true
+                required:
+                - id
+                - title
+                - status
+                - approvals
+                - experiments
+                - memory
+                - events
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 'Not signed in: send a Bearer JWT or an X-API-Key.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: No company (or not yours), or no such task.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: Build a Company is not ready yet.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/company/{company_id}/memory:
+    get:
+      tags:
+      - Build a Company
+      summary: Memory Log
+      description: 'What each department remembers: the ``knows`` / ``how`` / ``mistake`` rows its agents
+
+        distilled from finished tasks and judged experiments, in the order they are fed back into
+
+        its prompts (mistakes first, then the most used). Up to 40 active rows per department;
+
+        ``include_retired=true`` also lists the rows that fell over the cap.'
+      operationId: memory_log_api_v1_company__company_id__memory_get
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Company Id
+      - name: department_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+            minimum: 1
+          - type: 'null'
+          title: Department Id
+      - name: include_retired
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+          title: Include Retired
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  memory:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        department_id:
+                          type:
+                          - integer
+                          - 'null'
+                        department:
+                          type:
+                          - string
+                          - 'null'
+                        kind:
+                          type: string
+                          description: knows | how | mistake.
+                        text:
+                          type: string
+                        uses:
+                          type: integer
+                        active:
+                          type: boolean
+                        source_task_id:
+                          type:
+                          - integer
+                          - 'null'
+                        last_used:
+                          type:
+                          - string
+                          - 'null'
+                        created_at:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: true
+                      required:
+                      - id
+                      - kind
+                      - text
+                additionalProperties: true
+                required:
+                - memory
+                description: What each department remembers, in prompt order (mistakes first). Owner only.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 'Not signed in: send a Bearer JWT or an X-API-Key.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: No company (or not yours).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: Build a Company is not ready yet.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/company/{company_id}/events:
+    get:
+      tags:
+      - Build a Company
+      summary: Events Feed
+      description: 'The live-office feed: what the agents did, ascending by id. ``after`` resumes
+
+        past the last id the page saw (gap recovery after a socket reconnect).'
+      operationId: events_feed_api_v1_company__company_id__events_get
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Company Id
+      - name: after
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: After
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 40
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        kind:
+                          type: string
+                        department_id:
+                          type:
+                          - integer
+                          - 'null'
+                        task_id:
+                          type:
+                          - integer
+                          - 'null'
+                        title:
+                          type: string
+                        detail:
+                          type: string
+                        created_at:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: true
+                      required:
+                      - id
+                      - kind
+                      description: One live-office event (what the agents did).
+                additionalProperties: true
+                required:
+                - events
+                description: Live-office feed, ascending by id; `after` resumes past the last id seen (WS /ws/company/{id} pushes the same).
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 'Not signed in: send a Bearer JWT or an X-API-Key.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/company/{company_id}/plan:
+    get:
+      tags:
+      - Build a Company
+      summary: Plan List
+      description: 'The Manager''s plan: every queued task in the order the runner takes it, with its
+
+        department, one line on why, the turns it expects and why it waits right now.
+
+        Messages to the Manager are answered before any of these.'
+      operationId: plan_list_api_v1_company__company_id__plan_get
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Company Id
+      responses:
+        '200':
+          description: The Manager's plan, in the order the runner takes it.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plan:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        task_id:
+                          type: integer
+                        position:
+                          type: integer
+                          description: 1 = runs next
+                        department_id:
+                          type: integer
+                        department:
+                          type:
+                          - string
+                          - 'null'
+                        title:
+                          type: string
+                        why:
+                          type: string
+                          description: One line on why it is planned.
+                        origin:
+                          type: string
+                          description: owner | manager | system
+                        attempts:
+                          type: integer
+                        turns_expected:
+                          type: integer
+                          description: One agent turn per attempt.
+                        turns_max:
+                          type: integer
+                          description: Turns it may take with retries.
+                        units_expected:
+                          type:
+                          - string
+                          - 'null'
+                          description: Plan units per turn (measured average).
+                        next_attempt_at:
+                          type:
+                          - string
+                          - 'null'
+                          format: date-time
+                        last_error:
+                          type:
+                          - string
+                          - 'null'
+                        waits:
+                          type:
+                          - object
+                          - 'null'
+                          description: Why it waits, in a few words, and until when (ISO time) when that is known.
+                          properties:
+                            code:
+                              type: string
+                              enum:
+                              - paused
+                              - plan_limit
+                              - free_plan
+                              - daily_cap
+                              - capacity
+                              - usage_unavailable
+                              - retry
+                              - next_pass
+                              - wall
+                            text:
+                              type: string
+                            until:
+                              type:
+                              - string
+                              - 'null'
+                              format: date-time
+                      required:
+                      - task_id
+                      - position
+                      - department_id
+                      - title
+                      - why
+                      - turns_expected
+                  removed:
+                    type: integer
+                required:
+                - plan
+        '404':
+          description: company or task not found
+        '409':
+          description: the task is no longer queued (running or finished)
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 'Not signed in: send a Bearer JWT or an X-API-Key.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/company/{company_id}/plan/{task_id}/move:
+    post:
+      tags:
+      - Build a Company
+      summary: Plan Move
+      description: 'Move a queued task up, down or to the top of the Manager''s plan before any turn is
+
+        spent; the runner takes the tasks in the new order. 409 when the task is no longer queued.'
+      operationId: plan_move_api_v1_company__company_id__plan__task_id__move_post
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Company Id
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Task Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanMoveIn'
+      responses:
+        '200':
+          description: The Manager's plan, in the order the runner takes it.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plan:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        task_id:
+                          type: integer
+                        position:
+                          type: integer
+                          description: 1 = runs next
+                        department_id:
+                          type: integer
+                        department:
+                          type:
+                          - string
+                          - 'null'
+                        title:
+                          type: string
+                        why:
+                          type: string
+                          description: One line on why it is planned.
+                        origin:
+                          type: string
+                          description: owner | manager | system
+                        attempts:
+                          type: integer
+                        turns_expected:
+                          type: integer
+                          description: One agent turn per attempt.
+                        turns_max:
+                          type: integer
+                          description: Turns it may take with retries.
+                        units_expected:
+                          type:
+                          - string
+                          - 'null'
+                          description: Plan units per turn (measured average).
+                        next_attempt_at:
+                          type:
+                          - string
+                          - 'null'
+                          format: date-time
+                        last_error:
+                          type:
+                          - string
+                          - 'null'
+                        waits:
+                          type:
+                          - object
+                          - 'null'
+                          description: Why it waits, in a few words, and until when (ISO time) when that is known.
+                          properties:
+                            code:
+                              type: string
+                              enum:
+                              - paused
+                              - plan_limit
+                              - free_plan
+                              - daily_cap
+                              - capacity
+                              - usage_unavailable
+                              - retry
+                              - next_pass
+                              - wall
+                            text:
+                              type: string
+                            until:
+                              type:
+                              - string
+                              - 'null'
+                              format: date-time
+                      required:
+                      - task_id
+                      - position
+                      - department_id
+                      - title
+                      - why
+                      - turns_expected
+                  removed:
+                    type: integer
+                required:
+                - plan
+        '404':
+          description: company or task not found
+        '409':
+          description: the task is no longer queued (running or finished)
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 'Not signed in: send a Bearer JWT or an X-API-Key.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/company/{company_id}/plan/{task_id}:
+    delete:
+      tags:
+      - Build a Company
+      summary: Plan Remove
+      description: 'Take a queued task off the Manager''s plan: it is cancelled and never runs, and no
+
+        turn is spent on it. 409 when it already started or finished.'
+      operationId: plan_remove_api_v1_company__company_id__plan__task_id__delete
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Company Id
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Task Id
+      responses:
+        '200':
+          description: The Manager's plan, in the order the runner takes it.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plan:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        task_id:
+                          type: integer
+                        position:
+                          type: integer
+                          description: 1 = runs next
+                        department_id:
+                          type: integer
+                        department:
+                          type:
+                          - string
+                          - 'null'
+                        title:
+                          type: string
+                        why:
+                          type: string
+                          description: One line on why it is planned.
+                        origin:
+                          type: string
+                          description: owner | manager | system
+                        attempts:
+                          type: integer
+                        turns_expected:
+                          type: integer
+                          description: One agent turn per attempt.
+                        turns_max:
+                          type: integer
+                          description: Turns it may take with retries.
+                        units_expected:
+                          type:
+                          - string
+                          - 'null'
+                          description: Plan units per turn (measured average).
+                        next_attempt_at:
+                          type:
+                          - string
+                          - 'null'
+                          format: date-time
+                        last_error:
+                          type:
+                          - string
+                          - 'null'
+                        waits:
+                          type:
+                          - object
+                          - 'null'
+                          description: Why it waits, in a few words, and until when (ISO time) when that is known.
+                          properties:
+                            code:
+                              type: string
+                              enum:
+                              - paused
+                              - plan_limit
+                              - free_plan
+                              - daily_cap
+                              - capacity
+                              - usage_unavailable
+                              - retry
+                              - next_pass
+                              - wall
+                            text:
+                              type: string
+                            until:
+                              type:
+                              - string
+                              - 'null'
+                              format: date-time
+                      required:
+                      - task_id
+                      - position
+                      - department_id
+                      - title
+                      - why
+                      - turns_expected
+                  removed:
+                    type: integer
+                required:
+                - plan
+        '404':
+          description: company or task not found
+        '409':
+          description: the task is no longer queued (running or finished)
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 'Not signed in: send a Bearer JWT or an X-API-Key.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/company/{company_id}/investable:
+    post:
+      tags:
+      - Build a Company
+      summary: Set Investable
+      description: 'Owner: switch Investable on/off (off by default) and set the backers'' share and cap.
+
+        The first pledge fixes the terms. Backers pledge real USDC from their own balance.'
+      operationId: set_investable_api_v1_company__company_id__investable_post
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Company Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvestableIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  investable:
+                    type: boolean
+                  mode:
+                    type: string
+                  since:
+                    type:
+                    - string
+                    - 'null'
+                  terms:
+                    type: object
+                    properties:
+                      backer_share_pct:
+                        type: number
+                      backer_cap_x:
+                        type: number
+                      locked:
+                        type: boolean
+                      locked_at:
+                        type:
+                        - string
+                        - 'null'
+                      version:
+                        type: string
+                      url:
+                        type: string
+                    additionalProperties: true
+                    required:
+                    - backer_share_pct
+                    - backer_cap_x
+                    - locked
+                  public_url:
+                    type:
+                    - string
+                    - 'null'
+                  backers:
+                    type: integer
+                  pledged_usdc:
+                    type: number
+                  available_usdc:
+                    type: number
+                  covered_usdc:
+                    type: number
+                  proceeds_shared_usdc:
+                    type: number
+                additionalProperties: true
+                required:
+                - investable
+                - mode
+                - terms
+                description: The owner's Investable switch and backing totals.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 'Not signed in: send a Bearer JWT or an X-API-Key.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/company/formation-guide:
+    get:
+      tags:
+      - Build a Company
+      summary: Formation Guide Public
+      description: 'Steps and guidance for forming a company (Cayman Islands first; the same steps for any
+
+        domicile) plus Cymetica''s published 1–10% stake rule. Public, keyless; the one source the
+
+        guide page, the creators page, the company Manager and NEXUS all read.'
+      operationId: formation_guide_public_api_v1_company_formation_guide_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Formation Guide Public Api V1 Company Formation Guide Get
+      security: []
+  /api/v1/company/domiciles:
+    get:
+      tags:
+      - Build a Company
+      summary: Domiciles Catalog
+      description: 'Every jurisdiction a company can be formed in (featured first, Cayman Islands at the
+
+        top, every ISO country after it) plus the declared off-world seats (Moon, Mars, Europa,
+
+        Titan — registered through an Earth registry) and the entity types for each.'
+      operationId: domiciles_catalog_api_v1_company_domiciles_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  featured:
+                    type: array
+                    items:
+                      type: object
+                      properties: {}
+                      additionalProperties: true
+                  all:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code:
+                          type: string
+                        name:
+                          type: string
+                        available:
+                          type: boolean
+                      additionalProperties: true
+                  off_world:
+                    type: array
+                    items:
+                      type: object
+                      properties: {}
+                      additionalProperties: true
+                  generic_entity_types:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                        name:
+                          type: string
+                      additionalProperties: true
+                  default_registry:
+                    type: string
+                additionalProperties: true
+                required:
+                - featured
+                - all
+                - off_world
+                - generic_entity_types
+                - default_registry
+                description: Every legal domicile and entity type a company can be formed in.
+      security: []
+  /api/v1/company/{company_id}/entity:
+    get:
+      tags:
+      - Build a Company
+      summary: Get Entity
+      description: 'Owner: the company''s legal entity — domicile, share classes, register, directors,
+
+        governance, formation status and the desk''s quote when there is one.'
+      operationId: get_entity_api_v1_company__company_id__entity_get
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Company Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - type: object
+                  properties:
+                    id:
+                      type: integer
+                    domicile_code:
+                      type: string
+                    domicile_name:
+                      type: string
+                    off_world:
+                      type: boolean
+                    registered_via:
+                      type:
+                      - string
+                      - 'null'
+                    registered_via_name:
+                      type:
+                      - string
+                      - 'null'
+                    entity_type_key:
+                      type:
+                      - string
+                      - 'null'
+                    entity_type_name:
+                      type:
+                      - string
+                      - 'null'
+                    legal_name:
+                      type:
+                      - string
+                      - 'null'
+                    status:
+                      type: string
+                    next_step:
+                      type: string
+                    registration_number:
+                      type:
+                      - string
+                      - 'null'
+                    incorporated_at:
+                      type:
+                      - string
+                      - 'null'
+                    share_currency:
+                      type:
+                      - string
+                      - 'null'
+                    share_classes:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                          code:
+                            type: string
+                          name:
+                            type: string
+                          authorized:
+                            type: number
+                          issued:
+                            type: number
+                          par_value:
+                            type: number
+                          votes_per_share:
+                            type: number
+                          liquidation_preference_x:
+                            type: number
+                          dividend_pref_pct:
+                            type: number
+                          participating:
+                            type: boolean
+                          convertible:
+                            type: boolean
+                          for_backers:
+                            type: boolean
+                          issue_price_usdc:
+                            type:
+                            - number
+                            - 'null'
+                        additionalProperties: true
+                    shares_issued_total:
+                      type: number
+                    ownership_by_source:
+                      type: object
+                      properties: {}
+                      additionalProperties: true
+                    editable:
+                      type: boolean
+                    off_world_note:
+                      type: string
+                    registered_office:
+                      type:
+                      - string
+                      - 'null'
+                    fiscal_year_end:
+                      type:
+                      - string
+                      - 'null'
+                    directors:
+                      type: array
+                      items:
+                        type: object
+                        properties: {}
+                        additionalProperties: true
+                    governance:
+                      type: object
+                      properties: {}
+                      additionalProperties: true
+                    quote:
+                      type:
+                      - object
+                      - 'null'
+                    formation_paid_usdc:
+                      type: number
+                    notes:
+                      type:
+                      - string
+                      - 'null'
+                    requested_at:
+                      type:
+                      - string
+                      - 'null'
+                    quoted_at:
+                      type:
+                      - string
+                      - 'null'
+                    paid_at:
+                      type:
+                      - string
+                      - 'null'
+                    filed_at:
+                      type:
+                      - string
+                      - 'null'
+                    desk_issue_id:
+                      type:
+                      - integer
+                      - 'null'
+                    register:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          class:
+                            type:
+                            - string
+                            - 'null'
+                          holder:
+                            type:
+                            - string
+                            - 'null'
+                          user_id:
+                            type:
+                            - integer
+                            - 'null'
+                          shares:
+                            type: number
+                          paid_usdc:
+                            type: number
+                          source:
+                            type: string
+                          status:
+                            type: string
+                          vesting:
+                            type:
+                            - object
+                            - 'null'
+                        additionalProperties: true
+                    events:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          kind:
+                            type: string
+                          detail:
+                            type:
+                            - string
+                            - 'null'
+                          actor:
+                            type:
+                            - string
+                            - 'null'
+                          at:
+                            type:
+                            - string
+                            - 'null'
+                        additionalProperties: true
+                  additionalProperties: true
+                  required:
+                  - id
+                  - domicile_code
+                  - status
+                  description: 'The company''s legal entity: domicile, equity structure, formation status.'
+                - type: 'null'
+                description: null until the owner drafts an entity.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 'Not signed in: send a Bearer JWT or an X-API-Key.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+    put:
+      tags:
+      - Build a Company
+      summary: Save Entity
+      description: 'Owner: save the entity draft. Editable until the quote is paid.'
+      operationId: save_entity_api_v1_company__company_id__entity_put
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Company Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EntityDraftIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  domicile_code:
+                    type: string
+                  domicile_name:
+                    type: string
+                  off_world:
+                    type: boolean
+                  registered_via:
+                    type:
+                    - string
+                    - 'null'
+                  registered_via_name:
+                    type:
+                    - string
+                    - 'null'
+                  entity_type_key:
+                    type:
+                    - string
+                    - 'null'
+                  entity_type_name:
+                    type:
+                    - string
+                    - 'null'
+                  legal_name:
+                    type:
+                    - string
+                    - 'null'
+                  status:
+                    type: string
+                  next_step:
+                    type: string
+                  registration_number:
+                    type:
+                    - string
+                    - 'null'
+                  incorporated_at:
+                    type:
+                    - string
+                    - 'null'
+                  share_currency:
+                    type:
+                    - string
+                    - 'null'
+                  share_classes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        code:
+                          type: string
+                        name:
+                          type: string
+                        authorized:
+                          type: number
+                        issued:
+                          type: number
+                        par_value:
+                          type: number
+                        votes_per_share:
+                          type: number
+                        liquidation_preference_x:
+                          type: number
+                        dividend_pref_pct:
+                          type: number
+                        participating:
+                          type: boolean
+                        convertible:
+                          type: boolean
+                        for_backers:
+                          type: boolean
+                        issue_price_usdc:
+                          type:
+                          - number
+                          - 'null'
+                      additionalProperties: true
+                  shares_issued_total:
+                    type: number
+                  ownership_by_source:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  editable:
+                    type: boolean
+                  off_world_note:
+                    type: string
+                  registered_office:
+                    type:
+                    - string
+                    - 'null'
+                  fiscal_year_end:
+                    type:
+                    - string
+                    - 'null'
+                  directors:
+                    type: array
+                    items:
+                      type: object
+                      properties: {}
+                      additionalProperties: true
+                  governance:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  quote:
+                    type:
+                    - object
+                    - 'null'
+                  formation_paid_usdc:
+                    type: number
+                  notes:
+                    type:
+                    - string
+                    - 'null'
+                  requested_at:
+                    type:
+                    - string
+                    - 'null'
+                  quoted_at:
+                    type:
+                    - string
+                    - 'null'
+                  paid_at:
+                    type:
+                    - string
+                    - 'null'
+                  filed_at:
+                    type:
+                    - string
+                    - 'null'
+                  desk_issue_id:
+                    type:
+                    - integer
+                    - 'null'
+                  register:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        class:
+                          type:
+                          - string
+                          - 'null'
+                        holder:
+                          type:
+                          - string
+                          - 'null'
+                        user_id:
+                          type:
+                          - integer
+                          - 'null'
+                        shares:
+                          type: number
+                        paid_usdc:
+                          type: number
+                        source:
+                          type: string
+                        status:
+                          type: string
+                        vesting:
+                          type:
+                          - object
+                          - 'null'
+                      additionalProperties: true
+                  events:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        kind:
+                          type: string
+                        detail:
+                          type:
+                          - string
+                          - 'null'
+                        actor:
+                          type:
+                          - string
+                          - 'null'
+                        at:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: true
+                additionalProperties: true
+                required:
+                - id
+                - domicile_code
+                - status
+                description: 'The company''s legal entity: domicile, equity structure, formation status.'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 'Not signed in: send a Bearer JWT or an X-API-Key.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/company/{company_id}/entity/request:
+    post:
+      tags:
+      - Build a Company
+      summary: Request Entity
+      description: 'Owner: ask the formation desk to form the entity as drafted. The desk comes back with
+
+        the registered agent''s quote; nothing is charged until the owner accepts it. The body must
+
+        carry ``accept_platform_stake: true`` (Cymetica''s published stake rule), else 400.'
+      operationId: request_entity_api_v1_company__company_id__entity_request_post
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Company Id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              anyOf:
+              - $ref: '#/components/schemas/EntityRequestIn'
+              - type: 'null'
+              title: Body
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  domicile_code:
+                    type: string
+                  domicile_name:
+                    type: string
+                  off_world:
+                    type: boolean
+                  registered_via:
+                    type:
+                    - string
+                    - 'null'
+                  registered_via_name:
+                    type:
+                    - string
+                    - 'null'
+                  entity_type_key:
+                    type:
+                    - string
+                    - 'null'
+                  entity_type_name:
+                    type:
+                    - string
+                    - 'null'
+                  legal_name:
+                    type:
+                    - string
+                    - 'null'
+                  status:
+                    type: string
+                  next_step:
+                    type: string
+                  registration_number:
+                    type:
+                    - string
+                    - 'null'
+                  incorporated_at:
+                    type:
+                    - string
+                    - 'null'
+                  share_currency:
+                    type:
+                    - string
+                    - 'null'
+                  share_classes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        code:
+                          type: string
+                        name:
+                          type: string
+                        authorized:
+                          type: number
+                        issued:
+                          type: number
+                        par_value:
+                          type: number
+                        votes_per_share:
+                          type: number
+                        liquidation_preference_x:
+                          type: number
+                        dividend_pref_pct:
+                          type: number
+                        participating:
+                          type: boolean
+                        convertible:
+                          type: boolean
+                        for_backers:
+                          type: boolean
+                        issue_price_usdc:
+                          type:
+                          - number
+                          - 'null'
+                      additionalProperties: true
+                  shares_issued_total:
+                    type: number
+                  ownership_by_source:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  editable:
+                    type: boolean
+                  off_world_note:
+                    type: string
+                  registered_office:
+                    type:
+                    - string
+                    - 'null'
+                  fiscal_year_end:
+                    type:
+                    - string
+                    - 'null'
+                  directors:
+                    type: array
+                    items:
+                      type: object
+                      properties: {}
+                      additionalProperties: true
+                  governance:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  quote:
+                    type:
+                    - object
+                    - 'null'
+                  formation_paid_usdc:
+                    type: number
+                  notes:
+                    type:
+                    - string
+                    - 'null'
+                  requested_at:
+                    type:
+                    - string
+                    - 'null'
+                  quoted_at:
+                    type:
+                    - string
+                    - 'null'
+                  paid_at:
+                    type:
+                    - string
+                    - 'null'
+                  filed_at:
+                    type:
+                    - string
+                    - 'null'
+                  desk_issue_id:
+                    type:
+                    - integer
+                    - 'null'
+                  register:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        class:
+                          type:
+                          - string
+                          - 'null'
+                        holder:
+                          type:
+                          - string
+                          - 'null'
+                        user_id:
+                          type:
+                          - integer
+                          - 'null'
+                        shares:
+                          type: number
+                        paid_usdc:
+                          type: number
+                        source:
+                          type: string
+                        status:
+                          type: string
+                        vesting:
+                          type:
+                          - object
+                          - 'null'
+                      additionalProperties: true
+                  events:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        kind:
+                          type: string
+                        detail:
+                          type:
+                          - string
+                          - 'null'
+                        actor:
+                          type:
+                          - string
+                          - 'null'
+                        at:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: true
+                additionalProperties: true
+                required:
+                - id
+                - domicile_code
+                - status
+                description: 'The company''s legal entity: domicile, equity structure, formation status.'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 'Not signed in: send a Bearer JWT or an X-API-Key.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/company/{company_id}/entity/accept-quote:
+    post:
+      tags:
+      - Build a Company
+      summary: Accept Entity Quote
+      description: 'Owner: accept and pay the desk''s quote from their own USDC balance.'
+      operationId: accept_entity_quote_api_v1_company__company_id__entity_accept_quote_post
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Company Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  domicile_code:
+                    type: string
+                  domicile_name:
+                    type: string
+                  off_world:
+                    type: boolean
+                  registered_via:
+                    type:
+                    - string
+                    - 'null'
+                  registered_via_name:
+                    type:
+                    - string
+                    - 'null'
+                  entity_type_key:
+                    type:
+                    - string
+                    - 'null'
+                  entity_type_name:
+                    type:
+                    - string
+                    - 'null'
+                  legal_name:
+                    type:
+                    - string
+                    - 'null'
+                  status:
+                    type: string
+                  next_step:
+                    type: string
+                  registration_number:
+                    type:
+                    - string
+                    - 'null'
+                  incorporated_at:
+                    type:
+                    - string
+                    - 'null'
+                  share_currency:
+                    type:
+                    - string
+                    - 'null'
+                  share_classes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        code:
+                          type: string
+                        name:
+                          type: string
+                        authorized:
+                          type: number
+                        issued:
+                          type: number
+                        par_value:
+                          type: number
+                        votes_per_share:
+                          type: number
+                        liquidation_preference_x:
+                          type: number
+                        dividend_pref_pct:
+                          type: number
+                        participating:
+                          type: boolean
+                        convertible:
+                          type: boolean
+                        for_backers:
+                          type: boolean
+                        issue_price_usdc:
+                          type:
+                          - number
+                          - 'null'
+                      additionalProperties: true
+                  shares_issued_total:
+                    type: number
+                  ownership_by_source:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  editable:
+                    type: boolean
+                  off_world_note:
+                    type: string
+                  registered_office:
+                    type:
+                    - string
+                    - 'null'
+                  fiscal_year_end:
+                    type:
+                    - string
+                    - 'null'
+                  directors:
+                    type: array
+                    items:
+                      type: object
+                      properties: {}
+                      additionalProperties: true
+                  governance:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  quote:
+                    type:
+                    - object
+                    - 'null'
+                  formation_paid_usdc:
+                    type: number
+                  notes:
+                    type:
+                    - string
+                    - 'null'
+                  requested_at:
+                    type:
+                    - string
+                    - 'null'
+                  quoted_at:
+                    type:
+                    - string
+                    - 'null'
+                  paid_at:
+                    type:
+                    - string
+                    - 'null'
+                  filed_at:
+                    type:
+                    - string
+                    - 'null'
+                  desk_issue_id:
+                    type:
+                    - integer
+                    - 'null'
+                  register:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        class:
+                          type:
+                          - string
+                          - 'null'
+                        holder:
+                          type:
+                          - string
+                          - 'null'
+                        user_id:
+                          type:
+                          - integer
+                          - 'null'
+                        shares:
+                          type: number
+                        paid_usdc:
+                          type: number
+                        source:
+                          type: string
+                        status:
+                          type: string
+                        vesting:
+                          type:
+                          - object
+                          - 'null'
+                      additionalProperties: true
+                  events:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        kind:
+                          type: string
+                        detail:
+                          type:
+                          - string
+                          - 'null'
+                        actor:
+                          type:
+                          - string
+                          - 'null'
+                        at:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: true
+                additionalProperties: true
+                required:
+                - id
+                - domicile_code
+                - status
+                description: 'The company''s legal entity: domicile, equity structure, formation status.'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 'Not signed in: send a Bearer JWT or an X-API-Key.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/companies:
+    get:
+      tags:
+      - Build a Company
+      summary: Investable Companies
+      description: 'Public: companies whose owners switched Investable on, with their scoreboards.
+
+        ``proven`` ranks by real proceeds, then experiments won, then work done.'
+      operationId: investable_companies_api_v1_companies_get
+      parameters:
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^(proven|backed|new)$
+          default: proven
+          title: Sort
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 50
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mode:
+                    type: string
+                  terms_url:
+                    type: string
+                  companies:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        mission:
+                          type: string
+                        status:
+                          type: string
+                        created_at:
+                          type:
+                          - string
+                          - 'null'
+                        investable_since:
+                          type:
+                          - string
+                          - 'null'
+                        mode:
+                          type: string
+                        terms:
+                          type: object
+                          properties: {}
+                          additionalProperties: true
+                        scoreboard:
+                          type: object
+                          properties: {}
+                          additionalProperties: true
+                        departments:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              name:
+                                type: string
+                              experts:
+                                type: array
+                                items:
+                                  type: string
+                            additionalProperties: false
+                            required:
+                            - name
+                            - experts
+                        url:
+                          type: string
+                        entity:
+                          type:
+                          - object
+                          - 'null'
+                        is_owner:
+                          type: boolean
+                          description: Only when called with a session or key.
+                        my_backing:
+                          type:
+                          - object
+                          - 'null'
+                          properties:
+                            pledged_usdc:
+                              type: number
+                            covered_usdc:
+                              type: number
+                            withdrawn_usdc:
+                              type: number
+                            available_usdc:
+                              type: number
+                            proceeds_usdc:
+                              type: number
+                            shares:
+                              type: number
+                            terms_version:
+                              type:
+                              - string
+                              - 'null'
+                            since:
+                              type:
+                              - string
+                              - 'null'
+                          additionalProperties: false
+                          description: Only when called with a session or key.
+                      additionalProperties: true
+                      required:
+                      - id
+                      - name
+                      - mission
+                      - status
+                      - url
+                      description: 'Public company profile: departments, scoreboard, backing terms, totals and legal entity. Totals fields (pledged, backers, ...) sit alongside.'
+                additionalProperties: false
+                required:
+                - mode
+                - terms_url
+                - companies
+                description: Investable companies with scoreboards, ranked by `sort` (proven, backed or new).
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '503':
+          description: Build a Company is not ready yet.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+  /api/v1/companies/backed/mine:
+    get:
+      tags:
+      - Build a Company
+      summary: My Backed
+      operationId: my_backed_api_v1_companies_backed_mine_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mode:
+                    type: string
+                  backings:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        pledged_usdc:
+                          type: number
+                        covered_usdc:
+                          type: number
+                        withdrawn_usdc:
+                          type: number
+                        available_usdc:
+                          type: number
+                        proceeds_usdc:
+                          type: number
+                        shares:
+                          type: number
+                        terms_version:
+                          type:
+                          - string
+                          - 'null'
+                        since:
+                          type:
+                          - string
+                          - 'null'
+                        company_id:
+                          type: integer
+                        name:
+                          type: string
+                        investable:
+                          type: boolean
+                        url:
+                          type: string
+                      additionalProperties: false
+                      description: 'A backer''s pledge: a commitment of their own USDC, nothing moves until costs are paid from it.'
+                additionalProperties: false
+                required:
+                - mode
+                - backings
+                description: The caller's own backings.
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+  /api/v1/companies/{company_id}:
+    get:
+      tags:
+      - Build a Company
+      summary: Investable Company
+      description: 'Public profile of an investable company: departments, scoreboard, terms, backing,
+
+        legal entity. A private company (Investable off) answers 404.'
+      operationId: investable_company_api_v1_companies__company_id__get
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Company Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  mission:
+                    type: string
+                  status:
+                    type: string
+                  created_at:
+                    type:
+                    - string
+                    - 'null'
+                  investable_since:
+                    type:
+                    - string
+                    - 'null'
+                  mode:
+                    type: string
+                  terms:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  scoreboard:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  departments:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        experts:
+                          type: array
+                          items:
+                            type: string
+                      additionalProperties: false
+                      required:
+                      - name
+                      - experts
+                  url:
+                    type: string
+                  entity:
+                    type:
+                    - object
+                    - 'null'
+                  is_owner:
+                    type: boolean
+                    description: Only when called with a session or key.
+                  my_backing:
+                    type:
+                    - object
+                    - 'null'
+                    properties:
+                      pledged_usdc:
+                        type: number
+                      covered_usdc:
+                        type: number
+                      withdrawn_usdc:
+                        type: number
+                      available_usdc:
+                        type: number
+                      proceeds_usdc:
+                        type: number
+                      shares:
+                        type: number
+                      terms_version:
+                        type:
+                        - string
+                        - 'null'
+                      since:
+                        type:
+                        - string
+                        - 'null'
+                    additionalProperties: false
+                    description: Only when called with a session or key.
+                additionalProperties: true
+                required:
+                - id
+                - name
+                - mission
+                - status
+                - url
+                description: 'Public company profile: departments, scoreboard, backing terms, totals and legal entity. Totals fields (pledged, backers, ...) sit alongside.'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '404':
+          description: No such company, or it is private (Investable off).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+  /api/v1/companies/{company_id}/back:
+    post:
+      tags:
+      - Build a Company
+      summary: Back Company
+      description: 'Pledge USDC from your own balance to an investable company: a commitment, nothing moves
+
+        until the company''s agent costs are paid to the owner from it. You must accept the backing
+
+        terms (/companies/backing-terms). Open to every user (operator 2026-10-12: no restriction
+
+        on user activity).'
+      operationId: back_company_api_v1_companies__company_id__back_post
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Company Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PledgeIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  company_id:
+                    type: integer
+                  mode:
+                    type: string
+                  my_backing:
+                    type: object
+                    properties:
+                      pledged_usdc:
+                        type: number
+                      covered_usdc:
+                        type: number
+                      withdrawn_usdc:
+                        type: number
+                      available_usdc:
+                        type: number
+                      proceeds_usdc:
+                        type: number
+                      shares:
+                        type: number
+                      terms_version:
+                        type:
+                        - string
+                        - 'null'
+                      since:
+                        type:
+                        - string
+                        - 'null'
+                    additionalProperties: false
+                    description: 'A backer''s pledge: a commitment of their own USDC, nothing moves until costs are paid from it.'
+                additionalProperties: false
+                required:
+                - company_id
+                - mode
+                - my_backing
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '400':
+          description: Terms not accepted, amount out of range, or balance too low.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/companies/{company_id}/withdraw:
+    post:
+      tags:
+      - Build a Company
+      summary: Withdraw Backing
+      description: 'Lower the unused part of your pledge (all of it when no amount). Nothing moves: the
+
+        USDC never left your account.'
+      operationId: withdraw_backing_api_v1_companies__company_id__withdraw_post
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Company Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WithdrawIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  company_id:
+                    type: integer
+                  mode:
+                    type: string
+                  my_backing:
+                    type: object
+                    properties:
+                      pledged_usdc:
+                        type: number
+                      covered_usdc:
+                        type: number
+                      withdrawn_usdc:
+                        type: number
+                      available_usdc:
+                        type: number
+                      proceeds_usdc:
+                        type: number
+                      shares:
+                        type: number
+                      terms_version:
+                        type:
+                        - string
+                        - 'null'
+                      since:
+                        type:
+                        - string
+                        - 'null'
+                    additionalProperties: false
+                    description: 'A backer''s pledge: a commitment of their own USDC, nothing moves until costs are paid from it.'
+                additionalProperties: false
+                required:
+                - company_id
+                - mode
+                - my_backing
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '400':
+          description: More than the unused part of the pledge.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: You have not backed this company.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+components:
+  schemas:
+    DepartmentIn:
+      properties:
+        key:
+          anyOf:
+          - type: string
+            maxLength: 40
+          - type: 'null'
+          title: Key
+          description: Template key (development | design | testing | testing_lab | trading_desk) or your own slug; 'manager' is reserved.
+        name:
+          anyOf:
+          - type: string
+            maxLength: 80
+          - type: 'null'
+          title: Name
+          description: Shown on the dashboard; required for a custom department when key is omitted.
+        charter:
+          anyOf:
+          - type: string
+            maxLength: 2000
+          - type: 'null'
+          title: Charter
+          description: The department's standing brief (its rules, what done looks like, what it already knows). Required for a custom department.
+        experts:
+          anyOf:
+          - items: {}
+            type: array
+          - type: 'null'
+          title: Experts
+          description: Catalog expert keys (or {key} objects); at least one for a custom department.
+      type: object
+      title: DepartmentIn
+      description: 'One department. Either a TEMPLATE (``key`` from GET /templates: development, design,
+
+        testing, testing_lab, trading_desk — name, charter and experts filled in from the template,
+
+        any of them overridable) or YOUR OWN: a ``name`` (the key is derived from it when ``key`` is
+
+        omitted), a ``charter`` of up to 2,000 characters — this text IS the department''s standing
+
+        brief, every task it runs is prompted with it — and at least one expert from the catalog
+
+        (qa_tester, researcher, trader, developer, lab_scientist, auditor, designer). A custom
+
+        department may run paper experiments and may raise any approval kind.'
+      examples:
+      - key: testing
+      - charter: 'Our lab''s working rules: one asset, one direction, a threshold and a window fixed before the start; judged from real prices. Lessons so far: ...'
+        experts:
+        - lab_scientist
+        - qa_tester
+        name: Paper lab
+    DecisionIn:
+      properties:
+        decision:
+          type: string
+          maxLength: 10
+          title: Decision
+        note:
+          type: string
+          maxLength: 1000
+          title: Note
+          default: ''
+      type: object
+      required:
+      - decision
+      title: DecisionIn
+    MessageIn:
+      properties:
+        text:
+          type: string
+          maxLength: 4000
+          minLength: 1
+          title: Text
+      type: object
+      required:
+      - text
+      title: MessageIn
+    PledgeIn:
+      properties:
+        amount_usdc:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Amount Usdc
+        accept_terms:
+          type: boolean
+          title: Accept Terms
+          default: false
+      type: object
+      required:
+      - amount_usdc
+      title: PledgeIn
+    PlanMoveIn:
+      properties:
+        direction:
+          type: string
+          pattern: ^(up|down|top)$
+          title: Direction
+          description: up | down | top
+      type: object
+      required:
+      - direction
+      title: PlanMoveIn
+    WithdrawIn:
+      properties:
+        amount_usdc:
+          anyOf:
+          - type: number
+            exclusiveMinimum: 0.0
+          - type: 'null'
+          title: Amount Usdc
+      type: object
+      title: WithdrawIn
+    CompanyIn:
+      properties:
+        name:
+          type: string
+          maxLength: 120
+          title: Name
+          description: 2 to 120 characters.
+        mission:
+          type: string
+          maxLength: 2000
+          title: Mission
+          description: 10 to 2,000 characters; every Manager and department turn is prompted with it.
+        departments:
+          items:
+            $ref: '#/components/schemas/DepartmentIn'
+          type: array
+          title: Departments
+          description: 1 to 8 departments, template or custom; keys unique.
+        report_style:
+          type: string
+          maxLength: 40
+          title: Report Style
+          description: How the Manager reports (free text; brief | detailed | daily_digest suggested).
+          default: brief
+        token_chain:
+          anyOf:
+          - type: string
+            maxLength: 16
+          - type: 'null'
+          title: Token Chain
+          description: 'Optional: a chains[].key from GET /api/v1/token-launch/chains to record where the company''s token should launch.'
+      type: object
+      required:
+      - name
+      - mission
+      - departments
+      title: CompanyIn
+      description: 'Create your company (one per account). ``departments`` takes 1 to 8 entries, template or
+
+        custom, keys unique. ``report_style`` is free text the Manager writes in (brief | detailed |
+
+        daily_digest are suggested).'
+      examples:
+      - departments:
+        - key: testing
+        - charter: 'Our desk''s notes and rules: ... Paper only; any real-money action waits for my approval.'
+          key: trading_desk
+        - charter: 'Our lab''s working rules and lessons: ...'
+          experts:
+          - lab_scientist
+          - qa_tester
+          name: Paper lab
+        mission: Find and prove ways to make money on Cymetica, on paper first.
+        name: Acme Labs
+        report_style: brief
+    InvestableIn:
+      properties:
+        enabled:
+          type: boolean
+          title: Enabled
+        backer_share_pct:
+          anyOf:
+          - type: number
+            maximum: 90.0
+            minimum: 10.0
+          - type: 'null'
+          title: Backer Share Pct
+        backer_cap_x:
+          anyOf:
+          - type: number
+            maximum: 5.0
+            minimum: 2.0
+          - type: 'null'
+          title: Backer Cap X
+      type: object
+      required:
+      - enabled
+      title: InvestableIn
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    EntityDraftIn:
+      properties:
+        domicile_code:
+          anyOf:
+          - type: string
+            maxLength: 8
+          - type: 'null'
+          title: Domicile Code
+        registered_via:
+          anyOf:
+          - type: string
+            maxLength: 2
+          - type: 'null'
+          title: Registered Via
+        entity_type_key:
+          anyOf:
+          - type: string
+            maxLength: 40
+          - type: 'null'
+          title: Entity Type Key
+        legal_name:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+          title: Legal Name
+        share_classes:
+          anyOf:
+          - items:
+              type: object
+            type: array
+          - type: 'null'
+          title: Share Classes
+        register:
+          anyOf:
+          - items:
+              type: object
+            type: array
+          - type: 'null'
+          title: Register
+        directors:
+          anyOf:
+          - items:
+              type: object
+            type: array
+          - type: 'null'
+          title: Directors
+        governance:
+          anyOf:
+          - type: object
+          - type: 'null'
+          title: Governance
+        fiscal_year_end:
+          anyOf:
+          - type: string
+            maxLength: 5
+          - type: 'null'
+          title: Fiscal Year End
+        share_currency:
+          anyOf:
+          - type: string
+            maxLength: 8
+          - type: 'null'
+          title: Share Currency
+        registered_office:
+          anyOf:
+          - type: string
+            maxLength: 400
+          - type: 'null'
+          title: Registered Office
+        notes:
+          anyOf:
+          - type: string
+            maxLength: 2000
+          - type: 'null'
+          title: Notes
+      type: object
+      title: EntityDraftIn
+    EntityRequestIn:
+      properties:
+        accept_platform_stake:
+          type: boolean
+          title: Accept Platform Stake
+          description: 'Required true: you accept Cymetica''s published 1–10% stake rule for this request (GET /api/v1/company/formation-guide → platform_stake). Recorded with the request.'
+          default: false
+      type: object
+      title: EntityRequestIn
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

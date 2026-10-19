@@ -22,7 +22,90 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  gates:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        token:
+                          type: string
+                        withdrawals_open:
+                          type: boolean
+                        since:
+                          type:
+                          - string
+                          - 'null'
+                          description: When this state was set; null = never set (default-open).
+                        user_message_when_paused:
+                          type:
+                          - string
+                          - 'null'
+                        max_single_transfer_now:
+                          type:
+                          - number
+                          - 'null'
+                          description: 'ET10 only: the largest amount one on-chain transfer can move right now (read live from the token''s revenue pool, cached about a minute). null = not read, or no published limit for this token.'
+                        transfer_limit_note:
+                          type:
+                          - string
+                          - 'null'
+                          description: 'ET10 only: why the limit exists.'
+                        transfer_limit_as_of:
+                          type:
+                          - string
+                          - 'null'
+                          description: 'ET10 only: when the limit was read (ISO 8601).'
+                        above_transfer_limit:
+                          type:
+                          - string
+                          - 'null'
+                          description: 'ET10 only: what happens to a request above it.'
+                      additionalProperties: false
+                      required:
+                      - token
+                      - withdrawals_open
+                      - max_single_transfer_now
+                  paused_tokens:
+                    type:
+                    - array
+                    - 'null'
+                    items:
+                      type: string
+                  governed_tokens:
+                    type: array
+                    items:
+                      type: string
+                  design:
+                    type: object
+                    properties:
+                      default:
+                        type: string
+                      gate_can_only_pause:
+                        type: boolean
+                      payout_cap:
+                        type: string
+                      not_governed:
+                        type: string
+                      audit:
+                        type: string
+                      how_you_see_it:
+                        type: string
+                      transfer_limits:
+                        type: string
+                    additionalProperties: false
+                  error:
+                    type: string
+                additionalProperties: false
+                required:
+                - ok
+                - gates
+                - governed_tokens
+                description: Per-token withdrawal gates. On a read failure `ok` is false, `gates` empty, `paused_tokens` null and `error` says why.
       security: []
 components:
   securitySchemes:

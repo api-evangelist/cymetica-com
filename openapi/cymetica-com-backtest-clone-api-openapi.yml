@@ -1,0 +1,288 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Backtest Clone API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: backtest-clone
+paths:
+  /api/v1/backtest/clone:
+    post:
+      tags:
+      - backtest-clone
+      summary: Clone Bot
+      description: 'Clone a backtested bot species for live trading. Requires a deposit.
+
+
+        The clone starts in "awaiting_deposit" status. The user must fund
+
+        the derived wallet before the bot begins trading. All trading is
+
+        100% on-chain — no simulations, no demo mode.
+
+
+        Args:
+
+        request: Clone request with species_slug and optional custom name.
+
+        current_user: Authenticated user (JWT payload).
+
+        db: Database session.
+
+
+        Returns:
+
+        CloneBotResponse with clone details and wallet address.
+
+
+        Raises:
+
+        HTTPException 404: Species not found or not active.
+
+        HTTPException 500: Wallet derivation or DB failure.'
+      operationId: clone_bot_api_v1_backtest_clone_post
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/src__api__routes__backtest_clone__CloneBotRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/src__api__routes__backtest_clone__CloneBotResponse'
+        '400':
+          description: 'Limits per account (a 400 names the one reached): Free plan, Paper or Live mode, and Live mode on every plan: 5 TRADING bots per mode (paused bots do not count, pause one to clone another) or 25 bots in total including paused ones. Paper mode on a paid NEXUS plan (Pro, Max 5x, Max 20x): 100 TRADING Paper bots (paused bots do not count) or 200 Paper bots in total including paused ones; only the paid Paper caps also let you repeat a source (Clone #2, #3 ...)'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/backtest/clone/deposit-info/{species_slug}:
+    get:
+      tags:
+      - backtest-clone
+      summary: Get Deposit Info
+      description: 'Get deposit instructions for funding a cloned bot.
+
+
+        Returns the derived wallet address and instructions for sending
+
+        USDT on Ethereum mainnet. Minimum deposit is $50.
+
+
+        Args:
+
+        species_slug: Slug of the bot species.
+
+        current_user: Authenticated user (JWT payload).
+
+        db: Database session.
+
+
+        Returns:
+
+        DepositInfoResponse with chain, token, address, and instructions.
+
+
+        Raises:
+
+        HTTPException 404: Species not found or not active.
+
+        HTTPException 500: Wallet derivation failure.'
+      operationId: get_deposit_info_api_v1_backtest_clone_deposit_info__species_slug__get
+      parameters:
+      - name: species_slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Species Slug
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepositInfoResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    src__api__routes__backtest_clone__CloneBotResponse:
+      properties:
+        clone_id:
+          type: integer
+          title: Clone Id
+        species_slug:
+          type: string
+          title: Species Slug
+        name:
+          type: string
+          title: Name
+        wallet_address:
+          type: string
+          title: Wallet Address
+        status:
+          type: string
+          title: Status
+        strategy_name:
+          type: string
+          title: Strategy Name
+        headline_return_pct:
+          type: number
+          title: Headline Return Pct
+      type: object
+      required:
+      - clone_id
+      - species_slug
+      - name
+      - wallet_address
+      - status
+      - strategy_name
+      - headline_return_pct
+      title: CloneBotResponse
+      description: Response after successfully cloning a bot species.
+    src__api__routes__backtest_clone__CloneBotRequest:
+      properties:
+        species_slug:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: Species Slug
+          description: Slug of the bot species to clone
+        name:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Name
+          description: Custom name for the clone (defaults to species name + ' Clone')
+      type: object
+      required:
+      - species_slug
+      title: CloneBotRequest
+      description: Request to clone a backtested bot species.
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    DepositInfoResponse:
+      properties:
+        deposit_chain:
+          type: string
+          title: Deposit Chain
+        deposit_token:
+          type: string
+          title: Deposit Token
+        deposit_address:
+          type: string
+          title: Deposit Address
+        minimum_deposit_usd:
+          type: integer
+          title: Minimum Deposit Usd
+        instructions:
+          type: string
+          title: Instructions
+        species_slug:
+          type: string
+          title: Species Slug
+        species_name:
+          type: string
+          title: Species Name
+        headline_return_pct:
+          type: number
+          title: Headline Return Pct
+      type: object
+      required:
+      - deposit_chain
+      - deposit_token
+      - deposit_address
+      - minimum_deposit_usd
+      - instructions
+      - species_slug
+      - species_name
+      - headline_return_pct
+      title: DepositInfoResponse
+      description: Deposit instructions for funding a cloned bot.
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

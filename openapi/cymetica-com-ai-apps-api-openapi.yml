@@ -1,0 +1,248 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public AI Apps API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: ai-apps
+paths:
+  /api/v1/ai-apps/leaderboard:
+    get:
+      tags:
+      - ai-apps
+      summary: Get Leaderboard
+      description: AI apps leaderboard ranked by score.
+      operationId: get_leaderboard_api_v1_ai_apps_leaderboard_get
+      parameters:
+      - name: period
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^(daily|weekly|all_time)$
+          default: all_time
+          title: Period
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 500
+          minimum: 1
+          default: 200
+          title: Limit
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^(hot|rising|new|top)$
+          default: hot
+          title: Sort
+      - name: category
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Category
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            pattern: ^(pending|reviewing|approved|building|completed)$
+          - type: 'null'
+          title: Status
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiAppLeaderboardResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+components:
+  schemas:
+    AiAppLeaderboardResponse:
+      properties:
+        entries:
+          items:
+            $ref: '#/components/schemas/AiAppLeaderboardEntryResponse'
+          type: array
+          title: Entries
+        total:
+          type: integer
+          title: Total
+        period:
+          type: string
+          title: Period
+      type: object
+      required:
+      - entries
+      - total
+      - period
+      title: AiAppLeaderboardResponse
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    AiAppLeaderboardEntryResponse:
+      properties:
+        rank:
+          type: integer
+          title: Rank
+        id:
+          type: integer
+          title: Id
+        title:
+          type: string
+          title: Title
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        category:
+          type: string
+          title: Category
+        score:
+          type: integer
+          title: Score
+          default: 0
+        upvotes:
+          type: integer
+          title: Upvotes
+          default: 0
+        downvotes:
+          type: integer
+          title: Downvotes
+          default: 0
+        status:
+          type: string
+          title: Status
+        username:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Username
+        source_channel:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Source Channel
+        app_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: App Type
+        target_audience:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Target Audience
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        comment_count:
+          type: integer
+          title: Comment Count
+          default: 0
+        is_microfund:
+          type: boolean
+          title: Is Microfund
+          default: false
+        mf_status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Mf Status
+        mf_funding_current_usd:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Mf Funding Current Usd
+        mf_funding_goal_usd:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Mf Funding Goal Usd
+        original_feature_request_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Original Feature Request Id
+      type: object
+      required:
+      - rank
+      - id
+      - title
+      - category
+      - status
+      - created_at
+      title: AiAppLeaderboardEntryResponse
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

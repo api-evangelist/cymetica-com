@@ -1,0 +1,2047 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Decide API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: decide
+paths:
+  /api/v1/decide:
+    get:
+      tags:
+      - decide
+      summary: About
+      operationId: about_api_v1_decide_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  what:
+                    type: string
+                  evidence:
+                    type: object
+                    properties: {}
+                    additionalProperties:
+                      type: string
+                  plans:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        plan:
+                          type: string
+                        name:
+                          type: string
+                        price_usdc_month:
+                          type: string
+                        classifiers:
+                          type: integer
+                        decisions_per_week:
+                          type: integer
+                      additionalProperties: false
+                  limits:
+                    type: object
+                    properties:
+                      labels:
+                        type: integer
+                      examples:
+                        type: integer
+                      min_examples_per_label:
+                        type: integer
+                      text_chars:
+                        type: integer
+                      batch:
+                        type: integer
+                    additionalProperties: true
+                  fallback:
+                    type: string
+                  docs:
+                    type: string
+                  enabled:
+                    type: boolean
+                additionalProperties: true
+                required:
+                - name
+                - plans
+                - limits
+                - enabled
+      security: []
+  /api/v1/decide/classifiers:
+    get:
+      tags:
+      - decide
+      summary: List Classifiers
+      operationId: list_classifiers_api_v1_decide_classifiers_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plan:
+                    type: string
+                  classifier_limit:
+                    type: integer
+                  decisions_per_week:
+                    type: integer
+                  classifiers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: dc_…
+                        name:
+                          type: string
+                        status:
+                          type: string
+                          description: queued | training | ready | failed
+                        version:
+                          type: integer
+                          description: 0 until the first model is trained; a retrain serves the old version until the new one is ready.
+                        servable:
+                          type: boolean
+                        labels:
+                          type: array
+                          items:
+                            type: string
+                        n_examples:
+                          type: integer
+                        threshold:
+                          type: number
+                          description: Results under this confidence are marked unsure.
+                        learn_from_fallback:
+                          type: boolean
+                        expected_accuracy:
+                          type:
+                          - number
+                          - 'null'
+                          description: Accuracy on held-out examples (0-1).
+                        expected_accuracy_linear_only:
+                          type:
+                          - number
+                          - 'null'
+                        held_out_examples:
+                          type:
+                          - integer
+                          - 'null'
+                        train_seconds:
+                          type:
+                          - number
+                          - 'null'
+                        error:
+                          type:
+                          - string
+                          - 'null'
+                        trained_at:
+                          type:
+                          - string
+                          - 'null'
+                        created_at:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: true
+                      required:
+                      - id
+                      - name
+                      - status
+                      - version
+                      - labels
+                      description: A Decide classifier.
+                additionalProperties: true
+                required:
+                - plan
+                - classifier_limit
+                - classifiers
+        '401':
+          description: No key or session.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+    post:
+      tags:
+      - decide
+      summary: Create
+      operationId: create_api_v1_decide_classifiers_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBody'
+        required: true
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: dc_…
+                  name:
+                    type: string
+                  status:
+                    type: string
+                    description: queued | training | ready | failed
+                  version:
+                    type: integer
+                    description: 0 until the first model is trained; a retrain serves the old version until the new one is ready.
+                  servable:
+                    type: boolean
+                  labels:
+                    type: array
+                    items:
+                      type: string
+                  n_examples:
+                    type: integer
+                  threshold:
+                    type: number
+                    description: Results under this confidence are marked unsure.
+                  learn_from_fallback:
+                    type: boolean
+                  expected_accuracy:
+                    type:
+                    - number
+                    - 'null'
+                    description: Accuracy on held-out examples (0-1).
+                  expected_accuracy_linear_only:
+                    type:
+                    - number
+                    - 'null'
+                  held_out_examples:
+                    type:
+                    - integer
+                    - 'null'
+                  train_seconds:
+                    type:
+                    - number
+                    - 'null'
+                  error:
+                    type:
+                    - string
+                    - 'null'
+                  trained_at:
+                    type:
+                    - string
+                    - 'null'
+                  created_at:
+                    type:
+                    - string
+                    - 'null'
+                additionalProperties: true
+                required:
+                - id
+                - name
+                - status
+                - version
+                - labels
+                description: A Decide classifier.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: No key or session.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: No such classifier on this account.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '429':
+          description: The plan's weekly allowance is used; see https://cymetica.com/usage.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '403':
+          description: 'CLASSIFIER_LIMIT: the plan''s classifier count is used; delete one or upgrade.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+  /api/v1/decide/classifiers/upload:
+    post:
+      tags:
+      - decide
+      summary: Create From Csv
+      description: CSV with a header row containing ``text`` and ``label`` columns.
+      operationId: create_from_csv_api_v1_decide_classifiers_upload_post
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_create_from_csv_api_v1_decide_classifiers_upload_post'
+        required: true
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: dc_…
+                  name:
+                    type: string
+                  status:
+                    type: string
+                    description: queued | training | ready | failed
+                  version:
+                    type: integer
+                    description: 0 until the first model is trained; a retrain serves the old version until the new one is ready.
+                  servable:
+                    type: boolean
+                  labels:
+                    type: array
+                    items:
+                      type: string
+                  n_examples:
+                    type: integer
+                  threshold:
+                    type: number
+                    description: Results under this confidence are marked unsure.
+                  learn_from_fallback:
+                    type: boolean
+                  expected_accuracy:
+                    type:
+                    - number
+                    - 'null'
+                    description: Accuracy on held-out examples (0-1).
+                  expected_accuracy_linear_only:
+                    type:
+                    - number
+                    - 'null'
+                  held_out_examples:
+                    type:
+                    - integer
+                    - 'null'
+                  train_seconds:
+                    type:
+                    - number
+                    - 'null'
+                  error:
+                    type:
+                    - string
+                    - 'null'
+                  trained_at:
+                    type:
+                    - string
+                    - 'null'
+                  created_at:
+                    type:
+                    - string
+                    - 'null'
+                additionalProperties: true
+                required:
+                - id
+                - name
+                - status
+                - version
+                - labels
+                description: A Decide classifier.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: No key or session.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: No such classifier on this account.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '429':
+          description: The plan's weekly allowance is used; see https://cymetica.com/usage.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '403':
+          description: CLASSIFIER_LIMIT
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '413':
+          description: CSV over 50 MB.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+  /api/v1/decide/classifiers/{cid}:
+    get:
+      tags:
+      - decide
+      summary: Get Classifier
+      operationId: get_classifier_api_v1_decide_classifiers__cid__get
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: cid
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Cid
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: dc_…
+                  name:
+                    type: string
+                  status:
+                    type: string
+                    description: queued | training | ready | failed
+                  version:
+                    type: integer
+                    description: 0 until the first model is trained; a retrain serves the old version until the new one is ready.
+                  servable:
+                    type: boolean
+                  labels:
+                    type: array
+                    items:
+                      type: string
+                  n_examples:
+                    type: integer
+                  threshold:
+                    type: number
+                    description: Results under this confidence are marked unsure.
+                  learn_from_fallback:
+                    type: boolean
+                  expected_accuracy:
+                    type:
+                    - number
+                    - 'null'
+                    description: Accuracy on held-out examples (0-1).
+                  expected_accuracy_linear_only:
+                    type:
+                    - number
+                    - 'null'
+                  held_out_examples:
+                    type:
+                    - integer
+                    - 'null'
+                  train_seconds:
+                    type:
+                    - number
+                    - 'null'
+                  error:
+                    type:
+                    - string
+                    - 'null'
+                  trained_at:
+                    type:
+                    - string
+                    - 'null'
+                  created_at:
+                    type:
+                    - string
+                    - 'null'
+                additionalProperties: true
+                required:
+                - id
+                - name
+                - status
+                - version
+                - labels
+                description: A Decide classifier.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: No key or session.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: No such classifier on this account.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '429':
+          description: The plan's weekly allowance is used; see https://cymetica.com/usage.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+    patch:
+      tags:
+      - decide
+      summary: Patch Classifier
+      operationId: patch_classifier_api_v1_decide_classifiers__cid__patch
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: cid
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Cid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettingsBody'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: dc_…
+                  name:
+                    type: string
+                  status:
+                    type: string
+                    description: queued | training | ready | failed
+                  version:
+                    type: integer
+                    description: 0 until the first model is trained; a retrain serves the old version until the new one is ready.
+                  servable:
+                    type: boolean
+                  labels:
+                    type: array
+                    items:
+                      type: string
+                  n_examples:
+                    type: integer
+                  threshold:
+                    type: number
+                    description: Results under this confidence are marked unsure.
+                  learn_from_fallback:
+                    type: boolean
+                  expected_accuracy:
+                    type:
+                    - number
+                    - 'null'
+                    description: Accuracy on held-out examples (0-1).
+                  expected_accuracy_linear_only:
+                    type:
+                    - number
+                    - 'null'
+                  held_out_examples:
+                    type:
+                    - integer
+                    - 'null'
+                  train_seconds:
+                    type:
+                    - number
+                    - 'null'
+                  error:
+                    type:
+                    - string
+                    - 'null'
+                  trained_at:
+                    type:
+                    - string
+                    - 'null'
+                  created_at:
+                    type:
+                    - string
+                    - 'null'
+                additionalProperties: true
+                required:
+                - id
+                - name
+                - status
+                - version
+                - labels
+                description: A Decide classifier.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: No key or session.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: No such classifier on this account.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '429':
+          description: The plan's weekly allowance is used; see https://cymetica.com/usage.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+    delete:
+      tags:
+      - decide
+      summary: Delete Classifier
+      operationId: delete_classifier_api_v1_decide_classifiers__cid__delete
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: cid
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Cid
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: string
+                additionalProperties: false
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: No key or session.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: No such classifier on this account.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '429':
+          description: The plan's weekly allowance is used; see https://cymetica.com/usage.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/decide/classifiers/{cid}/examples:
+    post:
+      tags:
+      - decide
+      summary: Add Examples
+      operationId: add_examples_api_v1_decide_classifiers__cid__examples_post
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: cid
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Cid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExamplesBody'
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: dc_…
+                  name:
+                    type: string
+                  status:
+                    type: string
+                    description: queued | training | ready | failed
+                  version:
+                    type: integer
+                    description: 0 until the first model is trained; a retrain serves the old version until the new one is ready.
+                  servable:
+                    type: boolean
+                  labels:
+                    type: array
+                    items:
+                      type: string
+                  n_examples:
+                    type: integer
+                  threshold:
+                    type: number
+                    description: Results under this confidence are marked unsure.
+                  learn_from_fallback:
+                    type: boolean
+                  expected_accuracy:
+                    type:
+                    - number
+                    - 'null'
+                    description: Accuracy on held-out examples (0-1).
+                  expected_accuracy_linear_only:
+                    type:
+                    - number
+                    - 'null'
+                  held_out_examples:
+                    type:
+                    - integer
+                    - 'null'
+                  train_seconds:
+                    type:
+                    - number
+                    - 'null'
+                  error:
+                    type:
+                    - string
+                    - 'null'
+                  trained_at:
+                    type:
+                    - string
+                    - 'null'
+                  created_at:
+                    type:
+                    - string
+                    - 'null'
+                additionalProperties: true
+                required:
+                - id
+                - name
+                - status
+                - version
+                - labels
+                description: A Decide classifier.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: No key or session.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: No such classifier on this account.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '429':
+          description: The plan's weekly allowance is used; see https://cymetica.com/usage.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/decide/classifiers/{cid}/predict:
+    post:
+      tags:
+      - decide
+      summary: Predict
+      operationId: predict_api_v1_decide_classifiers__cid__predict_post
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: cid
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Cid
+      - name: x-fallback-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Fallback-Key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PredictBody'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        label:
+                          type: string
+                        confidence:
+                          type: number
+                        unsure:
+                          type: boolean
+                        source:
+                          type: string
+                          description: specialist | fallback
+                        second_opinion:
+                          type: boolean
+                          description: the specialist was under 0.7 confidence and a second decision model re-ranked its top 5 labels (30% weight)
+                        probabilities:
+                          type: object
+                          properties: {}
+                          additionalProperties:
+                            type: number
+                          description: label → probability
+                      additionalProperties: true
+                      required:
+                      - label
+                      - confidence
+                      - unsure
+                      - probabilities
+                  model:
+                    type: string
+                    description: tuatara-decide/<id>@v<version>
+                  decisions:
+                    type: integer
+                  specialist_ms:
+                    type: number
+                  fallback_used:
+                    type: integer
+                  second_opinions:
+                    type: integer
+                  second_opinion_ms:
+                    type: number
+                additionalProperties: true
+                required:
+                - results
+                - model
+                - decisions
+                description: One result per input text, in order.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: No key or session.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: No such classifier on this account.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '429':
+          description: The plan's weekly allowance is used; see https://cymetica.com/usage.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '409':
+          description: 'NOT_READY: no trained model yet; poll GET /classifiers/{cid}.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/decide/classifiers/{cid}/savings:
+    get:
+      tags:
+      - decide
+      summary: Savings
+      operationId: savings_api_v1_decide_classifiers__cid__savings_get
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: cid
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Cid
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  decisions:
+                    type: integer
+                  answered_by_specialist:
+                    type: integer
+                  answered_by_fallback:
+                    type: integer
+                  fallback_answers_learned:
+                    type: integer
+                  estimated_prompt_tokens_per_decision:
+                    type: integer
+                  estimated_general_model_cost_usd:
+                    type: number
+                  basis:
+                    type: string
+                additionalProperties: true
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: No key or session.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: No such classifier on this account.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '429':
+          description: The plan's weekly allowance is used; see https://cymetica.com/usage.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/decide/systemone:
+    post:
+      tags:
+      - decide
+      summary: Systemone
+      description: 'Drop-in for ``POST https://api.typesafe.ai/v1/systemone`` with ``model`` set to
+
+        ``tuatara-decide/``: same request, same ``answers`` shape. ``model`` set to
+
+        ``tuatara/decide-auto`` is Decide Auto (no classifier needed).'
+      operationId: systemone_api_v1_decide_systemone_post
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: x-fallback-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Fallback-Key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              title: Body
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  answers:
+                    type: object
+                    properties: {}
+                    additionalProperties:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                        choice:
+                          type:
+                          - string
+                          - 'null'
+                        probabilities:
+                          type: object
+                          properties: {}
+                          additionalProperties:
+                            type: number
+                      additionalProperties: true
+                    description: question key → answer, in the TypeSafe System One shape
+                additionalProperties: true
+                required:
+                - answers
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: No key or session.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: No such classifier on this account.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '429':
+          description: The plan's weekly allowance is used; see https://cymetica.com/usage.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+components:
+  schemas:
+    Example:
+      properties:
+        text:
+          type: string
+          title: Text
+        label:
+          type: string
+          title: Label
+      type: object
+      required:
+      - text
+      - label
+      title: Example
+    Body_create_from_csv_api_v1_decide_classifiers_upload_post:
+      properties:
+        name:
+          type: string
+          title: Name
+        file:
+          type: string
+          contentMediaType: application/octet-stream
+          title: File
+        instructions:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Instructions
+        threshold:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Threshold
+          default: 0.5
+      type: object
+      required:
+      - name
+      - file
+      title: Body_create_from_csv_api_v1_decide_classifiers_upload_post
+    PredictBody:
+      properties:
+        texts:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Texts
+        text:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Text
+        second_opinion:
+          type: boolean
+          title: Second Opinion
+          default: true
+      type: object
+      title: PredictBody
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    CreateBody:
+      properties:
+        name:
+          type: string
+          maxLength: 120
+          title: Name
+        examples:
+          items:
+            $ref: '#/components/schemas/Example'
+          type: array
+          title: Examples
+        instructions:
+          anyOf:
+          - type: string
+            maxLength: 4000
+          - type: 'null'
+          title: Instructions
+        threshold:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Threshold
+          default: 0.5
+        learn_from_fallback:
+          type: boolean
+          title: Learn From Fallback
+          default: true
+      type: object
+      required:
+      - name
+      - examples
+      title: CreateBody
+    ExamplesBody:
+      properties:
+        examples:
+          items:
+            $ref: '#/components/schemas/Example'
+          type: array
+          title: Examples
+          default: []
+      type: object
+      title: ExamplesBody
+    SettingsBody:
+      properties:
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Name
+        threshold:
+          anyOf:
+          - type: number
+            maximum: 1.0
+            minimum: 0.0
+          - type: 'null'
+          title: Threshold
+        learn_from_fallback:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Learn From Fallback
+        instructions:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Instructions
+      type: object
+      title: SettingsBody
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

@@ -38,21 +38,7 @@ paths:
       tags:
       - Funding
       summary: Get Deposit Addresses
-      description: 'Get user''s unique deposit addresses for all supported chains.
-
-
-        Each user gets a unique deposit address per chain. The backend monitors
-
-        these addresses and automatically:
-
-        1. Detects incoming USDT deposits
-
-        2. Bridges to Base if needed (using Across Protocol)
-
-        3. Credits the net amount to user''s bot wallet
-
-
-        Returns deposit addresses for: Ethereum, Base, Arbitrum, Polygon'
+      description: 'The caller''s own deposit address on every supported chain: Ethereum, Base, Arbitrum, Polygon, Optimism, BNB Chain, Avalanche, Robinhood Chain, OctaSpace, Solana, Monero, Zcash. One address per chain, derived for this account; send USDT (USDC on Solana) on Ethereum mainnet unless the response says otherwise. Each entry names `chain_id`, `chain_name`, `address` and the token contract.'
       operationId: get_deposit_addresses_api_v1_funding_deposit_addresses_get
       responses:
         '200':
@@ -66,6 +52,47 @@ paths:
       - ApiKeyAuth: []
 components:
   schemas:
+    DepositAddressInfo:
+      properties:
+        chain_id:
+          type: integer
+          title: Chain Id
+        chain_name:
+          type: string
+          title: Chain Name
+        address:
+          type: string
+          title: Address
+        usdt_contract:
+          type: string
+          title: Usdt Contract
+        usdc_contract:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Usdc Contract
+        is_solana:
+          type: boolean
+          title: Is Solana
+          default: false
+        native_symbol:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Native Symbol
+        required_confirmations:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Required Confirmations
+      type: object
+      required:
+      - chain_id
+      - chain_name
+      - address
+      - usdt_contract
+      title: DepositAddressInfo
+      description: Deposit address for a specific chain.
     DepositAddressesResponse:
       properties:
         user_id:
@@ -91,37 +118,6 @@ components:
       - instructions
       title: DepositAddressesResponse
       description: All deposit addresses for a user.
-    DepositAddressInfo:
-      properties:
-        chain_id:
-          type: integer
-          title: Chain Id
-        chain_name:
-          type: string
-          title: Chain Name
-        address:
-          type: string
-          title: Address
-        usdt_contract:
-          type: string
-          title: Usdt Contract
-        usdc_contract:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Usdc Contract
-        is_solana:
-          type: boolean
-          title: Is Solana
-          default: false
-      type: object
-      required:
-      - chain_id
-      - chain_name
-      - address
-      - usdt_contract
-      title: DepositAddressInfo
-      description: Deposit address for a specific chain.
     SwarmWalletResponse:
       properties:
         address:

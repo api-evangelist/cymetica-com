@@ -1,0 +1,270 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Ontology API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: Ontology
+paths:
+  /api/v1/ontology/datacenter:
+    get:
+      summary: Ontology Datacenter Json
+      description: 'PUBLIC read-only JSON view of the data center supply ontology.
+
+
+        Serves the committed, citation-gated artifact ontologies/datacenter/datacenter.json
+
+        (regenerated only by ontologies/datacenter/build_datacenter_ontology.py and pinned
+
+        in sync by tests/test_datacenter_ontology.py). Cached by file mtime.'
+      operationId: ontology_datacenter_json_api_v1_ontology_datacenter_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ontology:
+                    type: object
+                    properties:
+                      namespace:
+                        type: string
+                      label:
+                        type: string
+                      version:
+                        type: string
+                      asOf:
+                        type: string
+                      plan:
+                        type: string
+                    additionalProperties: true
+                  classes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        parent:
+                          type:
+                          - string
+                          - 'null'
+                        prefLabel:
+                          type: string
+                        altLabels:
+                          type: array
+                          items:
+                            type: string
+                        definition:
+                          type: string
+                        sources:
+                          type: array
+                          items:
+                            type: string
+                      additionalProperties: true
+                  properties:
+                    type: object
+                    properties:
+                      object:
+                        type: object
+                        properties: {}
+                        additionalProperties: true
+                      data:
+                        type: object
+                        properties: {}
+                        additionalProperties: true
+                    additionalProperties: true
+                  relations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        subject:
+                          type: string
+                        predicate:
+                          type: string
+                        object:
+                          type: string
+                        sources:
+                          type: array
+                          items:
+                            type: string
+                      additionalProperties: true
+                  facts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        class:
+                          type: string
+                        property:
+                          type: string
+                        value: {}
+                        asOf:
+                          type: string
+                        sources:
+                          type: array
+                          items:
+                            type: string
+                      additionalProperties: true
+                  organizations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        prefLabel:
+                          type: string
+                        altLabels:
+                          type: array
+                          items:
+                            type: string
+                        categories:
+                          type: array
+                          items:
+                            type: string
+                        sources:
+                          type: array
+                          items:
+                            type: string
+                      additionalProperties: true
+                  tuataraStocks:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: 'Optional: per-class Tuatara stock annotations (nasdaq-v08).'
+                  tuataraStocksMeta:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  tuataraCryptos:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: 'Optional: per-class Tuatara crypto annotations (crypto-v01), separate from stocks.'
+                  tuataraCryptosMeta:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                additionalProperties: true
+                required:
+                - ontology
+                - classes
+                - relations
+                - facts
+                description: 'The committed data center supply ontology artifact (citation-gated). Returned as a JSON body `{"error": ...}` with status 503 when the artifact file is missing.'
+      security: []
+      tags:
+      - Ontology
+  /api/v1/ontology/datacenter/stock-graph:
+    get:
+      summary: Ontology Stock Graph Json
+      description: 'PUBLIC derived stock relationship graph (plan §11): edge strength from
+
+        ontology distance x per-invocation-normalized Tuatara scores.'
+      operationId: ontology_stock_graph_json_api_v1_ontology_datacenter_stock_graph_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: generator, formula, lambda, weight, distance, edge_policy, inputs, note.
+                  vertices:
+                    type: object
+                    properties: {}
+                    additionalProperties:
+                      type: object
+                      properties:
+                        appearances:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              node:
+                                type: string
+                              score:
+                                type: number
+                              weight:
+                                type: number
+                              is_direct:
+                                type: boolean
+                            additionalProperties: true
+                        total_weight:
+                          type: number
+                        branch:
+                          type: string
+                      additionalProperties: true
+                    description: Keyed by stock ticker.
+                  edges:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        a:
+                          type: string
+                        b:
+                          type: string
+                        strength:
+                          type: number
+                        top_contributors:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              node_a:
+                                type: string
+                              node_b:
+                                type: string
+                              d:
+                                type: integer
+                              share:
+                                type: number
+                            additionalProperties: true
+                        other_share:
+                          type: number
+                      additionalProperties: true
+                additionalProperties: true
+                required:
+                - meta
+                - vertices
+                - edges
+                description: 'Derived stock relationship graph (ontology distance x Tuatara scores). Returned as a JSON body `{"error": ...}` with status 503 when the artifact file is missing.'
+      security: []
+      tags:
+      - Ontology
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

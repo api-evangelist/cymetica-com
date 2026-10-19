@@ -1,0 +1,277 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Prices API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: Prices
+paths:
+  /api/v1/prices/{asset}:
+    get:
+      tags:
+      - Prices
+      summary: Get Asset Price
+      description: Current real price for an asset. 404 unknown asset, 503 no real price available.
+      operationId: get_asset_price_api_v1_prices__asset__get
+      parameters:
+      - name: asset
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Asset
+      - name: asset_class
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            pattern: ^(crypto|stock)$
+          - type: 'null'
+          description: A ticker that names both a coin and a share (LINK, TRX) means the coin; pass stock for the share.
+          title: Asset Class
+        description: A ticker that names both a coin and a share (LINK, TRX) means the coin; pass stock for the share.
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceResponse'
+        '404':
+          description: Unknown asset (`PRICE_NOT_FOUND`).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: object
+                    properties:
+                      error:
+                        type: object
+                        properties:
+                          code:
+                            type: string
+                          message:
+                            type: string
+                        required:
+                        - code
+                        - message
+                    required:
+                    - error
+                required:
+                - detail
+              example:
+                detail:
+                  error:
+                    code: PRICE_NOT_FOUND
+                    message: Price for asset XYZ not found
+        '503':
+          description: Known asset but no real price available right now (`PRICE_UNAVAILABLE`); retry later.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: object
+                    properties:
+                      error:
+                        type: object
+                        properties:
+                          code:
+                            type: string
+                          message:
+                            type: string
+                        required:
+                        - code
+                        - message
+                    required:
+                    - error
+                required:
+                - detail
+              example:
+                detail:
+                  error:
+                    code: PRICE_UNAVAILABLE
+                    message: No real price is available for this asset right now. We do not serve estimates.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/prices:
+    get:
+      tags:
+      - Prices
+      summary: Get Bulk Prices
+      description: 'Current real prices, keyed by symbol. An asset with no real price is left out, never estimated.
+
+
+        Examples:
+
+        - GET /api/v1/prices → the default set (majors + platform tokens)
+
+        - GET /api/v1/prices?symbols=BTC,ETH,SOL → exactly those assets
+
+        - GET /api/v1/prices?assets=BTC&assets=ETH&assets=SOL'
+      operationId: get_bulk_prices_api_v1_prices_get
+      parameters:
+      - name: assets
+        in: query
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+          title: Assets
+      - name: symbols
+        in: query
+        required: false
+        schema:
+          type: string
+          description: Comma-separated list of symbols (e.g., BTC,ETH,SOL). Omit to get the default liquid set.
+          title: Symbols
+        description: Comma-separated list of symbols (e.g., BTC,ETH,SOL). Omit to get the default liquid set.
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/PriceResponse'
+                title: Response Get Bulk Prices Api V1 Prices Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+components:
+  schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    PriceResponse:
+      properties:
+        asset:
+          type: string
+          title: Asset
+        price:
+          type: number
+          title: Price
+        price_change:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Price Change
+        timestamp:
+          type: string
+          format: date-time
+          title: Timestamp
+        source:
+          type: string
+          title: Source
+        is_real:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Real
+        stale:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Stale
+        price_as_of:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Price As Of
+      type: object
+      required:
+      - asset
+      - price
+      - timestamp
+      - source
+      title: PriceResponse
+      description: Schema for price response.
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

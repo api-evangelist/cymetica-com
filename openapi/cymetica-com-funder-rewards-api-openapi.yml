@@ -30,11 +30,310 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  total_earned_usd:
+                    type: number
+                  total_claimed_usd:
+                    type: number
+                  pending_rewards_usd:
+                    type: number
+                  claimable_count:
+                    type: integer
+                  claimable_usd:
+                    type: number
+                  tier:
+                    type: string
+                    description: bronze, silver, gold, platinum or diamond.
+                  tier_bonus_percent:
+                    type: number
+                additionalProperties: false
+                required:
+                - total_earned_usd
+                - claimable_count
+                - tier
+                description: The caller's reward summary (zeros when no wallet is linked).
       security:
       - BearerJWT: []
       - ApiKeyAuth: []
+  /api/v1/rewards/leaderboard/funders:
+    get:
+      tags:
+      - funder-rewards
+      summary: Get Funder Leaderboard
+      description: Get top funders leaderboard.
+      operationId: get_funder_leaderboard_api_v1_rewards_leaderboard_funders_get
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 50
+          default: 20
+          title: Limit
+      - name: sort_by
+        in: query
+        required: false
+        schema:
+          type: string
+          description: 'Sort by: earnings, roi, invested, features'
+          default: earnings
+          title: Sort By
+        description: 'Sort by: earnings, roi, invested, features'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  leaderboard:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        rank:
+                          type: integer
+                        wallet_address:
+                          type: string
+                          description: Masked (0x1234...abcd).
+                        tier:
+                          type: string
+                        total_earned_usd:
+                          type: number
+                        features_submitted:
+                          type: integer
+                        features_deployed:
+                          type: integer
+                      additionalProperties: true
+                      required:
+                      - rank
+                      - wallet_address
+                  sort_by:
+                    type: string
+                additionalProperties: false
+                required:
+                - leaderboard
+                - sort_by
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '400':
+          description: '`sort_by` not one of earnings, roi, invested, features.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+  /api/v1/rewards/leaderboard/features:
+    get:
+      tags:
+      - funder-rewards
+      summary: Get Feature Leaderboard
+      description: Get top revenue-generating features.
+      operationId: get_feature_leaderboard_api_v1_rewards_leaderboard_features_get
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 50
+          default: 20
+          title: Limit
+      - name: period
+        in: query
+        required: false
+        schema:
+          type: string
+          description: 'Period: all, month, week'
+          default: all
+          title: Period
+        description: 'Period: all, month, week'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  leaderboard:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        rank:
+                          type: integer
+                        feature_id:
+                          type: integer
+                        title:
+                          type: string
+                        total_revenue_usd:
+                          type: number
+                        total_usage:
+                          type: integer
+                        funder_earnings_usd:
+                          type: number
+                      additionalProperties: true
+                      required:
+                      - rank
+                      - feature_id
+                      - title
+                  period:
+                    type: string
+                additionalProperties: false
+                required:
+                - leaderboard
+                - period
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '400':
+          description: '`period` not one of all, month, week.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+  /api/v1/rewards/stats:
+    get:
+      tags:
+      - funder-rewards
+      summary: Get Global Reward Stats
+      description: Get global reward system statistics.
+      operationId: get_global_reward_stats_api_v1_rewards_stats_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_submitters:
+                    type: integer
+                  features_deployed:
+                    type: integer
+                  total_distributed_usd:
+                    type: number
+                  total_claimed_usd:
+                    type: number
+                  pending_usd:
+                    type: number
+                  pool:
+                    type: object
+                    properties:
+                      reward_rate_percent:
+                        type: number
+                      last_distribution:
+                        type:
+                        - string
+                        - 'null'
+                    additionalProperties: false
+                additionalProperties: false
+                required:
+                - total_submitters
+                - features_deployed
+                - total_distributed_usd
+                description: Global feature-reward statistics (USD).
+      security: []
 components:
+  schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

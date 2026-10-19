@@ -1,0 +1,906 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Features API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: Features
+paths:
+  /api/v1/features:
+    get:
+      tags:
+      - Features
+      summary: List Features
+      description: List all feature requests with pagination and filters.
+      operationId: list_features_api_v1_features_get
+      security: []
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+          title: Page
+      - name: per_page
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Per Page
+      - name: category
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Category
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+      - name: sort_by
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^(bids|raised|score|created_at|upvotes)$
+          default: bids
+          title: Sort By
+      - name: order
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^(asc|desc)$
+          default: desc
+          title: Order
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureListResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/features/leaderboard:
+    get:
+      tags:
+      - Features
+      summary: Get Leaderboard
+      description: 'The Feature Leaderboard. Public.
+
+
+        `sort=top` (the default) is the ranking: open features by the ET10 bid on them, then
+
+        by votes; shipped features last. Each entry carries `bid_total_et10`, `bid_count`,
+
+        `bid_usd_value` and `bid_rank_et10`. `hot`, `rising` and `new` are vote/recency views.
+
+
+        This endpoint is shared beyond `/leaderboard/features` (documented public API,
+
+        other admin surfaces) — its default response shape is never trimmed. Pass
+
+        `fields=list` to get the slim shape the board''s own list rendering re-fetches
+
+        (used by feature_leaderboard.html after the initial SSR paint); everyone else
+
+        keeps the full entry, including `description` and `username`.
+
+
+        Args:
+
+        period: Time period filter (daily, weekly, all_time)
+
+        limit: Maximum number of entries to return
+
+        category: Filter by category (feature, reward, incentive, improvement)
+
+        status: Filter by status (pending, reviewing, approved, implementing, completed)
+
+        channel: Filter by source channel (telegram, discord, web, github, api)'
+      operationId: get_leaderboard_api_v1_features_leaderboard_get
+      parameters:
+      - name: period
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^(daily|weekly|all_time)$
+          default: all_time
+          title: Period
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 500
+          minimum: 1
+          default: 200
+          title: Limit
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^(hot|rising|new|top)$
+          default: top
+          title: Sort
+      - name: category
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Category
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            pattern: ^(pending|reviewing|approved|implementing|qa_testing|completed)$
+          - type: 'null'
+          title: Status
+      - name: channel
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            pattern: ^(telegram|discord|web|github|api|linear)$
+          - type: 'null'
+          title: Channel
+      - name: fields
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            pattern: ^(list)$
+          - type: 'null'
+          description: fields=list returns a slim entry (no description/username) for a board-list rendering — the default (omitted) shape is unchanged for every other caller.
+          title: Fields
+        description: fields=list returns a slim entry (no description/username) for a board-list rendering — the default (omitted) shape is unchanged for every other caller.
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/src__schemas__features__LeaderboardResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/features/bidding/rules:
+    get:
+      tags:
+      - Features
+      summary: Bidding Rules
+      description: How bidding works, the smallest bid and the ET10 price it is worked out from. Public.
+      operationId: bidding_rules_api_v1_features_bidding_rules_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rules:
+                    type: string
+                    description: How bidding works, in the words the site uses.
+                  min_bid_usd:
+                    type: number
+                  min_bid_et10:
+                    type: number
+                    description: Smallest first bid on a feature, in ET10. Read it; never hardcode it.
+                  et10_price_usd:
+                    type: number
+                    description: The ET10 price the minimum is worked out from.
+                  min_holding_et10:
+                    type: number
+                    description: ET10 the account must hold to bid. A holding; a bid is never collected.
+                  collected:
+                    type: boolean
+                    description: 'Always false: a bid is never charged, locked or paid.'
+                  get_et10:
+                    type: string
+                  board:
+                    type: string
+                additionalProperties: true
+                required:
+                - rules
+                - min_bid_usd
+                - min_bid_et10
+                - et10_price_usd
+      security: []
+  /api/v1/features/bids/mine:
+    get:
+      tags:
+      - Features
+      summary: My Feature Bids
+      description: Your standing bid on each feature, and how much ET10 that commits on open features.
+      operationId: my_feature_bids_api_v1_features_bids_mine_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bids:
+                    type: object
+                    additionalProperties:
+                      type: string
+                    description: 'Your standing bid per feature: {feature_id: amount_et10}.'
+                  standing_on_open_features_et10:
+                    type: number
+                    description: ET10 your standing bids commit on features that are still open.
+                additionalProperties: true
+                required:
+                - bids
+                - standing_on_open_features_et10
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+  /api/v1/features/{feature_id}/bids:
+    get:
+      tags:
+      - Features
+      summary: Feature Bid Summary
+      description: A feature's bid total, number of bidders and highest bid. Never who bid what. Public.
+      operationId: feature_bid_summary_api_v1_features__feature_id__bids_get
+      parameters:
+      - name: feature_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Feature Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  feature_id:
+                    type: integer
+                  open_for_bids:
+                    type: boolean
+                    description: False once a feature has shipped or been closed; a bid on it is refused.
+                  bid_total_et10:
+                    type: number
+                    description: ET10 bid on this feature (each account's standing bid, summed).
+                  bid_count:
+                    type: integer
+                    description: How many accounts have bid. Never who.
+                  highest_bid_et10:
+                    type: number
+                  bid_usd_value:
+                    type: number
+                  bid_rank_et10:
+                    type: number
+                    description: 'What the board ranks by: ET10 bid plus dollars already raised, at the ET10 price.'
+                  min_bid_et10:
+                    type: number
+                  min_bid_usd:
+                    type: number
+                  et10_price_usd:
+                    type: number
+                  min_holding_et10:
+                    type: number
+                    description: ET10 the account must hold to bid. A holding; a bid is never collected.
+                  collected:
+                    type: boolean
+                    description: 'Always false: a bid is never charged, locked or paid.'
+                additionalProperties: true
+                required:
+                - feature_id
+                - open_for_bids
+                - bid_total_et10
+                - bid_count
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/features/{feature_id}/bid:
+    post:
+      tags:
+      - Features
+      summary: Bid On Feature
+      description: 'Place or raise your ET10 bid on a feature. Raise only. Never collected; the account must hold 100,000 ET10.
+
+
+        Signed-in session or X-API-Key, so an agent can bid for its account.'
+      operationId: bid_on_feature_api_v1_features__feature_id__bid_post
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: feature_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Feature Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeatureBidIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  feature_id:
+                    type: integer
+                  your_bid_et10:
+                    type: number
+                  raised_from_et10:
+                    type:
+                    - number
+                    - 'null'
+                    description: Your previous standing bid, null for a first bid.
+                  bid_total_et10:
+                    type: number
+                  bid_count:
+                    type: integer
+                  bid_usd_value:
+                    type: number
+                  bid_rank_et10:
+                    type: number
+                  message:
+                    type: string
+                additionalProperties: true
+                required:
+                - feature_id
+                - your_bid_et10
+                - bid_total_et10
+                - bid_count
+                - message
+                description: The bid stands. Nothing was charged or locked. A refusal is a 422 whose `detail` says why.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    FeatureResponse:
+      properties:
+        id:
+          type: integer
+          title: Id
+        title:
+          type: string
+          title: Title
+        description:
+          type: string
+          title: Description
+        category:
+          type: string
+          title: Category
+        upvotes:
+          type: integer
+          title: Upvotes
+        downvotes:
+          type: integer
+          title: Downvotes
+        score:
+          type: integer
+          title: Score
+        status:
+          type: string
+          title: Status
+        ai_review_summary:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Ai Review Summary
+        ai_feasibility_score:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Ai Feasibility Score
+        ai_complexity_estimate:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Ai Complexity Estimate
+        ai_security_concerns:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Ai Security Concerns
+        ai_implementation_plan:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Ai Implementation Plan
+        ticket_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Ticket Id
+        ticket_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Ticket Url
+        implementation_started_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Implementation Started At
+        implementation_completed_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Implementation Completed At
+        commit_hash:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Commit Hash
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Updated At
+        reviewed_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Reviewed At
+        qa_ready_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Qa Ready At
+        qa_approved_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Qa Approved At
+        qa_reviewer_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Qa Reviewer Id
+        qa_notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Qa Notes
+        images:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Images
+        specification_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Specification Url
+        linear_ticket_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Linear Ticket Id
+        linear_ticket_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Linear Ticket Url
+        linear_status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Linear Status
+        page_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Page Url
+        source_channel:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Source Channel
+        username:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Username
+        display_creator:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Display Creator
+        display_creator_source:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Display Creator Source
+        creator_handle:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Creator Handle
+        creator_source:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Creator Source
+        user_vote:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: User Vote
+        comment_count:
+          type: integer
+          title: Comment Count
+          default: 0
+        agent_votes_count:
+          type: integer
+          title: Agent Votes Count
+          default: 0
+        agent_votes:
+          anyOf:
+          - items:
+              type: object
+            type: array
+          - type: 'null'
+          title: Agent Votes
+        migrated_to_ai_app_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Migrated To Ai App Id
+      type: object
+      required:
+      - id
+      - title
+      - description
+      - category
+      - upvotes
+      - downvotes
+      - score
+      - status
+      - created_at
+      title: FeatureResponse
+      description: Schema for feature response.
+    src__schemas__features__LeaderboardResponse:
+      properties:
+        entries:
+          items:
+            $ref: '#/components/schemas/LeaderboardEntryResponse'
+          type: array
+          title: Entries
+        total:
+          type: integer
+          title: Total
+        returned:
+          type: integer
+          title: Returned
+          default: 0
+        stats:
+          additionalProperties:
+            type: integer
+          type: object
+          title: Stats
+        period:
+          type: string
+          title: Period
+      type: object
+      required:
+      - entries
+      - total
+      - period
+      title: LeaderboardResponse
+      description: Schema for leaderboard response.
+    LeaderboardEntryResponse:
+      properties:
+        rank:
+          type: integer
+          title: Rank
+        id:
+          type: integer
+          title: Id
+        title:
+          type: string
+          title: Title
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        category:
+          type: string
+          title: Category
+        score:
+          type: integer
+          title: Score
+          default: 0
+        upvotes:
+          type: integer
+          title: Upvotes
+          default: 0
+        downvotes:
+          type: integer
+          title: Downvotes
+          default: 0
+        status:
+          type: string
+          title: Status
+        username:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Username
+        display_creator:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Display Creator
+        display_creator_source:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Display Creator Source
+        source_channel:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Source Channel
+        linear_ticket_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Linear Ticket Id
+        linear_ticket_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Linear Ticket Url
+        linear_status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Linear Status
+        activated:
+          type: boolean
+          title: Activated
+          default: false
+        profit_score:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Profit Score
+        scout_reasoning:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Scout Reasoning
+        page_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Page Url
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        comment_count:
+          type: integer
+          title: Comment Count
+          default: 0
+        agent_votes_count:
+          type: integer
+          title: Agent Votes Count
+          default: 0
+        qa_ready_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Qa Ready At
+        qa_approved_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Qa Approved At
+        is_microfund:
+          type: boolean
+          title: Is Microfund
+          default: false
+        mf_status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Mf Status
+        mf_funding_current_usd:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Mf Funding Current Usd
+        mf_funding_goal_usd:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Mf Funding Goal Usd
+        bid_total_et10:
+          type: number
+          title: Bid Total Et10
+          default: 0
+        bid_count:
+          type: integer
+          title: Bid Count
+          default: 0
+        bid_usd_value:
+          type: number
+          title: Bid Usd Value
+          default: 0
+        bid_rank_et10:
+          type: number
+          title: Bid Rank Et10
+          default: 0
+        open_for_bids:
+          type: boolean
+          title: Open For Bids
+          default: false
+        migrated_to_ai_app_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Migrated To Ai App Id
+      type: object
+      required:
+      - rank
+      - id
+      - title
+      - category
+      - status
+      - created_at
+      title: LeaderboardEntryResponse
+      description: Schema for leaderboard entry.
+    FeatureBidIn:
+      properties:
+        amount_et10:
+          title: Amount Et10
+      type: object
+      title: FeatureBidIn
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    FeatureListResponse:
+      properties:
+        features:
+          items:
+            $ref: '#/components/schemas/FeatureResponse'
+          type: array
+          title: Features
+        total:
+          type: integer
+          title: Total
+        page:
+          type: integer
+          title: Page
+        per_page:
+          type: integer
+          title: Per Page
+        total_pages:
+          type: integer
+          title: Total Pages
+      type: object
+      required:
+      - features
+      - total
+      - page
+      - per_page
+      - total_pages
+      title: FeatureListResponse
+      description: Schema for paginated feature list response.
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

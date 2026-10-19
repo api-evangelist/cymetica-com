@@ -1,0 +1,1201 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public CEO AI Leaderboard API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: CEO AI Leaderboard
+paths:
+  /api/v1/ceo-ai-leaderboard:
+    get:
+      tags:
+      - CEO AI Leaderboard
+      summary: Leaderboard
+      description: Ranked board. ``sector`` omitted returns the combined top ``limit``.
+      operationId: leaderboard_api_v1_ceo_ai_leaderboard_get
+      parameters:
+      - name: sector
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: crypto | general | omit for both
+          title: Sector
+        description: crypto | general | omit for both
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 100
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sector:
+                    type: string
+                    description: crypto | general | all
+                  count:
+                    type: integer
+                  totals:
+                    type: object
+                    properties: {}
+                    additionalProperties:
+                      type: integer
+                    description: sector → published profiles
+                  rubric:
+                    type: object
+                    properties:
+                      rubric_version:
+                        type: integer
+                      dimensions:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            key:
+                              type: string
+                            label:
+                              type: string
+                            max:
+                              type: integer
+                            description:
+                              type: string
+                            group:
+                              type: string
+                            added_in:
+                              type: integer
+                          additionalProperties: true
+                      dimension_labels:
+                        type: object
+                        properties: {}
+                        additionalProperties:
+                          type: string
+                      anchors:
+                        type: object
+                        properties: {}
+                        additionalProperties: true
+                      anchors_by_dimension:
+                        type: object
+                        properties: {}
+                        additionalProperties: true
+                      weighting:
+                        type: object
+                        properties:
+                          formula:
+                            type: string
+                        additionalProperties: true
+                      penalties:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            key:
+                              type: string
+                            label:
+                              type: string
+                            max:
+                              type: integer
+                            description:
+                              type: string
+                          additionalProperties: true
+                      penalty_rule:
+                        type: string
+                      score_formula:
+                        type: string
+                      max_score:
+                        type: integer
+                      tiers:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            key:
+                              type: string
+                            label:
+                              type: string
+                            min_score:
+                              type: integer
+                            description:
+                              type: string
+                          additionalProperties: true
+                      sectors:
+                        type: array
+                        items:
+                          type: string
+                      min_confidence_to_publish:
+                        type: number
+                    additionalProperties: true
+                    description: Machine-readable scoring rubric.
+                  dimension_labels:
+                    type: object
+                    properties: {}
+                    additionalProperties:
+                      type: string
+                  export:
+                    type: string
+                  methodology:
+                    type: string
+                  generated_at:
+                    type: string
+                  entries:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        slug:
+                          type: string
+                        name:
+                          type: string
+                        title:
+                          type:
+                          - string
+                          - 'null'
+                        company:
+                          type:
+                          - string
+                          - 'null'
+                        sector:
+                          type: string
+                          description: crypto | general
+                        profile_url:
+                          type:
+                          - string
+                          - 'null'
+                        image_url:
+                          type:
+                          - string
+                          - 'null'
+                        score:
+                          type: integer
+                          description: 0-100 final score = max(0, weighted_score - penalties).
+                        tier:
+                          type: string
+                        dimensions:
+                          type: object
+                          properties: {}
+                          additionalProperties:
+                            type: integer
+                          description: dimension key → 0-20 score
+                        rubric_version:
+                          type:
+                          - integer
+                          - 'null'
+                        weighted_score:
+                          type:
+                          - number
+                          - 'null'
+                        penalties:
+                          type: object
+                          properties: {}
+                          additionalProperties: true
+                          description: penalty key → 0-10
+                        rationale:
+                          type:
+                          - string
+                          - 'null'
+                        evidence:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              claim:
+                                type: string
+                              source_url:
+                                type: string
+                            additionalProperties: true
+                        confidence:
+                          type: number
+                        source:
+                          type: string
+                          description: seeded | community
+                        status:
+                          type: string
+                        scored_at:
+                          type:
+                          - string
+                          - 'null'
+                        rank:
+                          type: integer
+                      additionalProperties: true
+                      required:
+                      - slug
+                      - name
+                      - score
+                      - tier
+                      - rank
+                additionalProperties: false
+                required:
+                - sector
+                - count
+                - entries
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/ceo-ai-leaderboard/profile/{slug}:
+    get:
+      tags:
+      - CEO AI Leaderboard
+      summary: Profile
+      operationId: profile_api_v1_ceo_ai_leaderboard_profile__slug__get
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  slug:
+                    type: string
+                  name:
+                    type: string
+                  title:
+                    type:
+                    - string
+                    - 'null'
+                  company:
+                    type:
+                    - string
+                    - 'null'
+                  sector:
+                    type: string
+                    description: crypto | general
+                  profile_url:
+                    type:
+                    - string
+                    - 'null'
+                  image_url:
+                    type:
+                    - string
+                    - 'null'
+                  score:
+                    type: integer
+                    description: 0-100 final score = max(0, weighted_score - penalties).
+                  tier:
+                    type: string
+                  dimensions:
+                    type: object
+                    properties: {}
+                    additionalProperties:
+                      type: integer
+                    description: dimension key → 0-20 score
+                  rubric_version:
+                    type:
+                    - integer
+                    - 'null'
+                  weighted_score:
+                    type:
+                    - number
+                    - 'null'
+                  penalties:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: penalty key → 0-10
+                  rationale:
+                    type:
+                    - string
+                    - 'null'
+                  evidence:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        claim:
+                          type: string
+                        source_url:
+                          type: string
+                      additionalProperties: true
+                  confidence:
+                    type: number
+                  source:
+                    type: string
+                    description: seeded | community
+                  status:
+                    type: string
+                  scored_at:
+                    type:
+                    - string
+                    - 'null'
+                  rank:
+                    type: integer
+                  sector_rank:
+                    type: integer
+                  penalty_evidence:
+                    type: array
+                    items:
+                      type: object
+                      properties: {}
+                      additionalProperties: true
+                  metadata:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  dimension_labels:
+                    type: object
+                    properties: {}
+                    additionalProperties:
+                      type: string
+                  passes:
+                    type: array
+                    items:
+                      type: object
+                      properties: {}
+                      additionalProperties: true
+                  dossier_sources:
+                    type: object
+                    properties: {}
+                    additionalProperties:
+                      type: boolean
+                    description: Which dossier sources were available (flags).
+                  validation:
+                    type: object
+                    properties:
+                      recompute:
+                        type: string
+                      score_formula:
+                        type: string
+                      methodology:
+                        type: string
+                      export:
+                        type: string
+                    additionalProperties: false
+                additionalProperties: true
+                required:
+                - slug
+                - name
+                - score
+                - rank
+                - sector_rank
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '404':
+          description: Profile not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+  /api/v1/ceo-ai-leaderboard/export.json:
+    get:
+      tags:
+      - CEO AI Leaderboard
+      summary: Export Json
+      description: 'Full machine-validatable export of the index — every published person
+
+        with the dimensions, weighted total, penalties, evidence and metadata a
+
+        third party needs to recompute and re-verify the score. No auth.'
+      operationId: export_json_api_v1_ceo_ai_leaderboard_export_json_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  service:
+                    type: string
+                  rubric_version:
+                    type: integer
+                  count:
+                    type: integer
+                  generated_at:
+                    type: string
+                  methodology:
+                    type: string
+                  methodology_url:
+                    type: string
+                  how_to_validate:
+                    type: array
+                    items:
+                      type: string
+                  rubric:
+                    type: object
+                    properties:
+                      rubric_version:
+                        type: integer
+                      dimensions:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            key:
+                              type: string
+                            label:
+                              type: string
+                            max:
+                              type: integer
+                            description:
+                              type: string
+                            group:
+                              type: string
+                            added_in:
+                              type: integer
+                          additionalProperties: true
+                      dimension_labels:
+                        type: object
+                        properties: {}
+                        additionalProperties:
+                          type: string
+                      anchors:
+                        type: object
+                        properties: {}
+                        additionalProperties: true
+                      anchors_by_dimension:
+                        type: object
+                        properties: {}
+                        additionalProperties: true
+                      weighting:
+                        type: object
+                        properties:
+                          formula:
+                            type: string
+                        additionalProperties: true
+                      penalties:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            key:
+                              type: string
+                            label:
+                              type: string
+                            max:
+                              type: integer
+                            description:
+                              type: string
+                          additionalProperties: true
+                      penalty_rule:
+                        type: string
+                      score_formula:
+                        type: string
+                      max_score:
+                        type: integer
+                      tiers:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            key:
+                              type: string
+                            label:
+                              type: string
+                            min_score:
+                              type: integer
+                            description:
+                              type: string
+                          additionalProperties: true
+                      sectors:
+                        type: array
+                        items:
+                          type: string
+                      min_confidence_to_publish:
+                        type: number
+                    additionalProperties: true
+                    description: Machine-readable scoring rubric.
+                  human_page:
+                    type: string
+                  license:
+                    type: string
+                  people:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        slug:
+                          type: string
+                        name:
+                          type: string
+                        title:
+                          type:
+                          - string
+                          - 'null'
+                        company:
+                          type:
+                          - string
+                          - 'null'
+                        sector:
+                          type: string
+                          description: crypto | general
+                        profile_url:
+                          type:
+                          - string
+                          - 'null'
+                        image_url:
+                          type:
+                          - string
+                          - 'null'
+                        score:
+                          type: integer
+                          description: 0-100 final score = max(0, weighted_score - penalties).
+                        tier:
+                          type: string
+                        dimensions:
+                          type: object
+                          properties: {}
+                          additionalProperties:
+                            type: integer
+                          description: dimension key → 0-20 score
+                        rubric_version:
+                          type:
+                          - integer
+                          - 'null'
+                        weighted_score:
+                          type:
+                          - number
+                          - 'null'
+                        penalties:
+                          type: object
+                          properties: {}
+                          additionalProperties: true
+                          description: penalty key → 0-10
+                        rationale:
+                          type:
+                          - string
+                          - 'null'
+                        evidence:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              claim:
+                                type:
+                                - string
+                                - 'null'
+                              source_url:
+                                type:
+                                - string
+                                - 'null'
+                              verified:
+                                type: boolean
+                              verified_at:
+                                type:
+                                - string
+                                - 'null'
+                            additionalProperties: true
+                        confidence:
+                          type: number
+                        source:
+                          type: string
+                          description: seeded | community
+                        status:
+                          type: string
+                        scored_at:
+                          type:
+                          - string
+                          - 'null'
+                        rank:
+                          type: integer
+                        tier_label:
+                          type: string
+                        dimension_labels:
+                          type: object
+                          properties: {}
+                          additionalProperties:
+                            type: string
+                        penalty_evidence:
+                          type: array
+                          items:
+                            type: object
+                            properties: {}
+                            additionalProperties: true
+                        metadata:
+                          type: object
+                          properties: {}
+                          additionalProperties: true
+                        dossier_sources:
+                          type: object
+                          properties: {}
+                          additionalProperties:
+                            type: boolean
+                        passes:
+                          type: array
+                          items:
+                            type: object
+                            properties: {}
+                            additionalProperties: true
+                        wikipedia_title:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: true
+                      required:
+                      - slug
+                      - name
+                      - score
+                      - tier
+                      - rank
+                additionalProperties: true
+                required:
+                - service
+                - rubric_version
+                - count
+                - people
+        '304':
+          description: If-None-Match matched the ETag; no body.
+      security: []
+  /api/v1/ceo-ai-leaderboard/methodology:
+    get:
+      tags:
+      - CEO AI Leaderboard
+      summary: Methodology
+      description: 'Rubric v4 in full — the assessor prompt, dimension labels, weights,
+
+        anchors, penalty rules, invariants and the recipe for re-validating every
+
+        published score from primary sources.'
+      operationId: methodology_api_v1_ceo_ai_leaderboard_methodology_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  service:
+                    type: string
+                  rubric_version:
+                    type: integer
+                  summary:
+                    type: string
+                  rubric:
+                    type: object
+                    properties:
+                      rubric_version:
+                        type: integer
+                      dimensions:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            key:
+                              type: string
+                            label:
+                              type: string
+                            max:
+                              type: integer
+                            description:
+                              type: string
+                            group:
+                              type: string
+                            added_in:
+                              type: integer
+                          additionalProperties: true
+                      dimension_labels:
+                        type: object
+                        properties: {}
+                        additionalProperties:
+                          type: string
+                      anchors:
+                        type: object
+                        properties: {}
+                        additionalProperties: true
+                      anchors_by_dimension:
+                        type: object
+                        properties: {}
+                        additionalProperties: true
+                      weighting:
+                        type: object
+                        properties:
+                          formula:
+                            type: string
+                        additionalProperties: true
+                      penalties:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            key:
+                              type: string
+                            label:
+                              type: string
+                            max:
+                              type: integer
+                            description:
+                              type: string
+                          additionalProperties: true
+                      penalty_rule:
+                        type: string
+                      score_formula:
+                        type: string
+                      max_score:
+                        type: integer
+                      tiers:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            key:
+                              type: string
+                            label:
+                              type: string
+                            min_score:
+                              type: integer
+                            description:
+                              type: string
+                          additionalProperties: true
+                      sectors:
+                        type: array
+                        items:
+                          type: string
+                      min_confidence_to_publish:
+                        type: number
+                    additionalProperties: true
+                    description: Machine-readable scoring rubric.
+                  dimension_labels:
+                    type: object
+                    properties: {}
+                    additionalProperties:
+                      type: string
+                  weights:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  anchors:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  penalty_rules:
+                    type: object
+                    properties:
+                      penalties:
+                        type: array
+                        items:
+                          type: object
+                          properties: {}
+                          additionalProperties: true
+                      rule:
+                        type: string
+                      never_on_rumour:
+                        type: string
+                    additionalProperties: false
+                  tiers:
+                    type: array
+                    items:
+                      type: object
+                      properties: {}
+                      additionalProperties: true
+                  anchors_by_dimension:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  invariants:
+                    type: array
+                    items:
+                      type: string
+                  evidence_standard:
+                    type: string
+                  popularity_rule:
+                    type: string
+                  no_special_cases:
+                    type: string
+                  assessor_prompt:
+                    type: string
+                  pipeline:
+                    type: array
+                    items:
+                      type: string
+                  how_to_validate:
+                    type: array
+                    items:
+                      type: string
+                  export:
+                    type: string
+                  validator_script:
+                    type: string
+                  human_page:
+                    type: string
+                additionalProperties: false
+                required:
+                - service
+                - rubric_version
+                - rubric
+                - how_to_validate
+      security: []
+  /api/v1/ceo-ai-leaderboard/score:
+    post:
+      tags:
+      - CEO AI Leaderboard
+      summary: Score Profile
+      description: 'Score one founder / CEO profile URL. Built for agents: returns the
+
+        result (200) when it finishes within ``wait`` seconds, otherwise 202 with
+
+        a status URL to poll. Same URL within 7 days → cached 200.'
+      operationId: score_profile_api_v1_ceo_ai_leaderboard_score_post
+      parameters:
+      - name: wait
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 55
+          minimum: 0
+          default: 45
+          title: Wait
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScoreRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type:
+                    - string
+                    - 'null'
+                  title:
+                    type:
+                    - string
+                    - 'null'
+                  company:
+                    type:
+                    - string
+                    - 'null'
+                  sector:
+                    type:
+                    - string
+                    - 'null'
+                  dimensions:
+                    type: object
+                    properties: {}
+                    additionalProperties:
+                      type: integer
+                    description: dimension key → 0-20 score
+                  score:
+                    type: integer
+                    description: 0-100 = max(0, weighted_score - penalties).
+                  tier:
+                    type: string
+                  tier_label:
+                    type: string
+                  rationale:
+                    type:
+                    - string
+                    - 'null'
+                  evidence:
+                    type: array
+                    items:
+                      type: object
+                      properties: {}
+                      additionalProperties: true
+                  confidence:
+                    type: number
+                  image_url:
+                    type:
+                    - string
+                    - 'null'
+                  profile_url:
+                    type:
+                    - string
+                    - 'null'
+                  duration_ms:
+                    type:
+                    - integer
+                    - 'null'
+                  cached:
+                    type:
+                    - boolean
+                    - 'null'
+                    description: true = a saved scoring of the same URL (7 days) was served.
+                  rubric_version:
+                    type: integer
+                  weighted_score:
+                    type:
+                    - number
+                    - 'null'
+                  penalties:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  penalty_evidence:
+                    type: array
+                    items:
+                      type: object
+                      properties: {}
+                      additionalProperties: true
+                  metadata:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  dimension_labels:
+                    type: object
+                    properties: {}
+                    additionalProperties:
+                      type: string
+                  published:
+                    type: boolean
+                    description: true = this person is on the public board.
+                  slug:
+                    type:
+                    - string
+                    - 'null'
+                  leaderboard_url:
+                    type:
+                    - string
+                    - 'null'
+                additionalProperties: true
+                required:
+                - score
+                - tier
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '202':
+          description: Scoring still running after `wait` seconds (default 45, max 55). Poll `status_url`.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    description: '`pending`.'
+                  message:
+                    type: string
+                  url:
+                    type: string
+                  status_url:
+                    type: string
+                    description: Poll this until the result is ready.
+                  retry_after_seconds:
+                    type: integer
+                additionalProperties: true
+                required:
+                - status
+                - status_url
+        '400':
+          description: Missing, over-long or non-public URL.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '429':
+          description: Three new scorings per hour per IP; Retry-After is set.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: Scoring is busy; retry in a few minutes.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+components:
+  schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    ScoreRequest:
+      properties:
+        url:
+          type: string
+          title: Url
+          description: Profile URL of the founder / CEO
+      type: object
+      required:
+      - url
+      title: ScoreRequest
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

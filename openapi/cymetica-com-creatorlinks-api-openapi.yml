@@ -1,0 +1,2787 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Creator Links API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: CreatorLinks
+paths:
+  /api/v1/creator-links/{slug}/stats:
+    get:
+      tags:
+      - CreatorLinks
+      summary: Link Stats
+      operationId: link_stats_api_v1_creator_links__slug__stats_get
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  slug:
+                    type: string
+                  title:
+                    type: string
+                  kind:
+                    type: string
+                    enum:
+                    - artifact
+                    - tool
+                    - app
+                    - product
+                    - service
+                    - post
+                    - other
+                  target_url:
+                    type: string
+                  parent_id:
+                    type:
+                    - integer
+                    - 'null'
+                  artifact_status:
+                    type:
+                    - string
+                    - 'null'
+                  artifact_url:
+                    type:
+                    - string
+                    - 'null'
+                  pitch:
+                    type:
+                    - string
+                    - 'null'
+                  has_page:
+                    type: boolean
+                  created_at:
+                    type:
+                    - string
+                    - 'null'
+                  clicks:
+                    type: integer
+                  reads:
+                    type: integer
+                  likes:
+                    type: integer
+                  unique_visitors:
+                    type: integer
+                  likes_excluded:
+                    type: integer
+                    description: Like rows kept as history but left out of `likes` by the 2026-10-18 correction (automated multi-link liking).
+                  last_activity:
+                    type:
+                    - string
+                    - 'null'
+                  series:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        day:
+                          type: string
+                        click:
+                          type: integer
+                        read:
+                          type: integer
+                        like:
+                          type: integer
+                      additionalProperties: false
+                      description: One row per day for the last 14 days (YYYY-MM-DD).
+                  top_referrers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        host:
+                          type: string
+                        count:
+                          type: integer
+                      additionalProperties: false
+                additionalProperties: true
+                required:
+                - slug
+                - kind
+                - target_url
+                - clicks
+                - reads
+                - likes
+                - series
+                - top_referrers
+                description: One tracked link with its click/read/like counts.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/creator/{username}/links:
+    get:
+      tags:
+      - CreatorLinks
+      summary: Creator Links
+      operationId: creator_links_api_v1_creator__username__links_get
+      parameters:
+      - name: username
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Username
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  username:
+                    type: string
+                  summary:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  links:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        slug:
+                          type: string
+                        title:
+                          type: string
+                        kind:
+                          type: string
+                          enum:
+                          - artifact
+                          - tool
+                          - app
+                          - product
+                          - service
+                          - post
+                          - other
+                        target_url:
+                          type: string
+                        parent_id:
+                          type:
+                          - integer
+                          - 'null'
+                        artifact_status:
+                          type:
+                          - string
+                          - 'null'
+                        artifact_url:
+                          type:
+                          - string
+                          - 'null'
+                        pitch:
+                          type:
+                          - string
+                          - 'null'
+                        has_page:
+                          type: boolean
+                        created_at:
+                          type:
+                          - string
+                          - 'null'
+                        clicks:
+                          type: integer
+                        reads:
+                          type: integer
+                        likes:
+                          type: integer
+                        unique_visitors:
+                          type: integer
+                        likes_excluded:
+                          type: integer
+                          description: Like rows kept as history but left out of `likes` by the 2026-10-18 correction (automated multi-link liking).
+                        last_activity:
+                          type:
+                          - string
+                          - 'null'
+                        series:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              day:
+                                type: string
+                              click:
+                                type: integer
+                              read:
+                                type: integer
+                              like:
+                                type: integer
+                            additionalProperties: false
+                            description: One row per day for the last 14 days (YYYY-MM-DD).
+                        top_referrers:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              host:
+                                type: string
+                              count:
+                                type: integer
+                            additionalProperties: false
+                      additionalProperties: true
+                      required:
+                      - slug
+                      - kind
+                      - target_url
+                      - clicks
+                      - reads
+                      - likes
+                      - series
+                      - top_referrers
+                      description: One tracked link with its click/read/like counts.
+                additionalProperties: false
+                required:
+                - username
+                - summary
+                - links
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/creator/links:
+    post:
+      tags:
+      - CreatorLinks
+      summary: Create Link
+      operationId: create_link_api_v1_creator_links_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLinkBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  slug:
+                    type: string
+                  tracked_url:
+                    type: string
+                  like_url:
+                    type: string
+                  pixel_url:
+                    type: string
+                  stats:
+                    type: object
+                    properties:
+                      slug:
+                        type: string
+                      title:
+                        type: string
+                      kind:
+                        type: string
+                        enum:
+                        - artifact
+                        - tool
+                        - app
+                        - product
+                        - service
+                        - post
+                        - other
+                      target_url:
+                        type: string
+                      parent_id:
+                        type:
+                        - integer
+                        - 'null'
+                      artifact_status:
+                        type:
+                        - string
+                        - 'null'
+                      artifact_url:
+                        type:
+                        - string
+                        - 'null'
+                      pitch:
+                        type:
+                        - string
+                        - 'null'
+                      has_page:
+                        type: boolean
+                      created_at:
+                        type:
+                        - string
+                        - 'null'
+                      clicks:
+                        type: integer
+                      reads:
+                        type: integer
+                      likes:
+                        type: integer
+                      unique_visitors:
+                        type: integer
+                      likes_excluded:
+                        type: integer
+                        description: Like rows kept as history but left out of `likes` by the 2026-10-18 correction (automated multi-link liking).
+                      last_activity:
+                        type:
+                        - string
+                        - 'null'
+                      series:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            day:
+                              type: string
+                            click:
+                              type: integer
+                            read:
+                              type: integer
+                            like:
+                              type: integer
+                          additionalProperties: false
+                          description: One row per day for the last 14 days (YYYY-MM-DD).
+                      top_referrers:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            host:
+                              type: string
+                            count:
+                              type: integer
+                          additionalProperties: false
+                    additionalProperties: true
+                    required:
+                    - slug
+                    - kind
+                    - target_url
+                    - clicks
+                    - reads
+                    - likes
+                    - series
+                    - top_referrers
+                    description: One tracked link with its click/read/like counts.
+                additionalProperties: false
+                required:
+                - slug
+                - tracked_url
+                - like_url
+                - pixel_url
+                - stats
+                description: The tracked link (`tracked_url` = https://cymetica.com/c/{slug}). Posting the same target_url again returns the existing link instead of minting a new one.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+  /api/v1/creator/artifacts:
+    post:
+      tags:
+      - CreatorLinks
+      summary: Create Artifact
+      operationId: create_artifact_api_v1_creator_artifacts_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateArtifactBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  slug:
+                    type: string
+                  title:
+                    type:
+                    - string
+                    - 'null'
+                  status:
+                    type:
+                    - string
+                    - 'null'
+                  artifact_url:
+                    type:
+                    - string
+                    - 'null'
+                  tracked_url:
+                    type: string
+                  page_url:
+                    type: string
+                  download_url:
+                    type: string
+                  like_url:
+                    type: string
+                  html:
+                    type:
+                    - string
+                    - 'null'
+                additionalProperties: false
+                required:
+                - slug
+                - tracked_url
+                - page_url
+                - like_url
+                description: 'The page just built: `page_url` is the public copy, `tracked_url` the link to share, `html` the full page for publishing as a Claude artifact.'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+  /api/v1/creator/links/{slug}:
+    patch:
+      tags:
+      - CreatorLinks
+      summary: Record Url
+      operationId: record_url_api_v1_creator_links__slug__patch
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordUrlBody'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  slug:
+                    type: string
+                  target_url:
+                    type: string
+                additionalProperties: true
+                description: The link after its target was recorded (an artifact link answers with its full artifact payload).
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/creator/rewards:
+    get:
+      tags:
+      - CreatorLinks
+      summary: Creator Rewards
+      description: 'The dev''s post-reward ledger: counts, ET10/ETLP earned, recent replies with verification state.'
+      operationId: creator_rewards_api_v1_creator_rewards_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  summary:
+                    type: object
+                    properties:
+                      pending:
+                        type: integer
+                      paid:
+                        type: integer
+                      unverifiable:
+                        type: integer
+                      failed:
+                        type: integer
+                      et10:
+                        type: number
+                      etlp:
+                        type: number
+                      per_post:
+                        type: object
+                        properties:
+                          et10:
+                            type: integer
+                          etlp:
+                            type: integer
+                        additionalProperties: false
+                    additionalProperties: false
+                    required:
+                    - pending
+                    - paid
+                    - unverifiable
+                    - failed
+                    - et10
+                    - etlp
+                    - per_post
+                  recent:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        source:
+                          type: string
+                          enum:
+                          - reddit
+                          - x
+                        id:
+                          type: integer
+                        permalink:
+                          type:
+                          - string
+                          - 'null'
+                        reply_url:
+                          type:
+                          - string
+                          - 'null'
+                        reward_status:
+                          type: string
+                          enum:
+                          - pending
+                          - paid
+                          - unverifiable
+                          - failed
+                        reward_note:
+                          type: string
+                        replied_at:
+                          type:
+                          - string
+                          - 'null'
+                        where:
+                          type: string
+                        text:
+                          type: string
+                      additionalProperties: true
+                      required:
+                      - source
+                      - id
+                      - reward_status
+                additionalProperties: false
+                required:
+                - summary
+                - recent
+                description: The caller's own post-reward ledger (session or X-API-Key).
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+  /api/v1/creator/post-kit:
+    get:
+      tags:
+      - CreatorLinks
+      summary: Creator Post Kit
+      description: Hashtags + @mentions per outlet for one surface (public; no DB).
+      operationId: creator_post_kit_api_v1_creator_post_kit_get
+      parameters:
+      - name: surface
+        in: query
+        required: false
+        schema:
+          type: string
+          default: /
+          title: Surface
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  surface:
+                    type: string
+                  kit:
+                    type: object
+                    properties:
+                      paste:
+                        type:
+                        - string
+                        - 'null'
+                      paste_lead:
+                        type:
+                        - string
+                        - 'null'
+                      hashtags:
+                        type: array
+                        items:
+                          type: string
+                      x:
+                        type: object
+                        properties:
+                          hashtags:
+                            type: string
+                          mention:
+                            type: string
+                          post:
+                            type: string
+                          rule:
+                            type: string
+                        additionalProperties: false
+                      reddit:
+                        type: object
+                        properties:
+                          rule:
+                            type: string
+                        additionalProperties: false
+                      telegram:
+                        type: object
+                        properties:
+                          hashtags:
+                            type: string
+                          mention:
+                            type: string
+                          rule:
+                            type: string
+                        additionalProperties: false
+                      discord:
+                        type: object
+                        properties:
+                          invite:
+                            type: string
+                          rule:
+                            type: string
+                        additionalProperties: false
+                    additionalProperties: false
+                    required:
+                    - hashtags
+                    - x
+                    - reddit
+                    - telegram
+                    - discord
+                    description: What a creator pastes per outlet for one surface. `paste` is the one-paste agent prompt when the surface has one; the X post is then that prompt with the tracked link as its last line.
+                  playbook:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        title:
+                          type: string
+                        text:
+                          type: string
+                      additionalProperties: false
+                additionalProperties: false
+                required:
+                - surface
+                - kit
+                - playbook
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/creator/reddit-leads:
+    get:
+      tags:
+      - CreatorLinks
+      summary: Reddit Leads
+      operationId: reddit_leads_api_v1_creator_reddit_leads_get
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 40
+          title: Limit
+      - name: tool
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 120
+          description: 'One queue per tool: a site path from /tools such as /pineconnector (or just pineconnector) keeps only threads whose best-matching page is that tool. Empty = every tool. An unknown tool is refused with 400 ("unknown tool ...") rather than ignored, so an empty list always means the filter matched nothing.'
+          default: ''
+          title: Tool
+        description: 'One queue per tool: a site path from /tools such as /pineconnector (or just pineconnector) keeps only threads whose best-matching page is that tool. Empty = every tool. An unknown tool is refused with 400 ("unknown tool ...") rather than ignored, so an empty list always means the filter matched nothing.'
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 60
+          description: 'Which leads to list: one of new, claimed, replied, skipped, or several comma-separated (e.g. claimed,replied). Empty = today''s queue: every open (new) thread plus the threads you claimed. Any status other than new lists only YOUR leads, each with its own reply_slug, tracked_url (https://cymetica.com/c/<reply_slug>), the page it points at (reply_page_slug, reply_page_name) and the suggested reply. An unknown status is refused with 400.'
+          default: ''
+          title: Status
+        description: 'Which leads to list: one of new, claimed, replied, skipped, or several comma-separated (e.g. claimed,replied). Empty = today''s queue: every open (new) thread plus the threads you claimed. Any status other than new lists only YOUR leads, each with its own reply_slug, tracked_url (https://cymetica.com/c/<reply_slug>), the page it points at (reply_page_slug, reply_page_name) and the suggested reply. An unknown status is refused with 400.'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stats:
+                    type: object
+                    properties:
+                      new:
+                        type: integer
+                      claimed:
+                        type: integer
+                      replied:
+                        type: integer
+                      skipped:
+                        type: integer
+                    additionalProperties: true
+                    description: Queue counts by status.
+                  leads:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        permalink:
+                          type: string
+                        author:
+                          type:
+                          - string
+                          - 'null'
+                        body:
+                          type: string
+                        posted_at:
+                          type:
+                          - string
+                          - 'null'
+                        relevance:
+                          type: integer
+                        matched:
+                          type:
+                          - string
+                          - 'null'
+                        surface:
+                          type: string
+                        surface_name:
+                          type: string
+                        tool_path:
+                          type:
+                          - string
+                          - 'null'
+                        tool_name:
+                          type:
+                          - string
+                          - 'null'
+                        tool_score:
+                          type:
+                          - number
+                          - 'null'
+                        status:
+                          type: string
+                          enum:
+                          - new
+                          - claimed
+                          - replied
+                          - skipped
+                        claimed_by:
+                          type:
+                          - integer
+                          - 'null'
+                        reply_slug:
+                          type:
+                          - string
+                          - 'null'
+                        suggested_reply:
+                          type:
+                          - string
+                          - 'null'
+                        reply_url:
+                          type:
+                          - string
+                          - 'null'
+                        tracked_url:
+                          type:
+                          - string
+                          - 'null'
+                        reply_page_slug:
+                          type:
+                          - string
+                          - 'null'
+                        reply_page_name:
+                          type:
+                          - string
+                          - 'null'
+                        reward_status:
+                          type:
+                          - string
+                          - 'null'
+                        reward_note:
+                          type:
+                          - string
+                          - 'null'
+                        reply_drafting:
+                          type: boolean
+                        reddit_id:
+                          type: string
+                        kind:
+                          type: string
+                          enum:
+                          - post
+                          - comment
+                        subreddit:
+                          type: string
+                        title:
+                          type:
+                          - string
+                          - 'null'
+                        score:
+                          type: integer
+                      additionalProperties: true
+                      required:
+                      - id
+                      - permalink
+                      - body
+                      - relevance
+                      - surface
+                      - status
+                      - subreddit
+                      description: 'One thread where a reply with the creator''s page fits. `permalink` opens it, `body` is the text (first 600 chars), `relevance` the crawler''s score, `surface`/`surface_name` the site surface the thread is about, `tool_path`/`tool_name` the best-matching page to reply with (vector match `tool_score`), `suggested_reply` the drafted reply once claimed via /reply. A claimed lead carries its OWN tracked link: `reply_slug`, `tracked_url` (https://cymetica.com/c/<reply_slug>) and the page it points at (`reply_page_slug`, `reply_page_name`), bound to the page picked on that card. `suggested_reply` is usable at once; while `reply_drafting` is true a reply written from the thread''s own text is still being prepared — GET /{platform}-leads/{id} again after a minute or two and use the newer `suggested_reply` when it changes. `?tool=` narrows the queue to one site surface (unknown tool → 400); `?status=claimed,replied` lists your own claimed/replied leads instead of the open queue (unknown status → 400).'
+                  artifacts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        slug:
+                          type: string
+                        title:
+                          type: string
+                        status:
+                          type:
+                          - string
+                          - 'null'
+                        surface:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: true
+                      description: One of the creator's pages a reply can link to.
+                  tool:
+                    type:
+                    - string
+                    - 'null'
+                    description: The resolved `?tool=` site path (null = every tool); `stats` then counts that tool's threads only.
+                  subreddits:
+                    type: array
+                    items:
+                      type: string
+                  discovered:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                additionalProperties: true
+                required:
+                - stats
+                - leads
+                - artifacts
+                description: 'The creator''s reply queue: fresh threads (newest/most relevant first, `?limit=` up to 200), the creator''s own claimed ones included.'
+        '400':
+          description: Unknown `tool` (not a site path from /tools) or unknown `status` (not one of new, claimed, replied, skipped). The queue is never silently widened.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/creator/reddit-leads/{lead_id}/reply:
+    post:
+      tags:
+      - CreatorLinks
+      summary: Reddit Lead Reply
+      operationId: reddit_lead_reply_api_v1_creator_reddit_leads__lead_id__reply_post
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: lead_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Lead Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClaimBody'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  permalink:
+                    type: string
+                  author:
+                    type:
+                    - string
+                    - 'null'
+                  body:
+                    type: string
+                  posted_at:
+                    type:
+                    - string
+                    - 'null'
+                  relevance:
+                    type: integer
+                  matched:
+                    type:
+                    - string
+                    - 'null'
+                  surface:
+                    type: string
+                  surface_name:
+                    type: string
+                  tool_path:
+                    type:
+                    - string
+                    - 'null'
+                  tool_name:
+                    type:
+                    - string
+                    - 'null'
+                  tool_score:
+                    type:
+                    - number
+                    - 'null'
+                  status:
+                    type: string
+                    enum:
+                    - new
+                    - claimed
+                    - replied
+                    - skipped
+                  claimed_by:
+                    type:
+                    - integer
+                    - 'null'
+                  reply_slug:
+                    type:
+                    - string
+                    - 'null'
+                  suggested_reply:
+                    type:
+                    - string
+                    - 'null'
+                  reply_url:
+                    type:
+                    - string
+                    - 'null'
+                  tracked_url:
+                    type:
+                    - string
+                    - 'null'
+                  reply_page_slug:
+                    type:
+                    - string
+                    - 'null'
+                  reply_page_name:
+                    type:
+                    - string
+                    - 'null'
+                  reward_status:
+                    type:
+                    - string
+                    - 'null'
+                  reward_note:
+                    type:
+                    - string
+                    - 'null'
+                  reply_drafting:
+                    type: boolean
+                  reddit_id:
+                    type: string
+                  kind:
+                    type: string
+                    enum:
+                    - post
+                    - comment
+                  subreddit:
+                    type: string
+                  title:
+                    type:
+                    - string
+                    - 'null'
+                  score:
+                    type: integer
+                additionalProperties: true
+                required:
+                - id
+                - permalink
+                - body
+                - relevance
+                - surface
+                - status
+                - subreddit
+                description: 'One thread where a reply with the creator''s page fits. `permalink` opens it, `body` is the text (first 600 chars), `relevance` the crawler''s score, `surface`/`surface_name` the site surface the thread is about, `tool_path`/`tool_name` the best-matching page to reply with (vector match `tool_score`), `suggested_reply` the drafted reply once claimed via /reply. A claimed lead carries its OWN tracked link: `reply_slug`, `tracked_url` (https://cymetica.com/c/<reply_slug>) and the page it points at (`reply_page_slug`, `reply_page_name`), bound to the page picked on that card. `suggested_reply` is usable at once; while `reply_drafting` is true a reply written from the thread''s own text is still being prepared — GET /{platform}-leads/{id} again after a minute or two and use the newer `suggested_reply` when it changes. `?tool=` narrows the queue to one site surface (unknown tool → 400); `?status=claimed,replied` lists your own claimed/replied leads instead of the open queue (unknown status → 400).'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/creator/reddit-leads/{lead_id}:
+    get:
+      tags:
+      - CreatorLinks
+      summary: Reddit Lead One
+      description: 'One card, for the poll while `reply_drafting`: the claimant''s own lead only.'
+      operationId: reddit_lead_one_api_v1_creator_reddit_leads__lead_id__get
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: lead_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Lead Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  permalink:
+                    type: string
+                  author:
+                    type:
+                    - string
+                    - 'null'
+                  body:
+                    type: string
+                  posted_at:
+                    type:
+                    - string
+                    - 'null'
+                  relevance:
+                    type: integer
+                  matched:
+                    type:
+                    - string
+                    - 'null'
+                  surface:
+                    type: string
+                  surface_name:
+                    type: string
+                  tool_path:
+                    type:
+                    - string
+                    - 'null'
+                  tool_name:
+                    type:
+                    - string
+                    - 'null'
+                  tool_score:
+                    type:
+                    - number
+                    - 'null'
+                  status:
+                    type: string
+                    enum:
+                    - new
+                    - claimed
+                    - replied
+                    - skipped
+                  claimed_by:
+                    type:
+                    - integer
+                    - 'null'
+                  reply_slug:
+                    type:
+                    - string
+                    - 'null'
+                  suggested_reply:
+                    type:
+                    - string
+                    - 'null'
+                  reply_url:
+                    type:
+                    - string
+                    - 'null'
+                  tracked_url:
+                    type:
+                    - string
+                    - 'null'
+                  reply_page_slug:
+                    type:
+                    - string
+                    - 'null'
+                  reply_page_name:
+                    type:
+                    - string
+                    - 'null'
+                  reward_status:
+                    type:
+                    - string
+                    - 'null'
+                  reward_note:
+                    type:
+                    - string
+                    - 'null'
+                  reply_drafting:
+                    type: boolean
+                  reddit_id:
+                    type: string
+                  kind:
+                    type: string
+                    enum:
+                    - post
+                    - comment
+                  subreddit:
+                    type: string
+                  title:
+                    type:
+                    - string
+                    - 'null'
+                  score:
+                    type: integer
+                additionalProperties: true
+                required:
+                - id
+                - permalink
+                - body
+                - relevance
+                - surface
+                - status
+                - subreddit
+                description: 'One thread where a reply with the creator''s page fits. `permalink` opens it, `body` is the text (first 600 chars), `relevance` the crawler''s score, `surface`/`surface_name` the site surface the thread is about, `tool_path`/`tool_name` the best-matching page to reply with (vector match `tool_score`), `suggested_reply` the drafted reply once claimed via /reply. A claimed lead carries its OWN tracked link: `reply_slug`, `tracked_url` (https://cymetica.com/c/<reply_slug>) and the page it points at (`reply_page_slug`, `reply_page_name`), bound to the page picked on that card. `suggested_reply` is usable at once; while `reply_drafting` is true a reply written from the thread''s own text is still being prepared — GET /{platform}-leads/{id} again after a minute or two and use the newer `suggested_reply` when it changes. `?tool=` narrows the queue to one site surface (unknown tool → 400); `?status=claimed,replied` lists your own claimed/replied leads instead of the open queue (unknown status → 400).'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/creator/twitter-leads/{lead_id}:
+    get:
+      tags:
+      - CreatorLinks
+      summary: Twitter Lead One
+      description: 'One card, for the poll while `reply_drafting`: the claimant''s own lead only.'
+      operationId: twitter_lead_one_api_v1_creator_twitter_leads__lead_id__get
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: lead_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Lead Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  permalink:
+                    type: string
+                  author:
+                    type:
+                    - string
+                    - 'null'
+                  body:
+                    type: string
+                  posted_at:
+                    type:
+                    - string
+                    - 'null'
+                  relevance:
+                    type: integer
+                  matched:
+                    type:
+                    - string
+                    - 'null'
+                  surface:
+                    type: string
+                  surface_name:
+                    type: string
+                  tool_path:
+                    type:
+                    - string
+                    - 'null'
+                  tool_name:
+                    type:
+                    - string
+                    - 'null'
+                  tool_score:
+                    type:
+                    - number
+                    - 'null'
+                  status:
+                    type: string
+                    enum:
+                    - new
+                    - claimed
+                    - replied
+                    - skipped
+                  claimed_by:
+                    type:
+                    - integer
+                    - 'null'
+                  reply_slug:
+                    type:
+                    - string
+                    - 'null'
+                  suggested_reply:
+                    type:
+                    - string
+                    - 'null'
+                  reply_url:
+                    type:
+                    - string
+                    - 'null'
+                  tracked_url:
+                    type:
+                    - string
+                    - 'null'
+                  reply_page_slug:
+                    type:
+                    - string
+                    - 'null'
+                  reply_page_name:
+                    type:
+                    - string
+                    - 'null'
+                  reward_status:
+                    type:
+                    - string
+                    - 'null'
+                  reward_note:
+                    type:
+                    - string
+                    - 'null'
+                  reply_drafting:
+                    type: boolean
+                  tweet_id:
+                    type: string
+                  group_key:
+                    type: string
+                  group_name:
+                    type: string
+                  author_followers:
+                    type:
+                    - number
+                    - 'null'
+                  likes:
+                    type:
+                    - number
+                    - 'null'
+                  replies:
+                    type:
+                    - number
+                    - 'null'
+                  impressions:
+                    type:
+                    - number
+                    - 'null'
+                additionalProperties: true
+                required:
+                - id
+                - permalink
+                - body
+                - relevance
+                - surface
+                - status
+                - tweet_id
+                description: 'One thread where a reply with the creator''s page fits. `permalink` opens it, `body` is the text (first 600 chars), `relevance` the crawler''s score, `surface`/`surface_name` the site surface the thread is about, `tool_path`/`tool_name` the best-matching page to reply with (vector match `tool_score`), `suggested_reply` the drafted reply once claimed via /reply. A claimed lead carries its OWN tracked link: `reply_slug`, `tracked_url` (https://cymetica.com/c/<reply_slug>) and the page it points at (`reply_page_slug`, `reply_page_name`), bound to the page picked on that card. `suggested_reply` is usable at once; while `reply_drafting` is true a reply written from the thread''s own text is still being prepared — GET /{platform}-leads/{id} again after a minute or two and use the newer `suggested_reply` when it changes. `?tool=` narrows the queue to one site surface (unknown tool → 400); `?status=claimed,replied` lists your own claimed/replied leads instead of the open queue (unknown status → 400).'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/creator/reddit-leads/{lead_id}/posted:
+    post:
+      tags:
+      - CreatorLinks
+      summary: Reddit Lead Posted
+      operationId: reddit_lead_posted_api_v1_creator_reddit_leads__lead_id__posted_post
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: lead_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Lead Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostedBody'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  permalink:
+                    type: string
+                  author:
+                    type:
+                    - string
+                    - 'null'
+                  body:
+                    type: string
+                  posted_at:
+                    type:
+                    - string
+                    - 'null'
+                  relevance:
+                    type: integer
+                  matched:
+                    type:
+                    - string
+                    - 'null'
+                  surface:
+                    type: string
+                  surface_name:
+                    type: string
+                  tool_path:
+                    type:
+                    - string
+                    - 'null'
+                  tool_name:
+                    type:
+                    - string
+                    - 'null'
+                  tool_score:
+                    type:
+                    - number
+                    - 'null'
+                  status:
+                    type: string
+                    enum:
+                    - new
+                    - claimed
+                    - replied
+                    - skipped
+                  claimed_by:
+                    type:
+                    - integer
+                    - 'null'
+                  reply_slug:
+                    type:
+                    - string
+                    - 'null'
+                  suggested_reply:
+                    type:
+                    - string
+                    - 'null'
+                  reply_url:
+                    type:
+                    - string
+                    - 'null'
+                  tracked_url:
+                    type:
+                    - string
+                    - 'null'
+                  reply_page_slug:
+                    type:
+                    - string
+                    - 'null'
+                  reply_page_name:
+                    type:
+                    - string
+                    - 'null'
+                  reward_status:
+                    type:
+                    - string
+                    - 'null'
+                  reward_note:
+                    type:
+                    - string
+                    - 'null'
+                  reply_drafting:
+                    type: boolean
+                  reddit_id:
+                    type: string
+                  kind:
+                    type: string
+                    enum:
+                    - post
+                    - comment
+                  subreddit:
+                    type: string
+                  title:
+                    type:
+                    - string
+                    - 'null'
+                  score:
+                    type: integer
+                additionalProperties: true
+                required:
+                - id
+                - permalink
+                - body
+                - relevance
+                - surface
+                - status
+                - subreddit
+                description: 'One thread where a reply with the creator''s page fits. `permalink` opens it, `body` is the text (first 600 chars), `relevance` the crawler''s score, `surface`/`surface_name` the site surface the thread is about, `tool_path`/`tool_name` the best-matching page to reply with (vector match `tool_score`), `suggested_reply` the drafted reply once claimed via /reply. A claimed lead carries its OWN tracked link: `reply_slug`, `tracked_url` (https://cymetica.com/c/<reply_slug>) and the page it points at (`reply_page_slug`, `reply_page_name`), bound to the page picked on that card. `suggested_reply` is usable at once; while `reply_drafting` is true a reply written from the thread''s own text is still being prepared — GET /{platform}-leads/{id} again after a minute or two and use the newer `suggested_reply` when it changes. `?tool=` narrows the queue to one site surface (unknown tool → 400); `?status=claimed,replied` lists your own claimed/replied leads instead of the open queue (unknown status → 400).'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/creator/reddit-leads/{lead_id}/skip:
+    post:
+      tags:
+      - CreatorLinks
+      summary: Reddit Lead Skip
+      operationId: reddit_lead_skip_api_v1_creator_reddit_leads__lead_id__skip_post
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: lead_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Lead Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  status:
+                    type: string
+                    enum:
+                    - new
+                    - claimed
+                    - replied
+                    - skipped
+                additionalProperties: false
+                required:
+                - id
+                - status
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/creator/twitter-leads:
+    get:
+      tags:
+      - CreatorLinks
+      summary: Twitter Leads
+      operationId: twitter_leads_api_v1_creator_twitter_leads_get
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 40
+          title: Limit
+      - name: tool
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 120
+          description: 'One queue per tool: a site path from /tools such as /pineconnector (or just pineconnector) keeps only threads whose best-matching page is that tool. Empty = every tool. An unknown tool is refused with 400 ("unknown tool ...") rather than ignored, so an empty list always means the filter matched nothing.'
+          default: ''
+          title: Tool
+        description: 'One queue per tool: a site path from /tools such as /pineconnector (or just pineconnector) keeps only threads whose best-matching page is that tool. Empty = every tool. An unknown tool is refused with 400 ("unknown tool ...") rather than ignored, so an empty list always means the filter matched nothing.'
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 60
+          description: 'Which leads to list: one of new, claimed, replied, skipped, or several comma-separated (e.g. claimed,replied). Empty = today''s queue: every open (new) thread plus the threads you claimed. Any status other than new lists only YOUR leads, each with its own reply_slug, tracked_url (https://cymetica.com/c/<reply_slug>), the page it points at (reply_page_slug, reply_page_name) and the suggested reply. An unknown status is refused with 400.'
+          default: ''
+          title: Status
+        description: 'Which leads to list: one of new, claimed, replied, skipped, or several comma-separated (e.g. claimed,replied). Empty = today''s queue: every open (new) thread plus the threads you claimed. Any status other than new lists only YOUR leads, each with its own reply_slug, tracked_url (https://cymetica.com/c/<reply_slug>), the page it points at (reply_page_slug, reply_page_name) and the suggested reply. An unknown status is refused with 400.'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stats:
+                    type: object
+                    properties:
+                      new:
+                        type: integer
+                      claimed:
+                        type: integer
+                      replied:
+                        type: integer
+                      skipped:
+                        type: integer
+                    additionalProperties: true
+                    description: Queue counts by status.
+                  leads:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        permalink:
+                          type: string
+                        author:
+                          type:
+                          - string
+                          - 'null'
+                        body:
+                          type: string
+                        posted_at:
+                          type:
+                          - string
+                          - 'null'
+                        relevance:
+                          type: integer
+                        matched:
+                          type:
+                          - string
+                          - 'null'
+                        surface:
+                          type: string
+                        surface_name:
+                          type: string
+                        tool_path:
+                          type:
+                          - string
+                          - 'null'
+                        tool_name:
+                          type:
+                          - string
+                          - 'null'
+                        tool_score:
+                          type:
+                          - number
+                          - 'null'
+                        status:
+                          type: string
+                          enum:
+                          - new
+                          - claimed
+                          - replied
+                          - skipped
+                        claimed_by:
+                          type:
+                          - integer
+                          - 'null'
+                        reply_slug:
+                          type:
+                          - string
+                          - 'null'
+                        suggested_reply:
+                          type:
+                          - string
+                          - 'null'
+                        reply_url:
+                          type:
+                          - string
+                          - 'null'
+                        tracked_url:
+                          type:
+                          - string
+                          - 'null'
+                        reply_page_slug:
+                          type:
+                          - string
+                          - 'null'
+                        reply_page_name:
+                          type:
+                          - string
+                          - 'null'
+                        reward_status:
+                          type:
+                          - string
+                          - 'null'
+                        reward_note:
+                          type:
+                          - string
+                          - 'null'
+                        reply_drafting:
+                          type: boolean
+                        tweet_id:
+                          type: string
+                        group_key:
+                          type: string
+                        group_name:
+                          type: string
+                        author_followers:
+                          type:
+                          - number
+                          - 'null'
+                        likes:
+                          type:
+                          - number
+                          - 'null'
+                        replies:
+                          type:
+                          - number
+                          - 'null'
+                        impressions:
+                          type:
+                          - number
+                          - 'null'
+                      additionalProperties: true
+                      required:
+                      - id
+                      - permalink
+                      - body
+                      - relevance
+                      - surface
+                      - status
+                      - tweet_id
+                      description: 'One thread where a reply with the creator''s page fits. `permalink` opens it, `body` is the text (first 600 chars), `relevance` the crawler''s score, `surface`/`surface_name` the site surface the thread is about, `tool_path`/`tool_name` the best-matching page to reply with (vector match `tool_score`), `suggested_reply` the drafted reply once claimed via /reply. A claimed lead carries its OWN tracked link: `reply_slug`, `tracked_url` (https://cymetica.com/c/<reply_slug>) and the page it points at (`reply_page_slug`, `reply_page_name`), bound to the page picked on that card. `suggested_reply` is usable at once; while `reply_drafting` is true a reply written from the thread''s own text is still being prepared — GET /{platform}-leads/{id} again after a minute or two and use the newer `suggested_reply` when it changes. `?tool=` narrows the queue to one site surface (unknown tool → 400); `?status=claimed,replied` lists your own claimed/replied leads instead of the open queue (unknown status → 400).'
+                  artifacts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        slug:
+                          type: string
+                        title:
+                          type: string
+                        status:
+                          type:
+                          - string
+                          - 'null'
+                        surface:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: true
+                      description: One of the creator's pages a reply can link to.
+                  tool:
+                    type:
+                    - string
+                    - 'null'
+                    description: The resolved `?tool=` site path (null = every tool); `stats` then counts that tool's threads only.
+                  groups:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                        name:
+                          type: string
+                        terms:
+                          type: array
+                          items:
+                            type: string
+                      additionalProperties: true
+                  discovered:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                additionalProperties: true
+                required:
+                - stats
+                - leads
+                - artifacts
+                description: 'The creator''s reply queue: fresh threads (newest/most relevant first, `?limit=` up to 200), the creator''s own claimed ones included.'
+        '400':
+          description: Unknown `tool` (not a site path from /tools) or unknown `status` (not one of new, claimed, replied, skipped). The queue is never silently widened.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/creator/twitter-leads/{lead_id}/reply:
+    post:
+      tags:
+      - CreatorLinks
+      summary: Twitter Lead Reply
+      operationId: twitter_lead_reply_api_v1_creator_twitter_leads__lead_id__reply_post
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: lead_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Lead Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClaimBody'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  permalink:
+                    type: string
+                  author:
+                    type:
+                    - string
+                    - 'null'
+                  body:
+                    type: string
+                  posted_at:
+                    type:
+                    - string
+                    - 'null'
+                  relevance:
+                    type: integer
+                  matched:
+                    type:
+                    - string
+                    - 'null'
+                  surface:
+                    type: string
+                  surface_name:
+                    type: string
+                  tool_path:
+                    type:
+                    - string
+                    - 'null'
+                  tool_name:
+                    type:
+                    - string
+                    - 'null'
+                  tool_score:
+                    type:
+                    - number
+                    - 'null'
+                  status:
+                    type: string
+                    enum:
+                    - new
+                    - claimed
+                    - replied
+                    - skipped
+                  claimed_by:
+                    type:
+                    - integer
+                    - 'null'
+                  reply_slug:
+                    type:
+                    - string
+                    - 'null'
+                  suggested_reply:
+                    type:
+                    - string
+                    - 'null'
+                  reply_url:
+                    type:
+                    - string
+                    - 'null'
+                  tracked_url:
+                    type:
+                    - string
+                    - 'null'
+                  reply_page_slug:
+                    type:
+                    - string
+                    - 'null'
+                  reply_page_name:
+                    type:
+                    - string
+                    - 'null'
+                  reward_status:
+                    type:
+                    - string
+                    - 'null'
+                  reward_note:
+                    type:
+                    - string
+                    - 'null'
+                  reply_drafting:
+                    type: boolean
+                  tweet_id:
+                    type: string
+                  group_key:
+                    type: string
+                  group_name:
+                    type: string
+                  author_followers:
+                    type:
+                    - number
+                    - 'null'
+                  likes:
+                    type:
+                    - number
+                    - 'null'
+                  replies:
+                    type:
+                    - number
+                    - 'null'
+                  impressions:
+                    type:
+                    - number
+                    - 'null'
+                additionalProperties: true
+                required:
+                - id
+                - permalink
+                - body
+                - relevance
+                - surface
+                - status
+                - tweet_id
+                description: 'One thread where a reply with the creator''s page fits. `permalink` opens it, `body` is the text (first 600 chars), `relevance` the crawler''s score, `surface`/`surface_name` the site surface the thread is about, `tool_path`/`tool_name` the best-matching page to reply with (vector match `tool_score`), `suggested_reply` the drafted reply once claimed via /reply. A claimed lead carries its OWN tracked link: `reply_slug`, `tracked_url` (https://cymetica.com/c/<reply_slug>) and the page it points at (`reply_page_slug`, `reply_page_name`), bound to the page picked on that card. `suggested_reply` is usable at once; while `reply_drafting` is true a reply written from the thread''s own text is still being prepared — GET /{platform}-leads/{id} again after a minute or two and use the newer `suggested_reply` when it changes. `?tool=` narrows the queue to one site surface (unknown tool → 400); `?status=claimed,replied` lists your own claimed/replied leads instead of the open queue (unknown status → 400).'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/creator/twitter-leads/{lead_id}/posted:
+    post:
+      tags:
+      - CreatorLinks
+      summary: Twitter Lead Posted
+      operationId: twitter_lead_posted_api_v1_creator_twitter_leads__lead_id__posted_post
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: lead_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Lead Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostedBody'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  permalink:
+                    type: string
+                  author:
+                    type:
+                    - string
+                    - 'null'
+                  body:
+                    type: string
+                  posted_at:
+                    type:
+                    - string
+                    - 'null'
+                  relevance:
+                    type: integer
+                  matched:
+                    type:
+                    - string
+                    - 'null'
+                  surface:
+                    type: string
+                  surface_name:
+                    type: string
+                  tool_path:
+                    type:
+                    - string
+                    - 'null'
+                  tool_name:
+                    type:
+                    - string
+                    - 'null'
+                  tool_score:
+                    type:
+                    - number
+                    - 'null'
+                  status:
+                    type: string
+                    enum:
+                    - new
+                    - claimed
+                    - replied
+                    - skipped
+                  claimed_by:
+                    type:
+                    - integer
+                    - 'null'
+                  reply_slug:
+                    type:
+                    - string
+                    - 'null'
+                  suggested_reply:
+                    type:
+                    - string
+                    - 'null'
+                  reply_url:
+                    type:
+                    - string
+                    - 'null'
+                  tracked_url:
+                    type:
+                    - string
+                    - 'null'
+                  reply_page_slug:
+                    type:
+                    - string
+                    - 'null'
+                  reply_page_name:
+                    type:
+                    - string
+                    - 'null'
+                  reward_status:
+                    type:
+                    - string
+                    - 'null'
+                  reward_note:
+                    type:
+                    - string
+                    - 'null'
+                  reply_drafting:
+                    type: boolean
+                  tweet_id:
+                    type: string
+                  group_key:
+                    type: string
+                  group_name:
+                    type: string
+                  author_followers:
+                    type:
+                    - number
+                    - 'null'
+                  likes:
+                    type:
+                    - number
+                    - 'null'
+                  replies:
+                    type:
+                    - number
+                    - 'null'
+                  impressions:
+                    type:
+                    - number
+                    - 'null'
+                additionalProperties: true
+                required:
+                - id
+                - permalink
+                - body
+                - relevance
+                - surface
+                - status
+                - tweet_id
+                description: 'One thread where a reply with the creator''s page fits. `permalink` opens it, `body` is the text (first 600 chars), `relevance` the crawler''s score, `surface`/`surface_name` the site surface the thread is about, `tool_path`/`tool_name` the best-matching page to reply with (vector match `tool_score`), `suggested_reply` the drafted reply once claimed via /reply. A claimed lead carries its OWN tracked link: `reply_slug`, `tracked_url` (https://cymetica.com/c/<reply_slug>) and the page it points at (`reply_page_slug`, `reply_page_name`), bound to the page picked on that card. `suggested_reply` is usable at once; while `reply_drafting` is true a reply written from the thread''s own text is still being prepared — GET /{platform}-leads/{id} again after a minute or two and use the newer `suggested_reply` when it changes. `?tool=` narrows the queue to one site surface (unknown tool → 400); `?status=claimed,replied` lists your own claimed/replied leads instead of the open queue (unknown status → 400).'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/creator/priority-tweet/{tweet_id}/posted:
+    post:
+      tags:
+      - CreatorLinks
+      summary: Priority Tweet Posted
+      description: 'ET-27292: "Mark posted" for the top-priority tweet. The creator''s link to
+
+        their post on X is verified by the reward checker and credited like a
+
+        reply-queue post. Session or the account''s own API key.'
+      operationId: priority_tweet_posted_api_v1_creator_priority_tweet__tweet_id__posted_post
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: tweet_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Tweet Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostedBody'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  post:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      tweet_id:
+                        type: integer
+                      reply_url:
+                        type: string
+                      replied_at:
+                        type:
+                        - string
+                        - 'null'
+                      reward_status:
+                        type: string
+                        enum:
+                        - pending
+                        - paid
+                        - unverifiable
+                        - failed
+                      reward_note:
+                        type: string
+                    additionalProperties: false
+                    required:
+                    - id
+                    - tweet_id
+                    - reward_status
+                additionalProperties: false
+                required:
+                - ok
+                - post
+                description: Your posting of the priority tweet, queued for reward verification.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '409':
+          description: Unknown priority tweet or the reply_url is not an x.com status link.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/creator/twitter-leads/{lead_id}/skip:
+    post:
+      tags:
+      - CreatorLinks
+      summary: Twitter Lead Skip
+      operationId: twitter_lead_skip_api_v1_creator_twitter_leads__lead_id__skip_post
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: lead_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Lead Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  status:
+                    type: string
+                    enum:
+                    - new
+                    - claimed
+                    - replied
+                    - skipped
+                additionalProperties: false
+                required:
+                - id
+                - status
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/creator/journalist-requests:
+    get:
+      tags:
+      - CreatorLinks
+      summary: Journalist Requests
+      description: Open requests that fit a dev, best fit first, plus this dev's own pitches.
+      operationId: journalist_requests_api_v1_creator_journalist_requests_get
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 30
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stats:
+                    type: object
+                    properties:
+                      open:
+                        type: integer
+                      open_all_topics:
+                        type: integer
+                      pitched:
+                        type: integer
+                      skipped:
+                        type: integer
+                      published:
+                        type: integer
+                    additionalProperties: false
+                  requests:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        platform:
+                          type:
+                          - string
+                          - 'null'
+                        outlet:
+                          type: string
+                        outlet_tier:
+                          type: string
+                        category:
+                          type: string
+                          description: The request platform's own category, empty when none.
+                        subject:
+                          type: string
+                        query:
+                          type: string
+                          description: The journalist's own question.
+                        journalist_name:
+                          type: string
+                        reply_to:
+                          type: string
+                          description: Address the answer is sent to.
+                        received_at:
+                          type:
+                          - string
+                          - 'null'
+                        deadline_at:
+                          type:
+                          - string
+                          - 'null'
+                        hours_left:
+                          type:
+                          - number
+                          - 'null'
+                          description: Hours to the deadline; null when none was given.
+                        relevance:
+                          type: number
+                          description: 0..1 fit to topics a builder on the exchange can speak to.
+                        topics:
+                          type: array
+                          items:
+                            type: string
+                        status:
+                          type: string
+                          enum:
+                          - open
+                          - pitched
+                          - skipped
+                        pitch_text:
+                          type: string
+                        article_url:
+                          type: string
+                        pitched_at:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: false
+                      required:
+                      - id
+                      - subject
+                      - query
+                      - relevance
+                      - status
+                  pitched:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        platform:
+                          type:
+                          - string
+                          - 'null'
+                        outlet:
+                          type: string
+                        outlet_tier:
+                          type: string
+                        category:
+                          type: string
+                          description: The request platform's own category, empty when none.
+                        subject:
+                          type: string
+                        query:
+                          type: string
+                          description: The journalist's own question.
+                        journalist_name:
+                          type: string
+                        reply_to:
+                          type: string
+                          description: Address the answer is sent to.
+                        received_at:
+                          type:
+                          - string
+                          - 'null'
+                        deadline_at:
+                          type:
+                          - string
+                          - 'null'
+                        hours_left:
+                          type:
+                          - number
+                          - 'null'
+                          description: Hours to the deadline; null when none was given.
+                        relevance:
+                          type: number
+                          description: 0..1 fit to topics a builder on the exchange can speak to.
+                        topics:
+                          type: array
+                          items:
+                            type: string
+                        status:
+                          type: string
+                          enum:
+                          - open
+                          - pitched
+                          - skipped
+                        pitch_text:
+                          type: string
+                        article_url:
+                          type: string
+                        pitched_at:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: false
+                      required:
+                      - id
+                      - subject
+                      - query
+                      - relevance
+                      - status
+                additionalProperties: false
+                required:
+                - stats
+                - requests
+                - pitched
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/creator/journalist-requests/{request_id}/pitched:
+    post:
+      tags:
+      - CreatorLinks
+      summary: Journalist Request Pitched
+      description: The dev sent their answer to the journalist (and, later, the link to the published piece).
+      operationId: journalist_request_pitched_api_v1_creator_journalist_requests__request_id__pitched_post
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: request_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Request Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JournalistPitchBody'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  platform:
+                    type:
+                    - string
+                    - 'null'
+                  outlet:
+                    type: string
+                  outlet_tier:
+                    type: string
+                  category:
+                    type: string
+                    description: The request platform's own category, empty when none.
+                  subject:
+                    type: string
+                  query:
+                    type: string
+                    description: The journalist's own question.
+                  journalist_name:
+                    type: string
+                  reply_to:
+                    type: string
+                    description: Address the answer is sent to.
+                  received_at:
+                    type:
+                    - string
+                    - 'null'
+                  deadline_at:
+                    type:
+                    - string
+                    - 'null'
+                  hours_left:
+                    type:
+                    - number
+                    - 'null'
+                    description: Hours to the deadline; null when none was given.
+                  relevance:
+                    type: number
+                    description: 0..1 fit to topics a builder on the exchange can speak to.
+                  topics:
+                    type: array
+                    items:
+                      type: string
+                  status:
+                    type: string
+                    enum:
+                    - open
+                    - pitched
+                    - skipped
+                  pitch_text:
+                    type: string
+                  article_url:
+                    type: string
+                  pitched_at:
+                    type:
+                    - string
+                    - 'null'
+                additionalProperties: false
+                required:
+                - id
+                - subject
+                - query
+                - relevance
+                - status
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/creator/journalist-requests/{request_id}/skip:
+    post:
+      tags:
+      - CreatorLinks
+      summary: Journalist Request Skip
+      operationId: journalist_request_skip_api_v1_creator_journalist_requests__request_id__skip_post
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: request_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Request Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  status:
+                    type: string
+                    enum:
+                    - skipped
+                additionalProperties: false
+                required:
+                - id
+                - status
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/creator/channel-posts:
+    post:
+      tags:
+      - CreatorLinks
+      summary: Channel Post Create
+      operationId: channel_post_create_api_v1_creator_channel_posts_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChannelPostBody'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+                additionalProperties: true
+                description: The queued channel post.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+  /api/v1/creator/radar-channel-posts:
+    post:
+      tags:
+      - CreatorLinks
+      summary: Radar Channel Post Create
+      description: 'Queue the app''s Telegram post, carrying the creator''s tracked link, into one of the
+
+        app''s Telegram groups (radar_rebuilds.telegram). Same outbox as the community-mover
+
+        posts: the platform userbot sends it, one post per channel per 24 h.'
+      operationId: radar_channel_post_create_api_v1_creator_radar_channel_posts_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RadarChannelPostBody'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+                additionalProperties: true
+                description: The queued channel post for a radar item.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+components:
+  schemas:
+    ChannelPostBody:
+      properties:
+        symbol:
+          type: string
+          maxLength: 32
+          title: Symbol
+        platform:
+          type: string
+          maxLength: 8
+          title: Platform
+        message:
+          type: string
+          maxLength: 400
+          title: Message
+          default: ''
+        kind:
+          type: string
+          maxLength: 16
+          title: Kind
+          default: terminal
+      type: object
+      required:
+      - symbol
+      - platform
+      title: ChannelPostBody
+    PostedBody:
+      properties:
+        reply_url:
+          type: string
+          maxLength: 400
+          title: Reply Url
+          default: ''
+      type: object
+      title: PostedBody
+    CreateArtifactBody:
+      properties:
+        surface:
+          type: string
+          maxLength: 300
+          title: Surface
+        headline:
+          type: string
+          maxLength: 120
+          title: Headline
+          default: ''
+        pitch:
+          type: string
+          maxLength: 600
+          title: Pitch
+          default: ''
+      type: object
+      required:
+      - surface
+      title: CreateArtifactBody
+    JournalistPitchBody:
+      properties:
+        pitch_text:
+          type: string
+          maxLength: 8000
+          title: Pitch Text
+          default: ''
+        article_url:
+          type: string
+          maxLength: 1000
+          title: Article Url
+          default: ''
+      type: object
+      title: JournalistPitchBody
+    RecordUrlBody:
+      properties:
+        target_url:
+          type: string
+          maxLength: 2000
+          title: Target Url
+      type: object
+      required:
+      - target_url
+      title: RecordUrlBody
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    RadarChannelPostBody:
+      properties:
+        slug:
+          type: string
+          maxLength: 32
+          title: Slug
+        handle:
+          type: string
+          maxLength: 120
+          title: Handle
+      type: object
+      required:
+      - slug
+      - handle
+      title: RadarChannelPostBody
+    ClaimBody:
+      properties:
+        link_slug:
+          type: string
+          maxLength: 16
+          title: Link Slug
+          default: ''
+      type: object
+      title: ClaimBody
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    CreateLinkBody:
+      properties:
+        target_url:
+          type: string
+          maxLength: 2000
+          title: Target Url
+        title:
+          type: string
+          maxLength: 200
+          title: Title
+          default: ''
+        kind:
+          type: string
+          maxLength: 24
+          title: Kind
+          default: other
+      type: object
+      required:
+      - target_url
+      title: CreateLinkBody
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

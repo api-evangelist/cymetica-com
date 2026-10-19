@@ -1,0 +1,4048 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Chart Analyzer API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: Chart Analyzer
+paths:
+  /api/v1/chart-analyzer/analyze:
+    get:
+      tags:
+      - Chart Analyzer
+      summary: Analyze Get
+      description: 'One number from 1 (very bearish) to 100 (very bullish) for a coin''s chart, with the patterns found.
+
+        By contract address (+ chain) or by ticker.'
+      operationId: analyze_get_api_v1_chart_analyzer_analyze_get
+      parameters:
+      - name: symbol
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 24
+          - type: 'null'
+          description: Crypto ticker, e.g. BTC (Binance USDT pair)
+          title: Symbol
+        description: Crypto ticker, e.g. BTC (Binance USDT pair)
+      - name: contract
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 160
+          - type: 'null'
+          description: Token contract address; identifies the coin exactly
+          title: Contract
+        description: Token contract address; identifies the coin exactly
+      - name: chain
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 32
+          - type: 'null'
+          description: Chain of the contract, e.g. ethereum, solana, bsc (needed only when the address is ambiguous)
+          title: Chain
+        description: Chain of the contract, e.g. ethereum, solana, bsc (needed only when the address is ambiguous)
+      - name: timeframe
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 4
+          description: 1h, 4h, 1d, 5d, 1w, 2w, 1M, or auto (the longest with enough candles)
+          default: 1d
+          title: Timeframe
+        description: 1h, 4h, 1d, 5d, 1w, 2w, 1M, or auto (the longest with enough candles)
+      - name: include_candles
+        in: query
+        required: false
+        schema:
+          type: boolean
+          description: Also return the candles that were scored
+          default: false
+          title: Include Candles
+        description: Also return the candles that were scored
+      - name: closed_only
+        in: query
+        required: false
+        schema:
+          type: boolean
+          description: Score closed candles only (drop a still-forming last candle), so the number is reproducible until the next close
+          default: false
+          title: Closed Only
+        description: Score closed candles only (drop a still-forming last candle), so the number is reproducible until the next close
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  score:
+                    type: integer
+                    description: 1 (very bearish) to 100 (very bullish).
+                  band:
+                    type: string
+                  symbol:
+                    type:
+                    - string
+                    - 'null'
+                  timeframe:
+                    type:
+                    - string
+                    - 'null'
+                  source:
+                    type: string
+                  candles_used:
+                    type: integer
+                  first_candle:
+                    type: integer
+                  last_candle:
+                    type: integer
+                  last_candle_forming:
+                    type: boolean
+                  forming_note:
+                    type: string
+                  reading:
+                    type: string
+                  patterns:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                        name:
+                          type: string
+                        direction:
+                          type: string
+                          enum:
+                          - bullish
+                          - bearish
+                          - too few samples
+                          description: 'Measured: bullish when its train success rate is above the base rate.'
+                        textbook_direction:
+                          type: string
+                        success_rate:
+                          type:
+                          - number
+                          - 'null'
+                        train_samples:
+                          type:
+                          - integer
+                          - 'null'
+                        pattern_score:
+                          type:
+                          - integer
+                          - 'null'
+                        counted_in_score:
+                          type: boolean
+                        confirmed_at:
+                          type: integer
+                          description: Unix seconds of the confirming candle.
+                        bars_ago:
+                          type: integer
+                        drawing:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              time:
+                                type: integer
+                                description: Unix seconds.
+                              price:
+                                type: number
+                            additionalProperties: false
+                      additionalProperties: false
+                  counted_patterns:
+                    type: array
+                    items:
+                      type: string
+                  chart_rate:
+                    type: number
+                  base_rate:
+                    type: number
+                  scale:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  rule:
+                    type: string
+                  study_version:
+                    type: string
+                  study_url:
+                    type: string
+                  not_advice:
+                    type: string
+                  as_of:
+                    type: string
+                  midpoint:
+                    type: string
+                    description: 'What 50 means: the base rate (share of all study candles that rose).'
+                  coverage:
+                    type: object
+                    properties:
+                      covered:
+                        type: boolean
+                      coin:
+                        type: string
+                      timeframe:
+                        type: string
+                      note:
+                        type: string
+                    additionalProperties: true
+                    description: Where the study does not cover this coin or timeframe (ET-28324).
+                  identity:
+                    type:
+                    - object
+                    - 'null'
+                    description: 'How the coin was identified: by contract (chain, address, pool, dex, symbol, name, gem_screener) or by ticker (Binance pair).'
+                  candles_fetched_at:
+                    type: string
+                    description: 'Contract input: when the DEX pool candles were fetched.'
+                  candles_stale:
+                    type: boolean
+                  candles:
+                    type: array
+                    items:
+                      type: array
+                      items:
+                        type: number
+                    description: '[time, open, high, low, close, volume] rows; only with include_candles or an upload.'
+                  verdict:
+                    type: object
+                    properties:
+                      label:
+                        type: string
+                        enum:
+                        - READY TO POP
+                        - READY TO DUMP
+                        - NO EDGE
+                      rule_label:
+                        type: string
+                        description: What the calibration rule alone says (before the held-out guard).
+                      held_out_failed:
+                        type:
+                        - object
+                        - 'null'
+                      probability:
+                        type:
+                        - number
+                        - 'null'
+                        description: Calibrated, of the labelled side; null for NO EDGE.
+                      range:
+                        type:
+                        - array
+                        - 'null'
+                        items:
+                          type: number
+                        minItems: 2
+                        maxItems: 2
+                        description: '[lo, hi], a 95% Wilson range.'
+                      cases:
+                        type:
+                        - integer
+                        - 'null'
+                      pooled_cases:
+                        type:
+                        - integer
+                        - 'null'
+                      base_rate:
+                        type:
+                        - number
+                        - 'null'
+                      gap:
+                        type:
+                        - number
+                        - 'null'
+                      up:
+                        type:
+                        - object
+                        - 'null'
+                        additionalProperties: true
+                        properties:
+                          raw:
+                            type: number
+                          calibrated:
+                            type:
+                            - number
+                            - 'null'
+                            description: The share of the pooled calibration cases that went this way (made monotone); the number shown.
+                          range:
+                            type:
+                            - array
+                            - 'null'
+                            items:
+                              type: number
+                            minItems: 2
+                            maxItems: 2
+                            description: 'The 95% range of `calibrated`, over the pooled cases: `calibrated` always lies inside it (ET-29276).'
+                          cases:
+                            type: integer
+                          pooled_cases:
+                            type:
+                            - integer
+                            - 'null'
+                          rate:
+                            type:
+                            - number
+                            - 'null'
+                            description: The bin's own rate.
+                          bin_range:
+                            type:
+                            - array
+                            - 'null'
+                            items:
+                              type: number
+                            minItems: 2
+                            maxItems: 2
+                            description: The 95% range of the bin's own rate.
+                          base_rate:
+                            type: number
+                          usable:
+                            type: boolean
+                          bin:
+                            type: integer
+                        description: 'One side''s figures: the raw model number, its calibration bin, the calibrated value and ranges.'
+                      down:
+                        type:
+                        - object
+                        - 'null'
+                        additionalProperties: true
+                        properties:
+                          raw:
+                            type: number
+                          calibrated:
+                            type:
+                            - number
+                            - 'null'
+                            description: The share of the pooled calibration cases that went this way (made monotone); the number shown.
+                          range:
+                            type:
+                            - array
+                            - 'null'
+                            items:
+                              type: number
+                            minItems: 2
+                            maxItems: 2
+                            description: 'The 95% range of `calibrated`, over the pooled cases: `calibrated` always lies inside it (ET-29276).'
+                          cases:
+                            type: integer
+                          pooled_cases:
+                            type:
+                            - integer
+                            - 'null'
+                          rate:
+                            type:
+                            - number
+                            - 'null'
+                            description: The bin's own rate.
+                          bin_range:
+                            type:
+                            - array
+                            - 'null'
+                            items:
+                              type: number
+                            minItems: 2
+                            maxItems: 2
+                            description: The 95% range of the bin's own rate.
+                          base_rate:
+                            type: number
+                          usable:
+                            type: boolean
+                          bin:
+                            type: integer
+                        description: 'One side''s figures: the raw model number, its calibration bin, the calibrated value and ranges.'
+                      drivers:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            key:
+                              type: string
+                            weight_up:
+                              type: number
+                            weight_down:
+                              type: number
+                          additionalProperties: false
+                      why:
+                        type: string
+                      timeframe:
+                        type: string
+                      target:
+                        type: object
+                        properties:
+                          up_pct:
+                            type: number
+                          down_pct:
+                            type: number
+                          window:
+                            type: integer
+                          text:
+                            type: string
+                        additionalProperties: false
+                      rule:
+                        type: string
+                      held_out_record:
+                        type:
+                        - object
+                        - 'null'
+                      coverage:
+                        type: string
+                        enum:
+                        - covered
+                        - pair_not_in_study
+                        - asset_not_covered
+                        - timeframe_not_covered
+                      coverage_note:
+                        type: string
+                      withheld:
+                        type:
+                        - object
+                        - 'null'
+                        additionalProperties: true
+                        properties:
+                          label:
+                            type:
+                            - string
+                            - 'null'
+                          probability:
+                            type:
+                            - number
+                            - 'null'
+                          range:
+                            type:
+                            - array
+                            - 'null'
+                            items:
+                              type: number
+                            minItems: 2
+                            maxItems: 2
+                            description: '[lo, hi], a 95% Wilson range.'
+                          cases:
+                            type:
+                            - integer
+                            - 'null'
+                          reason:
+                            type: string
+                        description: 'Null for an exchange chart. For a DEX-pool coin or uploaded candles (which get no verdict): what the table alone would have said, and why the label is withheld.'
+                    additionalProperties: false
+                    required:
+                    - label
+                    - probability
+                    - range
+                    - cases
+                    - base_rate
+                    - why
+                    - timeframe
+                    - target
+                    - rule
+                    - coverage
+                    description: READY TO POP / READY TO DUMP / NO EDGE with the calibrated probability, its 95% range, the base rate, the cases and why.
+                  setups:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                        name:
+                          type: string
+                        group:
+                          type: string
+                          enum:
+                          - pattern
+                          - structure
+                          - indicator
+                        kind:
+                          type: string
+                        textbook_side:
+                          type: string
+                        train:
+                          type:
+                          - object
+                          - 'null'
+                        test:
+                          type:
+                          - object
+                          - 'null'
+                        included:
+                          type: boolean
+                        weight_up:
+                          type:
+                          - number
+                          - 'null'
+                        weight_down:
+                          type:
+                          - number
+                          - 'null'
+                        measured_side:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: false
+                    description: The structure, pattern and indicator states active on the last candle, each with its train / held-out rates and model weight.
+                  structures:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        kind:
+                          type: string
+                        status:
+                          type: string
+                        price:
+                          type: number
+                        slope_pct_per_bar:
+                          type: number
+                        long_term:
+                          type: boolean
+                        log_scale:
+                          type: boolean
+                        pair:
+                          type: string
+                        touches:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              time:
+                                type: integer
+                                description: Unix seconds.
+                              price:
+                                type: number
+                            additionalProperties: false
+                        from:
+                          type: object
+                          properties:
+                            time:
+                              type: integer
+                              description: Unix seconds.
+                            price:
+                              type: number
+                          additionalProperties: false
+                        to:
+                          type: object
+                          properties:
+                            time:
+                              type: integer
+                              description: Unix seconds.
+                            price:
+                              type: number
+                          additionalProperties: false
+                        path:
+                          type: array
+                          items:
+                            type: array
+                            items:
+                              type: number
+                        broken_at:
+                          type:
+                          - integer
+                          - 'null'
+                        at:
+                          type: integer
+                        upper:
+                          type: object
+                        lower:
+                          type: object
+                      additionalProperties: true
+                      description: A drawing; which keys appear depends on kind.
+                    description: Support, resistance, trendlines (log scale), channels, wedges, triangles, flags, head and shoulders, double tops / bottoms, drawn by rule with touch points.
+                  swings:
+                    type: object
+                    properties:
+                      highs:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            time:
+                              type: integer
+                              description: Unix seconds.
+                            price:
+                              type: number
+                          additionalProperties: false
+                      lows:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            time:
+                              type: integer
+                              description: Unix seconds.
+                            price:
+                              type: number
+                          additionalProperties: false
+                    additionalProperties: false
+                    description: The confirmed swing highs and lows (last 40 each).
+                  indicators:
+                    type: object
+                    properties:
+                      from_time:
+                        type: integer
+                      rsi:
+                        type: array
+                        items:
+                          type:
+                          - number
+                          - 'null'
+                      macd:
+                        type: array
+                        items:
+                          type:
+                          - number
+                          - 'null'
+                      macd_signal:
+                        type: array
+                        items:
+                          type:
+                          - number
+                          - 'null'
+                      macd_hist:
+                        type: array
+                        items:
+                          type:
+                          - number
+                          - 'null'
+                      sma50:
+                        type: array
+                        items:
+                          type:
+                          - number
+                          - 'null'
+                      sma200:
+                        type: array
+                        items:
+                          type:
+                          - number
+                          - 'null'
+                      bb_upper:
+                        type: array
+                        items:
+                          type:
+                          - number
+                          - 'null'
+                      bb_lower:
+                        type: array
+                        items:
+                          type:
+                          - number
+                          - 'null'
+                      last:
+                        type: object
+                        properties: {}
+                        additionalProperties:
+                          type:
+                          - number
+                          - 'null'
+                    additionalProperties: true
+                    description: Indicator series aligned to the last candles (from from_time) and their last values.
+                  weekly_signal:
+                    type: object
+                    properties:
+                      available:
+                        type: boolean
+                      fires:
+                        type:
+                        - boolean
+                        - 'null'
+                      rsi:
+                        type:
+                        - number
+                        - 'null'
+                      macd_hist_rising:
+                        type:
+                        - boolean
+                        - 'null'
+                      weeks_read:
+                        type:
+                        - integer
+                        - 'null'
+                      week_end:
+                        type:
+                        - integer
+                        - 'null'
+                      rule:
+                        type: string
+                      record:
+                        type: object
+                        properties: {}
+                        additionalProperties: true
+                      on_this_chart:
+                        type:
+                        - object
+                        - 'null'
+                      page:
+                        type: string
+                      note:
+                        type:
+                        - string
+                        - 'null'
+                      marks:
+                        type: array
+                        items:
+                          type: integer
+                    additionalProperties: true
+                    description: The /weekly-signal indicator read from this chart's weekly closes.
+                  expert_study_url:
+                    type: string
+                  calls_url:
+                    type: string
+                    description: The public ledger of the page's own calls.
+                  projections:
+                    type: object
+                    properties:
+                      timeframe:
+                        type: string
+                      window_candles:
+                        type: integer
+                      horizon_seconds:
+                        type: integer
+                      from:
+                        type: object
+                        properties:
+                          time:
+                            type: integer
+                            description: Unix seconds.
+                          price:
+                            type: number
+                        additionalProperties: false
+                      to_time:
+                        type: integer
+                        description: Unix seconds, end of the projection window.
+                      scenarios:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              enum:
+                              - bullish
+                              - bearish
+                              - sideways
+                            label:
+                              type: string
+                            direction:
+                              type: string
+                              enum:
+                              - up
+                              - down
+                              - flat
+                            probability:
+                              type: number
+                              description: Calibrated P(first barrier) from the expert study; sideways is the remainder.
+                            range:
+                              type:
+                              - array
+                              - 'null'
+                              items:
+                                type: number
+                              minItems: 2
+                              maxItems: 2
+                              description: '[lo, hi], a 95% Wilson range.'
+                            cases:
+                              type:
+                              - integer
+                              - 'null'
+                            base_rate:
+                              type:
+                              - number
+                              - 'null'
+                            usable:
+                              type: boolean
+                            residual:
+                              type: boolean
+                              description: True on the sideways scenario (1 - up - down).
+                            target_price:
+                              type: number
+                            path:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  time:
+                                    type: integer
+                                    description: Unix seconds.
+                                  price:
+                                    type: number
+                                additionalProperties: false
+                            rank:
+                              type: integer
+                          additionalProperties: false
+                        description: Ranked by probability; empty when no probability is claimed.
+                      main:
+                        type:
+                        - string
+                        - 'null'
+                        description: id of the most probable scenario, null when none is claimed.
+                      basis:
+                        type: string
+                      tracked_record:
+                        type: object
+                        properties:
+                          held_out:
+                            type:
+                            - object
+                            - 'null'
+                          live_calls_url:
+                            type: string
+                        additionalProperties: true
+                      not_advice:
+                        type: string
+                      reason:
+                        type: string
+                        description: Present when no scenario is drawn (withheld verdict, no study block).
+                      sum_check:
+                        type: number
+                      drivers:
+                        type: array
+                        items: {}
+                    additionalProperties: false
+                    description: Ranked projection scenarios for the chart's timeframe from the verdict's measured probabilities, drawn as dashed paths on the page.
+                additionalProperties: false
+                required:
+                - score
+                - band
+                - patterns
+                - candles_used
+                - as_of
+                description: 'One number for the chart, the patterns found (drawn), and how the number was made; plus the verdict layer: verdict, setups, structures, swings, indicators and the Weekly Signal.'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '400':
+          description: 'Bad input (`error.code`: INVALID_SYMBOL, INVALID_TIMEFRAME, MISSING_INPUT, BAD_JSON, BAD_ROW, BAD_VALUE, BAD_TIME, MISSING_COLUMNS, DUPLICATE_TIME, TOO_FEW_ROWS, TOO_MANY_ROWS, NOT_TEXT, EMPTY_FILE, INVALID_CONTRACT, UNKNOWN_CHAIN, UNSUPPORTED_CHAIN, CHAIN_NEEDED, TOKEN_MISMATCH).'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: 'UNKNOWN_SYMBOL, TOO_LITTLE_HISTORY or NO_CANDLES (no DEX pool / no candle data for the contract: no score is given).'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '429':
+          description: Rate limited.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: 'UPSTREAM_UNAVAILABLE, or COLLECTING: the contract''s candles are being fetched; ask again in a few minutes.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+    post:
+      tags:
+      - Chart Analyzer
+      summary: Analyze Post
+      description: 'Same as GET ({"contract","chain"} or {"symbol"}), or score candles you send: {"candles": [...]}.'
+      operationId: analyze_post_api_v1_chart_analyzer_analyze_post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              title: Body
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  score:
+                    type: integer
+                    description: 1 (very bearish) to 100 (very bullish).
+                  band:
+                    type: string
+                  symbol:
+                    type:
+                    - string
+                    - 'null'
+                  timeframe:
+                    type:
+                    - string
+                    - 'null'
+                  source:
+                    type: string
+                  candles_used:
+                    type: integer
+                  first_candle:
+                    type: integer
+                  last_candle:
+                    type: integer
+                  last_candle_forming:
+                    type: boolean
+                  forming_note:
+                    type: string
+                  reading:
+                    type: string
+                  patterns:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                        name:
+                          type: string
+                        direction:
+                          type: string
+                          enum:
+                          - bullish
+                          - bearish
+                          - too few samples
+                          description: 'Measured: bullish when its train success rate is above the base rate.'
+                        textbook_direction:
+                          type: string
+                        success_rate:
+                          type:
+                          - number
+                          - 'null'
+                        train_samples:
+                          type:
+                          - integer
+                          - 'null'
+                        pattern_score:
+                          type:
+                          - integer
+                          - 'null'
+                        counted_in_score:
+                          type: boolean
+                        confirmed_at:
+                          type: integer
+                          description: Unix seconds of the confirming candle.
+                        bars_ago:
+                          type: integer
+                        drawing:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              time:
+                                type: integer
+                                description: Unix seconds.
+                              price:
+                                type: number
+                            additionalProperties: false
+                      additionalProperties: false
+                  counted_patterns:
+                    type: array
+                    items:
+                      type: string
+                  chart_rate:
+                    type: number
+                  base_rate:
+                    type: number
+                  scale:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  rule:
+                    type: string
+                  study_version:
+                    type: string
+                  study_url:
+                    type: string
+                  not_advice:
+                    type: string
+                  as_of:
+                    type: string
+                  midpoint:
+                    type: string
+                    description: 'What 50 means: the base rate (share of all study candles that rose).'
+                  coverage:
+                    type: object
+                    properties:
+                      covered:
+                        type: boolean
+                      coin:
+                        type: string
+                      timeframe:
+                        type: string
+                      note:
+                        type: string
+                    additionalProperties: true
+                    description: Where the study does not cover this coin or timeframe (ET-28324).
+                  identity:
+                    type:
+                    - object
+                    - 'null'
+                    description: 'How the coin was identified: by contract (chain, address, pool, dex, symbol, name, gem_screener) or by ticker (Binance pair).'
+                  candles_fetched_at:
+                    type: string
+                    description: 'Contract input: when the DEX pool candles were fetched.'
+                  candles_stale:
+                    type: boolean
+                  candles:
+                    type: array
+                    items:
+                      type: array
+                      items:
+                        type: number
+                    description: '[time, open, high, low, close, volume] rows; only with include_candles or an upload.'
+                  verdict:
+                    type: object
+                    properties:
+                      label:
+                        type: string
+                        enum:
+                        - READY TO POP
+                        - READY TO DUMP
+                        - NO EDGE
+                      rule_label:
+                        type: string
+                        description: What the calibration rule alone says (before the held-out guard).
+                      held_out_failed:
+                        type:
+                        - object
+                        - 'null'
+                      probability:
+                        type:
+                        - number
+                        - 'null'
+                        description: Calibrated, of the labelled side; null for NO EDGE.
+                      range:
+                        type:
+                        - array
+                        - 'null'
+                        items:
+                          type: number
+                        minItems: 2
+                        maxItems: 2
+                        description: '[lo, hi], a 95% Wilson range.'
+                      cases:
+                        type:
+                        - integer
+                        - 'null'
+                      pooled_cases:
+                        type:
+                        - integer
+                        - 'null'
+                      base_rate:
+                        type:
+                        - number
+                        - 'null'
+                      gap:
+                        type:
+                        - number
+                        - 'null'
+                      up:
+                        type:
+                        - object
+                        - 'null'
+                        additionalProperties: true
+                        properties:
+                          raw:
+                            type: number
+                          calibrated:
+                            type:
+                            - number
+                            - 'null'
+                            description: The share of the pooled calibration cases that went this way (made monotone); the number shown.
+                          range:
+                            type:
+                            - array
+                            - 'null'
+                            items:
+                              type: number
+                            minItems: 2
+                            maxItems: 2
+                            description: 'The 95% range of `calibrated`, over the pooled cases: `calibrated` always lies inside it (ET-29276).'
+                          cases:
+                            type: integer
+                          pooled_cases:
+                            type:
+                            - integer
+                            - 'null'
+                          rate:
+                            type:
+                            - number
+                            - 'null'
+                            description: The bin's own rate.
+                          bin_range:
+                            type:
+                            - array
+                            - 'null'
+                            items:
+                              type: number
+                            minItems: 2
+                            maxItems: 2
+                            description: The 95% range of the bin's own rate.
+                          base_rate:
+                            type: number
+                          usable:
+                            type: boolean
+                          bin:
+                            type: integer
+                        description: 'One side''s figures: the raw model number, its calibration bin, the calibrated value and ranges.'
+                      down:
+                        type:
+                        - object
+                        - 'null'
+                        additionalProperties: true
+                        properties:
+                          raw:
+                            type: number
+                          calibrated:
+                            type:
+                            - number
+                            - 'null'
+                            description: The share of the pooled calibration cases that went this way (made monotone); the number shown.
+                          range:
+                            type:
+                            - array
+                            - 'null'
+                            items:
+                              type: number
+                            minItems: 2
+                            maxItems: 2
+                            description: 'The 95% range of `calibrated`, over the pooled cases: `calibrated` always lies inside it (ET-29276).'
+                          cases:
+                            type: integer
+                          pooled_cases:
+                            type:
+                            - integer
+                            - 'null'
+                          rate:
+                            type:
+                            - number
+                            - 'null'
+                            description: The bin's own rate.
+                          bin_range:
+                            type:
+                            - array
+                            - 'null'
+                            items:
+                              type: number
+                            minItems: 2
+                            maxItems: 2
+                            description: The 95% range of the bin's own rate.
+                          base_rate:
+                            type: number
+                          usable:
+                            type: boolean
+                          bin:
+                            type: integer
+                        description: 'One side''s figures: the raw model number, its calibration bin, the calibrated value and ranges.'
+                      drivers:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            key:
+                              type: string
+                            weight_up:
+                              type: number
+                            weight_down:
+                              type: number
+                          additionalProperties: false
+                      why:
+                        type: string
+                      timeframe:
+                        type: string
+                      target:
+                        type: object
+                        properties:
+                          up_pct:
+                            type: number
+                          down_pct:
+                            type: number
+                          window:
+                            type: integer
+                          text:
+                            type: string
+                        additionalProperties: false
+                      rule:
+                        type: string
+                      held_out_record:
+                        type:
+                        - object
+                        - 'null'
+                      coverage:
+                        type: string
+                        enum:
+                        - covered
+                        - pair_not_in_study
+                        - asset_not_covered
+                        - timeframe_not_covered
+                      coverage_note:
+                        type: string
+                      withheld:
+                        type:
+                        - object
+                        - 'null'
+                        additionalProperties: true
+                        properties:
+                          label:
+                            type:
+                            - string
+                            - 'null'
+                          probability:
+                            type:
+                            - number
+                            - 'null'
+                          range:
+                            type:
+                            - array
+                            - 'null'
+                            items:
+                              type: number
+                            minItems: 2
+                            maxItems: 2
+                            description: '[lo, hi], a 95% Wilson range.'
+                          cases:
+                            type:
+                            - integer
+                            - 'null'
+                          reason:
+                            type: string
+                        description: 'Null for an exchange chart. For a DEX-pool coin or uploaded candles (which get no verdict): what the table alone would have said, and why the label is withheld.'
+                    additionalProperties: false
+                    required:
+                    - label
+                    - probability
+                    - range
+                    - cases
+                    - base_rate
+                    - why
+                    - timeframe
+                    - target
+                    - rule
+                    - coverage
+                    description: READY TO POP / READY TO DUMP / NO EDGE with the calibrated probability, its 95% range, the base rate, the cases and why.
+                  setups:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                        name:
+                          type: string
+                        group:
+                          type: string
+                          enum:
+                          - pattern
+                          - structure
+                          - indicator
+                        kind:
+                          type: string
+                        textbook_side:
+                          type: string
+                        train:
+                          type:
+                          - object
+                          - 'null'
+                        test:
+                          type:
+                          - object
+                          - 'null'
+                        included:
+                          type: boolean
+                        weight_up:
+                          type:
+                          - number
+                          - 'null'
+                        weight_down:
+                          type:
+                          - number
+                          - 'null'
+                        measured_side:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: false
+                    description: The structure, pattern and indicator states active on the last candle, each with its train / held-out rates and model weight.
+                  structures:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        kind:
+                          type: string
+                        status:
+                          type: string
+                        price:
+                          type: number
+                        slope_pct_per_bar:
+                          type: number
+                        long_term:
+                          type: boolean
+                        log_scale:
+                          type: boolean
+                        pair:
+                          type: string
+                        touches:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              time:
+                                type: integer
+                                description: Unix seconds.
+                              price:
+                                type: number
+                            additionalProperties: false
+                        from:
+                          type: object
+                          properties:
+                            time:
+                              type: integer
+                              description: Unix seconds.
+                            price:
+                              type: number
+                          additionalProperties: false
+                        to:
+                          type: object
+                          properties:
+                            time:
+                              type: integer
+                              description: Unix seconds.
+                            price:
+                              type: number
+                          additionalProperties: false
+                        path:
+                          type: array
+                          items:
+                            type: array
+                            items:
+                              type: number
+                        broken_at:
+                          type:
+                          - integer
+                          - 'null'
+                        at:
+                          type: integer
+                        upper:
+                          type: object
+                        lower:
+                          type: object
+                      additionalProperties: true
+                      description: A drawing; which keys appear depends on kind.
+                    description: Support, resistance, trendlines (log scale), channels, wedges, triangles, flags, head and shoulders, double tops / bottoms, drawn by rule with touch points.
+                  swings:
+                    type: object
+                    properties:
+                      highs:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            time:
+                              type: integer
+                              description: Unix seconds.
+                            price:
+                              type: number
+                          additionalProperties: false
+                      lows:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            time:
+                              type: integer
+                              description: Unix seconds.
+                            price:
+                              type: number
+                          additionalProperties: false
+                    additionalProperties: false
+                    description: The confirmed swing highs and lows (last 40 each).
+                  indicators:
+                    type: object
+                    properties:
+                      from_time:
+                        type: integer
+                      rsi:
+                        type: array
+                        items:
+                          type:
+                          - number
+                          - 'null'
+                      macd:
+                        type: array
+                        items:
+                          type:
+                          - number
+                          - 'null'
+                      macd_signal:
+                        type: array
+                        items:
+                          type:
+                          - number
+                          - 'null'
+                      macd_hist:
+                        type: array
+                        items:
+                          type:
+                          - number
+                          - 'null'
+                      sma50:
+                        type: array
+                        items:
+                          type:
+                          - number
+                          - 'null'
+                      sma200:
+                        type: array
+                        items:
+                          type:
+                          - number
+                          - 'null'
+                      bb_upper:
+                        type: array
+                        items:
+                          type:
+                          - number
+                          - 'null'
+                      bb_lower:
+                        type: array
+                        items:
+                          type:
+                          - number
+                          - 'null'
+                      last:
+                        type: object
+                        properties: {}
+                        additionalProperties:
+                          type:
+                          - number
+                          - 'null'
+                    additionalProperties: true
+                    description: Indicator series aligned to the last candles (from from_time) and their last values.
+                  weekly_signal:
+                    type: object
+                    properties:
+                      available:
+                        type: boolean
+                      fires:
+                        type:
+                        - boolean
+                        - 'null'
+                      rsi:
+                        type:
+                        - number
+                        - 'null'
+                      macd_hist_rising:
+                        type:
+                        - boolean
+                        - 'null'
+                      weeks_read:
+                        type:
+                        - integer
+                        - 'null'
+                      week_end:
+                        type:
+                        - integer
+                        - 'null'
+                      rule:
+                        type: string
+                      record:
+                        type: object
+                        properties: {}
+                        additionalProperties: true
+                      on_this_chart:
+                        type:
+                        - object
+                        - 'null'
+                      page:
+                        type: string
+                      note:
+                        type:
+                        - string
+                        - 'null'
+                      marks:
+                        type: array
+                        items:
+                          type: integer
+                    additionalProperties: true
+                    description: The /weekly-signal indicator read from this chart's weekly closes.
+                  expert_study_url:
+                    type: string
+                  calls_url:
+                    type: string
+                    description: The public ledger of the page's own calls.
+                  projections:
+                    type: object
+                    properties:
+                      timeframe:
+                        type: string
+                      window_candles:
+                        type: integer
+                      horizon_seconds:
+                        type: integer
+                      from:
+                        type: object
+                        properties:
+                          time:
+                            type: integer
+                            description: Unix seconds.
+                          price:
+                            type: number
+                        additionalProperties: false
+                      to_time:
+                        type: integer
+                        description: Unix seconds, end of the projection window.
+                      scenarios:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              enum:
+                              - bullish
+                              - bearish
+                              - sideways
+                            label:
+                              type: string
+                            direction:
+                              type: string
+                              enum:
+                              - up
+                              - down
+                              - flat
+                            probability:
+                              type: number
+                              description: Calibrated P(first barrier) from the expert study; sideways is the remainder.
+                            range:
+                              type:
+                              - array
+                              - 'null'
+                              items:
+                                type: number
+                              minItems: 2
+                              maxItems: 2
+                              description: '[lo, hi], a 95% Wilson range.'
+                            cases:
+                              type:
+                              - integer
+                              - 'null'
+                            base_rate:
+                              type:
+                              - number
+                              - 'null'
+                            usable:
+                              type: boolean
+                            residual:
+                              type: boolean
+                              description: True on the sideways scenario (1 - up - down).
+                            target_price:
+                              type: number
+                            path:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  time:
+                                    type: integer
+                                    description: Unix seconds.
+                                  price:
+                                    type: number
+                                additionalProperties: false
+                            rank:
+                              type: integer
+                          additionalProperties: false
+                        description: Ranked by probability; empty when no probability is claimed.
+                      main:
+                        type:
+                        - string
+                        - 'null'
+                        description: id of the most probable scenario, null when none is claimed.
+                      basis:
+                        type: string
+                      tracked_record:
+                        type: object
+                        properties:
+                          held_out:
+                            type:
+                            - object
+                            - 'null'
+                          live_calls_url:
+                            type: string
+                        additionalProperties: true
+                      not_advice:
+                        type: string
+                      reason:
+                        type: string
+                        description: Present when no scenario is drawn (withheld verdict, no study block).
+                      sum_check:
+                        type: number
+                      drivers:
+                        type: array
+                        items: {}
+                    additionalProperties: false
+                    description: Ranked projection scenarios for the chart's timeframe from the verdict's measured probabilities, drawn as dashed paths on the page.
+                additionalProperties: false
+                required:
+                - score
+                - band
+                - patterns
+                - candles_used
+                - as_of
+                description: 'One number for the chart, the patterns found (drawn), and how the number was made; plus the verdict layer: verdict, setups, structures, swings, indicators and the Weekly Signal.'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '400':
+          description: 'Bad input (`error.code`: INVALID_SYMBOL, INVALID_TIMEFRAME, MISSING_INPUT, BAD_JSON, BAD_ROW, BAD_VALUE, BAD_TIME, MISSING_COLUMNS, DUPLICATE_TIME, TOO_FEW_ROWS, TOO_MANY_ROWS, NOT_TEXT, EMPTY_FILE, INVALID_CONTRACT, UNKNOWN_CHAIN, UNSUPPORTED_CHAIN, CHAIN_NEEDED, TOKEN_MISMATCH).'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: 'UNKNOWN_SYMBOL, TOO_LITTLE_HISTORY or NO_CANDLES (no DEX pool / no candle data for the contract: no score is given).'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '429':
+          description: Rate limited.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: 'UPSTREAM_UNAVAILABLE, or COLLECTING: the contract''s candles are being fetched; ask again in a few minutes.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+  /api/v1/chart-analyzer/batch:
+    post:
+      tags:
+      - Chart Analyzer
+      summary: Batch Post
+      description: 'Score up to 300 charts in one call: {"timeframe":"1d","items":[{"contract":"0x..","chain":"ethereum"},
+
+        {"symbol":"BTC"}, ...]}. Rows come back in the same order, each with its coverage note.'
+      operationId: batch_post_api_v1_chart_analyzer_batch_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              title: Body
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  timeframe:
+                    type: string
+                  count:
+                    type: integer
+                  statuses:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  bands:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  elapsed_ms:
+                    type: integer
+                  midpoint:
+                    type: string
+                  study_version:
+                    type: string
+                  study_url:
+                    type: string
+                  not_advice:
+                    type: string
+                  as_of:
+                    type: string
+                  source_list:
+                    type: string
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties: {}
+                      additionalProperties: true
+                    description: 'Same order as the input. Each: input, status (scored | collecting | no_pool | no_candles | too_little_history | no_contract | error), score, band, counted_patterns, identity, coverage {covered, coin, timeframe, note}, candles_used, last_candle, message.'
+                additionalProperties: true
+                required:
+                - count
+                - items
+                description: Many charts scored in one call.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '400':
+          description: MISSING_INPUT, TOO_MANY_ITEMS (max 300) or a bad timeframe.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: 'UNKNOWN_SYMBOL, TOO_LITTLE_HISTORY or NO_CANDLES (no DEX pool / no candle data for the contract: no score is given).'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '429':
+          description: Rate limited.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: 'UPSTREAM_UNAVAILABLE, or COLLECTING: the contract''s candles are being fetched; ask again in a few minutes.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+  /api/v1/chart-analyzer/batch/gem-screener:
+    get:
+      tags:
+      - Chart Analyzer
+      summary: Batch Gem Screener
+      description: 'Every Gem Screener coin scored in one call, each identified by its contract address (native chain coins
+
+        such as ETH or SOL, which have none, by ticker).'
+      operationId: batch_gem_screener_api_v1_chart_analyzer_batch_gem_screener_get
+      parameters:
+      - name: timeframe
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 4
+          default: 1d
+          title: Timeframe
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  timeframe:
+                    type: string
+                  count:
+                    type: integer
+                  statuses:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  bands:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  elapsed_ms:
+                    type: integer
+                  midpoint:
+                    type: string
+                  study_version:
+                    type: string
+                  study_url:
+                    type: string
+                  not_advice:
+                    type: string
+                  as_of:
+                    type: string
+                  source_list:
+                    type: string
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties: {}
+                      additionalProperties: true
+                    description: 'Same order as the input. Each: input, status (scored | collecting | no_pool | no_candles | too_little_history | no_contract | error), score, band, counted_patterns, identity, coverage {covered, coin, timeframe, note}, candles_used, last_candle, message.'
+                additionalProperties: true
+                required:
+                - count
+                - items
+                description: Many charts scored in one call.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '400':
+          description: 'Bad input (`error.code`: INVALID_SYMBOL, INVALID_TIMEFRAME, MISSING_INPUT, BAD_JSON, BAD_ROW, BAD_VALUE, BAD_TIME, MISSING_COLUMNS, DUPLICATE_TIME, TOO_FEW_ROWS, TOO_MANY_ROWS, NOT_TEXT, EMPTY_FILE, INVALID_CONTRACT, UNKNOWN_CHAIN, UNSUPPORTED_CHAIN, CHAIN_NEEDED, TOKEN_MISMATCH).'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: 'UNKNOWN_SYMBOL, TOO_LITTLE_HISTORY or NO_CANDLES (no DEX pool / no candle data for the contract: no score is given).'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '429':
+          description: Rate limited.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: 'UPSTREAM_UNAVAILABLE, or COLLECTING: the contract''s candles are being fetched; ask again in a few minutes.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+  /api/v1/chart-analyzer/gem-screener/coins:
+    get:
+      tags:
+      - Chart Analyzer
+      summary: Gem Screener Coins
+      description: 'Gem Screener''s coins with the contract address (and chain) that identifies each: the input to use here.'
+      operationId: gem_screener_coins_api_v1_chart_analyzer_gem_screener_coins_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  with_contract:
+                    type: integer
+                  note:
+                    type: string
+                  coins:
+                    type: array
+                    items:
+                      type: object
+                      properties: {}
+                      additionalProperties: true
+                additionalProperties: true
+                required:
+                - count
+                - coins
+                description: Gem Screener's coins with the contract address identifying each.
+      security: []
+  /api/v1/chart-analyzer/symbols:
+    get:
+      tags:
+      - Chart Analyzer
+      summary: Symbols
+      description: 'The tickers the study measured (its 292 Binance USDT pairs); any other Binance USDT pair or any contract
+
+        address can still be scored, and its answer says it is not covered.'
+      operationId: symbols_api_v1_chart_analyzer_symbols_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  study_version:
+                    type: string
+                  count:
+                    type: integer
+                  symbols:
+                    type: array
+                    items:
+                      type: string
+                  note:
+                    type: string
+                additionalProperties: true
+                required:
+                - symbols
+                description: The tickers the study measured.
+      security: []
+  /api/v1/chart-analyzer/chains:
+    get:
+      tags:
+      - Chart Analyzer
+      summary: Chains
+      description: Chains a contract address can be read on (DEX pool candles).
+      operationId: chains_api_v1_chart_analyzer_chains_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  chains:
+                    type: array
+                    items:
+                      type: object
+                      properties: {}
+                      additionalProperties: true
+                  note:
+                    type: string
+                additionalProperties: true
+                required:
+                - chains
+                description: Chains a contract can be read on.
+      security: []
+  /api/v1/chart-analyzer/upload:
+    post:
+      tags:
+      - Chart Analyzer
+      summary: Analyze Upload
+      description: Score an uploaded candle file (CSV or JSON, time/open/high/low/close/volume, up to 1 MB / 5000 rows).
+      operationId: analyze_upload_api_v1_chart_analyzer_upload_post
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_analyze_upload_api_v1_chart_analyzer_upload_post'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  score:
+                    type: integer
+                    description: 1 (very bearish) to 100 (very bullish).
+                  band:
+                    type: string
+                  symbol:
+                    type:
+                    - string
+                    - 'null'
+                  timeframe:
+                    type:
+                    - string
+                    - 'null'
+                  source:
+                    type: string
+                  candles_used:
+                    type: integer
+                  first_candle:
+                    type: integer
+                  last_candle:
+                    type: integer
+                  last_candle_forming:
+                    type: boolean
+                  forming_note:
+                    type: string
+                  reading:
+                    type: string
+                  patterns:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                        name:
+                          type: string
+                        direction:
+                          type: string
+                          enum:
+                          - bullish
+                          - bearish
+                          - too few samples
+                          description: 'Measured: bullish when its train success rate is above the base rate.'
+                        textbook_direction:
+                          type: string
+                        success_rate:
+                          type:
+                          - number
+                          - 'null'
+                        train_samples:
+                          type:
+                          - integer
+                          - 'null'
+                        pattern_score:
+                          type:
+                          - integer
+                          - 'null'
+                        counted_in_score:
+                          type: boolean
+                        confirmed_at:
+                          type: integer
+                          description: Unix seconds of the confirming candle.
+                        bars_ago:
+                          type: integer
+                        drawing:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              time:
+                                type: integer
+                                description: Unix seconds.
+                              price:
+                                type: number
+                            additionalProperties: false
+                      additionalProperties: false
+                  counted_patterns:
+                    type: array
+                    items:
+                      type: string
+                  chart_rate:
+                    type: number
+                  base_rate:
+                    type: number
+                  scale:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  rule:
+                    type: string
+                  study_version:
+                    type: string
+                  study_url:
+                    type: string
+                  not_advice:
+                    type: string
+                  as_of:
+                    type: string
+                  midpoint:
+                    type: string
+                    description: 'What 50 means: the base rate (share of all study candles that rose).'
+                  coverage:
+                    type: object
+                    properties:
+                      covered:
+                        type: boolean
+                      coin:
+                        type: string
+                      timeframe:
+                        type: string
+                      note:
+                        type: string
+                    additionalProperties: true
+                    description: Where the study does not cover this coin or timeframe (ET-28324).
+                  identity:
+                    type:
+                    - object
+                    - 'null'
+                    description: 'How the coin was identified: by contract (chain, address, pool, dex, symbol, name, gem_screener) or by ticker (Binance pair).'
+                  candles_fetched_at:
+                    type: string
+                    description: 'Contract input: when the DEX pool candles were fetched.'
+                  candles_stale:
+                    type: boolean
+                  candles:
+                    type: array
+                    items:
+                      type: array
+                      items:
+                        type: number
+                    description: '[time, open, high, low, close, volume] rows; only with include_candles or an upload.'
+                  verdict:
+                    type: object
+                    properties:
+                      label:
+                        type: string
+                        enum:
+                        - READY TO POP
+                        - READY TO DUMP
+                        - NO EDGE
+                      rule_label:
+                        type: string
+                        description: What the calibration rule alone says (before the held-out guard).
+                      held_out_failed:
+                        type:
+                        - object
+                        - 'null'
+                      probability:
+                        type:
+                        - number
+                        - 'null'
+                        description: Calibrated, of the labelled side; null for NO EDGE.
+                      range:
+                        type:
+                        - array
+                        - 'null'
+                        items:
+                          type: number
+                        minItems: 2
+                        maxItems: 2
+                        description: '[lo, hi], a 95% Wilson range.'
+                      cases:
+                        type:
+                        - integer
+                        - 'null'
+                      pooled_cases:
+                        type:
+                        - integer
+                        - 'null'
+                      base_rate:
+                        type:
+                        - number
+                        - 'null'
+                      gap:
+                        type:
+                        - number
+                        - 'null'
+                      up:
+                        type:
+                        - object
+                        - 'null'
+                        additionalProperties: true
+                        properties:
+                          raw:
+                            type: number
+                          calibrated:
+                            type:
+                            - number
+                            - 'null'
+                            description: The share of the pooled calibration cases that went this way (made monotone); the number shown.
+                          range:
+                            type:
+                            - array
+                            - 'null'
+                            items:
+                              type: number
+                            minItems: 2
+                            maxItems: 2
+                            description: 'The 95% range of `calibrated`, over the pooled cases: `calibrated` always lies inside it (ET-29276).'
+                          cases:
+                            type: integer
+                          pooled_cases:
+                            type:
+                            - integer
+                            - 'null'
+                          rate:
+                            type:
+                            - number
+                            - 'null'
+                            description: The bin's own rate.
+                          bin_range:
+                            type:
+                            - array
+                            - 'null'
+                            items:
+                              type: number
+                            minItems: 2
+                            maxItems: 2
+                            description: The 95% range of the bin's own rate.
+                          base_rate:
+                            type: number
+                          usable:
+                            type: boolean
+                          bin:
+                            type: integer
+                        description: 'One side''s figures: the raw model number, its calibration bin, the calibrated value and ranges.'
+                      down:
+                        type:
+                        - object
+                        - 'null'
+                        additionalProperties: true
+                        properties:
+                          raw:
+                            type: number
+                          calibrated:
+                            type:
+                            - number
+                            - 'null'
+                            description: The share of the pooled calibration cases that went this way (made monotone); the number shown.
+                          range:
+                            type:
+                            - array
+                            - 'null'
+                            items:
+                              type: number
+                            minItems: 2
+                            maxItems: 2
+                            description: 'The 95% range of `calibrated`, over the pooled cases: `calibrated` always lies inside it (ET-29276).'
+                          cases:
+                            type: integer
+                          pooled_cases:
+                            type:
+                            - integer
+                            - 'null'
+                          rate:
+                            type:
+                            - number
+                            - 'null'
+                            description: The bin's own rate.
+                          bin_range:
+                            type:
+                            - array
+                            - 'null'
+                            items:
+                              type: number
+                            minItems: 2
+                            maxItems: 2
+                            description: The 95% range of the bin's own rate.
+                          base_rate:
+                            type: number
+                          usable:
+                            type: boolean
+                          bin:
+                            type: integer
+                        description: 'One side''s figures: the raw model number, its calibration bin, the calibrated value and ranges.'
+                      drivers:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            key:
+                              type: string
+                            weight_up:
+                              type: number
+                            weight_down:
+                              type: number
+                          additionalProperties: false
+                      why:
+                        type: string
+                      timeframe:
+                        type: string
+                      target:
+                        type: object
+                        properties:
+                          up_pct:
+                            type: number
+                          down_pct:
+                            type: number
+                          window:
+                            type: integer
+                          text:
+                            type: string
+                        additionalProperties: false
+                      rule:
+                        type: string
+                      held_out_record:
+                        type:
+                        - object
+                        - 'null'
+                      coverage:
+                        type: string
+                        enum:
+                        - covered
+                        - pair_not_in_study
+                        - asset_not_covered
+                        - timeframe_not_covered
+                      coverage_note:
+                        type: string
+                      withheld:
+                        type:
+                        - object
+                        - 'null'
+                        additionalProperties: true
+                        properties:
+                          label:
+                            type:
+                            - string
+                            - 'null'
+                          probability:
+                            type:
+                            - number
+                            - 'null'
+                          range:
+                            type:
+                            - array
+                            - 'null'
+                            items:
+                              type: number
+                            minItems: 2
+                            maxItems: 2
+                            description: '[lo, hi], a 95% Wilson range.'
+                          cases:
+                            type:
+                            - integer
+                            - 'null'
+                          reason:
+                            type: string
+                        description: 'Null for an exchange chart. For a DEX-pool coin or uploaded candles (which get no verdict): what the table alone would have said, and why the label is withheld.'
+                    additionalProperties: false
+                    required:
+                    - label
+                    - probability
+                    - range
+                    - cases
+                    - base_rate
+                    - why
+                    - timeframe
+                    - target
+                    - rule
+                    - coverage
+                    description: READY TO POP / READY TO DUMP / NO EDGE with the calibrated probability, its 95% range, the base rate, the cases and why.
+                  setups:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                        name:
+                          type: string
+                        group:
+                          type: string
+                          enum:
+                          - pattern
+                          - structure
+                          - indicator
+                        kind:
+                          type: string
+                        textbook_side:
+                          type: string
+                        train:
+                          type:
+                          - object
+                          - 'null'
+                        test:
+                          type:
+                          - object
+                          - 'null'
+                        included:
+                          type: boolean
+                        weight_up:
+                          type:
+                          - number
+                          - 'null'
+                        weight_down:
+                          type:
+                          - number
+                          - 'null'
+                        measured_side:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: false
+                    description: The structure, pattern and indicator states active on the last candle, each with its train / held-out rates and model weight.
+                  structures:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        kind:
+                          type: string
+                        status:
+                          type: string
+                        price:
+                          type: number
+                        slope_pct_per_bar:
+                          type: number
+                        long_term:
+                          type: boolean
+                        log_scale:
+                          type: boolean
+                        pair:
+                          type: string
+                        touches:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              time:
+                                type: integer
+                                description: Unix seconds.
+                              price:
+                                type: number
+                            additionalProperties: false
+                        from:
+                          type: object
+                          properties:
+                            time:
+                              type: integer
+                              description: Unix seconds.
+                            price:
+                              type: number
+                          additionalProperties: false
+                        to:
+                          type: object
+                          properties:
+                            time:
+                              type: integer
+                              description: Unix seconds.
+                            price:
+                              type: number
+                          additionalProperties: false
+                        path:
+                          type: array
+                          items:
+                            type: array
+                            items:
+                              type: number
+                        broken_at:
+                          type:
+                          - integer
+                          - 'null'
+                        at:
+                          type: integer
+                        upper:
+                          type: object
+                        lower:
+                          type: object
+                      additionalProperties: true
+                      description: A drawing; which keys appear depends on kind.
+                    description: Support, resistance, trendlines (log scale), channels, wedges, triangles, flags, head and shoulders, double tops / bottoms, drawn by rule with touch points.
+                  swings:
+                    type: object
+                    properties:
+                      highs:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            time:
+                              type: integer
+                              description: Unix seconds.
+                            price:
+                              type: number
+                          additionalProperties: false
+                      lows:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            time:
+                              type: integer
+                              description: Unix seconds.
+                            price:
+                              type: number
+                          additionalProperties: false
+                    additionalProperties: false
+                    description: The confirmed swing highs and lows (last 40 each).
+                  indicators:
+                    type: object
+                    properties:
+                      from_time:
+                        type: integer
+                      rsi:
+                        type: array
+                        items:
+                          type:
+                          - number
+                          - 'null'
+                      macd:
+                        type: array
+                        items:
+                          type:
+                          - number
+                          - 'null'
+                      macd_signal:
+                        type: array
+                        items:
+                          type:
+                          - number
+                          - 'null'
+                      macd_hist:
+                        type: array
+                        items:
+                          type:
+                          - number
+                          - 'null'
+                      sma50:
+                        type: array
+                        items:
+                          type:
+                          - number
+                          - 'null'
+                      sma200:
+                        type: array
+                        items:
+                          type:
+                          - number
+                          - 'null'
+                      bb_upper:
+                        type: array
+                        items:
+                          type:
+                          - number
+                          - 'null'
+                      bb_lower:
+                        type: array
+                        items:
+                          type:
+                          - number
+                          - 'null'
+                      last:
+                        type: object
+                        properties: {}
+                        additionalProperties:
+                          type:
+                          - number
+                          - 'null'
+                    additionalProperties: true
+                    description: Indicator series aligned to the last candles (from from_time) and their last values.
+                  weekly_signal:
+                    type: object
+                    properties:
+                      available:
+                        type: boolean
+                      fires:
+                        type:
+                        - boolean
+                        - 'null'
+                      rsi:
+                        type:
+                        - number
+                        - 'null'
+                      macd_hist_rising:
+                        type:
+                        - boolean
+                        - 'null'
+                      weeks_read:
+                        type:
+                        - integer
+                        - 'null'
+                      week_end:
+                        type:
+                        - integer
+                        - 'null'
+                      rule:
+                        type: string
+                      record:
+                        type: object
+                        properties: {}
+                        additionalProperties: true
+                      on_this_chart:
+                        type:
+                        - object
+                        - 'null'
+                      page:
+                        type: string
+                      note:
+                        type:
+                        - string
+                        - 'null'
+                      marks:
+                        type: array
+                        items:
+                          type: integer
+                    additionalProperties: true
+                    description: The /weekly-signal indicator read from this chart's weekly closes.
+                  expert_study_url:
+                    type: string
+                  calls_url:
+                    type: string
+                    description: The public ledger of the page's own calls.
+                  projections:
+                    type: object
+                    properties:
+                      timeframe:
+                        type: string
+                      window_candles:
+                        type: integer
+                      horizon_seconds:
+                        type: integer
+                      from:
+                        type: object
+                        properties:
+                          time:
+                            type: integer
+                            description: Unix seconds.
+                          price:
+                            type: number
+                        additionalProperties: false
+                      to_time:
+                        type: integer
+                        description: Unix seconds, end of the projection window.
+                      scenarios:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              enum:
+                              - bullish
+                              - bearish
+                              - sideways
+                            label:
+                              type: string
+                            direction:
+                              type: string
+                              enum:
+                              - up
+                              - down
+                              - flat
+                            probability:
+                              type: number
+                              description: Calibrated P(first barrier) from the expert study; sideways is the remainder.
+                            range:
+                              type:
+                              - array
+                              - 'null'
+                              items:
+                                type: number
+                              minItems: 2
+                              maxItems: 2
+                              description: '[lo, hi], a 95% Wilson range.'
+                            cases:
+                              type:
+                              - integer
+                              - 'null'
+                            base_rate:
+                              type:
+                              - number
+                              - 'null'
+                            usable:
+                              type: boolean
+                            residual:
+                              type: boolean
+                              description: True on the sideways scenario (1 - up - down).
+                            target_price:
+                              type: number
+                            path:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  time:
+                                    type: integer
+                                    description: Unix seconds.
+                                  price:
+                                    type: number
+                                additionalProperties: false
+                            rank:
+                              type: integer
+                          additionalProperties: false
+                        description: Ranked by probability; empty when no probability is claimed.
+                      main:
+                        type:
+                        - string
+                        - 'null'
+                        description: id of the most probable scenario, null when none is claimed.
+                      basis:
+                        type: string
+                      tracked_record:
+                        type: object
+                        properties:
+                          held_out:
+                            type:
+                            - object
+                            - 'null'
+                          live_calls_url:
+                            type: string
+                        additionalProperties: true
+                      not_advice:
+                        type: string
+                      reason:
+                        type: string
+                        description: Present when no scenario is drawn (withheld verdict, no study block).
+                      sum_check:
+                        type: number
+                      drivers:
+                        type: array
+                        items: {}
+                    additionalProperties: false
+                    description: Ranked projection scenarios for the chart's timeframe from the verdict's measured probabilities, drawn as dashed paths on the page.
+                additionalProperties: false
+                required:
+                - score
+                - band
+                - patterns
+                - candles_used
+                - as_of
+                description: 'One number for the chart, the patterns found (drawn), and how the number was made; plus the verdict layer: verdict, setups, structures, swings, indicators and the Weekly Signal.'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '400':
+          description: 'Bad input (`error.code`: INVALID_SYMBOL, INVALID_TIMEFRAME, MISSING_INPUT, BAD_JSON, BAD_ROW, BAD_VALUE, BAD_TIME, MISSING_COLUMNS, DUPLICATE_TIME, TOO_FEW_ROWS, TOO_MANY_ROWS, NOT_TEXT, EMPTY_FILE, INVALID_CONTRACT, UNKNOWN_CHAIN, UNSUPPORTED_CHAIN, CHAIN_NEEDED, TOKEN_MISMATCH).'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: 'UNKNOWN_SYMBOL, TOO_LITTLE_HISTORY or NO_CANDLES (no DEX pool / no candle data for the contract: no score is given).'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '429':
+          description: Rate limited.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: 'UPSTREAM_UNAVAILABLE, or COLLECTING: the contract''s candles are being fetched; ask again in a few minutes.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '413':
+          description: 'FILE_TOO_LARGE: over 1 MB.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+  /api/v1/chart-analyzer/format:
+    get:
+      tags:
+      - Chart Analyzer
+      summary: Candle Format
+      description: The candle file format the analyzer reads.
+      operationId: candle_format_api_v1_chart_analyzer_format_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  columns:
+                    type: array
+                    items:
+                      type: string
+                  header_required:
+                    type: boolean
+                  time:
+                    type: string
+                  order:
+                    type: string
+                  files:
+                    type: string
+                  limits:
+                    type: object
+                    properties:
+                      max_bytes:
+                        type: integer
+                      min_rows:
+                        type: integer
+                      max_rows:
+                        type: integer
+                    additionalProperties: true
+                  checks:
+                    type: string
+                  example_csv:
+                    type: string
+                  example_file:
+                    type: string
+                additionalProperties: false
+                required:
+                - columns
+                - limits
+                description: The candle file format the analyzer reads.
+      security: []
+  /api/v1/chart-analyzer/study:
+    get:
+      tags:
+      - Chart Analyzer
+      summary: Study
+      description: 'The 1-100 score''s study (v2): universe, periods, per-pattern samples and success rates, and the held-out proof
+
+        (which showed that score does not predict). The expert verdict''s study is /study/expert.'
+      operationId: study_api_v1_chart_analyzer_study_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  version:
+                    type: string
+                  generated_at:
+                    type: string
+                  script:
+                    type: string
+                  data:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  outcome:
+                    type: string
+                  active_bars:
+                    type: integer
+                  min_samples:
+                    type: integer
+                  train_period:
+                    type: array
+                    items:
+                      type: string
+                  test_period:
+                    type: array
+                    items:
+                      type: string
+                  base_rate_train:
+                    type: number
+                  base_rate_train_n:
+                    type: integer
+                  base_rate_test:
+                    type: number
+                  base_rate_test_n:
+                    type: integer
+                  swing_definition:
+                    type: string
+                  patterns:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  proof:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                additionalProperties: true
+                required:
+                - version
+                - patterns
+                - proof
+                description: 'The measured study: per-pattern train and held-out samples and success rates, and the held-out score test.'
+      security: []
+  /api/v1/chart-analyzer/study/expert:
+    get:
+      tags:
+      - Chart Analyzer
+      summary: Study Expert
+      description: 'The expert study (v3): setups and their definitions, targets, split, per-timeframe weights, the calibration
+
+        tables and the held-out proof (reliability, Brier score, the record of the verdicts). Every number the verdict
+
+        shows traces here.'
+      operationId: study_expert_api_v1_chart_analyzer_study_expert_get
+      parameters:
+      - name: timeframe
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 4
+          - type: 'null'
+          description: one timeframe's block only
+          title: Timeframe
+        description: one timeframe's block only
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  version:
+                    type: string
+                  generated_at:
+                    type: string
+                  script:
+                    type: string
+                  method:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      source:
+                        type: string
+                      asset_class:
+                        type: string
+                      symbols:
+                        type: integer
+                      symbol_list:
+                        type: array
+                        items:
+                          type: string
+                      universe_rule:
+                        type: string
+                      survivorship_note:
+                        type: string
+                    additionalProperties: true
+                  split:
+                    type: object
+                    properties:
+                      train:
+                        type: string
+                      calibrate:
+                        type: string
+                      test:
+                        type: string
+                      short_history:
+                        type: string
+                      per_timeframe:
+                        type: object
+                        properties: {}
+                        additionalProperties:
+                          type: object
+                          properties: {}
+                          additionalProperties:
+                            type: string
+                    additionalProperties: true
+                  targets:
+                    type: object
+                    properties: {}
+                    additionalProperties:
+                      type: object
+                      properties:
+                        up_pct:
+                          type: number
+                        down_pct:
+                          type: number
+                        window:
+                          type: integer
+                      additionalProperties: false
+                  verdict_rule:
+                    type: object
+                    properties:
+                      gap:
+                        type: number
+                      min_cases:
+                        type: integer
+                      bin_width:
+                        type: number
+                      shrink_k:
+                        type: integer
+                      active_bars:
+                        type: integer
+                      cross_bars:
+                        type: integer
+                      min_feature_cases:
+                        type: integer
+                      text:
+                        type: string
+                    additionalProperties: true
+                  setups:
+                    type: object
+                    properties: {}
+                    additionalProperties:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        kind:
+                          type: string
+                        side:
+                          type: string
+                        group:
+                          type: string
+                        definition:
+                          type: string
+                      additionalProperties: true
+                    description: Every setup key -> its definition.
+                  setup_count:
+                    type: integer
+                  combinations_searched:
+                    type: object
+                    properties:
+                      setups:
+                        type: integer
+                      timeframes:
+                        type: integer
+                      sides:
+                        type: integer
+                      models:
+                        type: integer
+                      note:
+                        type: string
+                    additionalProperties: true
+                  timeframes:
+                    type: object
+                    properties: {}
+                    additionalProperties:
+                      type: object
+                    description: 'Per timeframe: covered, symbols, target, base, features, calibration, proof. Only without ?timeframe.'
+                  limits:
+                    type: array
+                    items:
+                      type: string
+                  weekly_signal_source:
+                    type: string
+                  runtime_s:
+                    type: number
+                  timeframe:
+                    type: string
+                    description: Only with ?timeframe.
+                  block:
+                    type:
+                    - object
+                    - 'null'
+                    description: 'Only with ?timeframe: that timeframe''s block (calibration rows carry calibrated, ci95 = the 95% range of that value over the pooled cases, bin_ci95 = the bin''s own range, pooled_n), or null for a timeframe the study does not cover.'
+                additionalProperties: false
+                required:
+                - version
+                - generated_at
+                - method
+                - data
+                - split
+                - targets
+                - verdict_rule
+                - setups
+                - limits
+                description: 'The study behind the verdict (v3): setups, targets, split, per-timeframe tables, calibration, held-out proof and limits.'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '400':
+          description: INVALID_TIMEFRAME.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+  /api/v1/chart-analyzer/calls:
+    get:
+      tags:
+      - Chart Analyzer
+      summary: Calls
+      description: 'The public ledger of the page''s own READY TO POP / READY TO DUMP calls: recorded when made (closed candles
+
+        only), scored when the target window ends, with the running record against the base rate.'
+      operationId: calls_api_v1_chart_analyzer_calls_get
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 1000
+          minimum: 1
+          default: 200
+          title: Limit
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 10
+          - type: 'null'
+          title: Status
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  summary:
+                    type: object
+                    properties:
+                      recorded:
+                        type: integer
+                      open:
+                        type: integer
+                      scored:
+                        type: integer
+                      withdrawn:
+                        type: integer
+                      by_verdict:
+                        type: object
+                        properties: {}
+                        additionalProperties:
+                          type: object
+                          properties:
+                            calls:
+                              type: integer
+                            scored:
+                              type: integer
+                            hits:
+                              type: integer
+                            rate:
+                              type:
+                              - number
+                              - 'null'
+                            ci95:
+                              type:
+                              - array
+                              - 'null'
+                              items:
+                                type: number
+                              minItems: 2
+                              maxItems: 2
+                              description: '[lo, hi], a 95% Wilson range.'
+                            said_on_average:
+                              type:
+                              - number
+                              - 'null'
+                            base_rate:
+                              type:
+                              - number
+                              - 'null'
+                            reading:
+                              type: string
+                          additionalProperties: true
+                      by_timeframe:
+                        type: object
+                        properties: {}
+                        additionalProperties:
+                          type: object
+                          properties:
+                            calls:
+                              type: integer
+                            scored:
+                              type: integer
+                            hits:
+                              type: integer
+                            rate:
+                              type:
+                              - number
+                              - 'null'
+                          additionalProperties: true
+                    additionalProperties: false
+                  calls:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: 'who|timeframe|candle_time: one row per chart, timeframe and closed candle.'
+                        who:
+                          type: string
+                          description: sym:<pair> (exchange chart). DEX-pool coins get no verdict and are not recorded.
+                        symbol:
+                          type:
+                          - string
+                          - 'null'
+                        chain:
+                          type:
+                          - string
+                          - 'null'
+                        address:
+                          type:
+                          - string
+                          - 'null'
+                        timeframe:
+                          type: string
+                        made_at:
+                          type: string
+                          description: ISO 8601 UTC, when the call was recorded (after the candle closed).
+                        candle_time:
+                          type: integer
+                          description: Unix seconds, open of the CLOSED candle the call was made on.
+                        close:
+                          type: number
+                        verdict:
+                          type: string
+                          enum:
+                          - READY TO POP
+                          - READY TO DUMP
+                        probability:
+                          type: number
+                        base_rate:
+                          type:
+                          - number
+                          - 'null'
+                        cases:
+                          type:
+                          - integer
+                          - 'null'
+                        target:
+                          type: object
+                          properties:
+                            up_pct:
+                              type: number
+                            down_pct:
+                              type: number
+                            window:
+                              type: integer
+                          additionalProperties: false
+                        status:
+                          type: string
+                          enum:
+                          - open
+                          - scored
+                          - withdrawn
+                        outcome:
+                          type:
+                          - string
+                          - 'null'
+                          description: rose_first | fell_first | neither once scored.
+                        after_candles:
+                          type:
+                          - integer
+                          - 'null'
+                        scored_at:
+                          type:
+                          - string
+                          - 'null'
+                        hit:
+                          type:
+                          - boolean
+                          - 'null'
+                        withdrawn_at:
+                          type:
+                          - string
+                          - 'null'
+                        withdrawn_reason:
+                          type:
+                          - string
+                          - 'null'
+                          description: Why a row was taken out of the record (status withdrawn).
+                      additionalProperties: true
+                      required:
+                      - id
+                      - who
+                      - timeframe
+                      - made_at
+                      - candle_time
+                      - close
+                      - verdict
+                      - probability
+                      - status
+                  rule:
+                    type: string
+                  not_advice:
+                    type: string
+                  as_of:
+                    type: string
+                additionalProperties: false
+                required:
+                - summary
+                - calls
+                - rule
+                - not_advice
+                - as_of
+                description: The public ledger of the page's own READY TO POP / READY TO DUMP calls on closed candles of exchange charts, with the running record against the base rate.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '429':
+          description: Rate limited.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+  /api/v1/chart-analyzer/overlays:
+    get:
+      tags:
+      - Chart Analyzer
+      summary: Chart Overlays
+      description: 'Bots, Chart Analyzer calls and the Gem Screener reading for one chart (feature #868).'
+      operationId: chart_overlays_api_v1_chart_analyzer_overlays_get
+      security: []
+      parameters:
+      - name: symbol
+        in: query
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 30
+          title: Symbol
+      - name: timeframe
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 4
+          default: 1d
+          title: Timeframe
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  symbol:
+                    type: string
+                  timeframe:
+                    type: string
+                  bots:
+                    type: object
+                    properties:
+                      signed_in:
+                        type: boolean
+                      markers:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            kind:
+                              type: string
+                              enum:
+                              - entry
+                              - exit
+                            at:
+                              type:
+                              - integer
+                              - 'null'
+                              description: Unix seconds.
+                            price:
+                              type:
+                              - number
+                              - 'null'
+                            side:
+                              type: string
+                              enum:
+                              - buy
+                              - sell
+                            bot:
+                              type: string
+                            instance_id:
+                              type:
+                              - integer
+                              - 'null'
+                            mode:
+                              type: string
+                              enum:
+                              - paper
+                              - live
+                            pnl_usdc:
+                              type:
+                              - number
+                              - 'null'
+                              description: 'Exits only: the closed trade''s P&L.'
+                          additionalProperties: false
+                          required:
+                          - kind
+                          - at
+                          - side
+                          - bot
+                          - mode
+                      note:
+                        type:
+                        - string
+                        - 'null'
+                        description: 'Set when anonymous: sign in to see your bots.'
+                    additionalProperties: false
+                    required:
+                    - signed_in
+                    - markers
+                  calls:
+                    type: object
+                    properties:
+                      markers:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            at:
+                              type:
+                              - integer
+                              - 'null'
+                            price:
+                              type:
+                              - number
+                              - 'null'
+                            verdict:
+                              type:
+                              - string
+                              - 'null'
+                            probability:
+                              type:
+                              - number
+                              - 'null'
+                            status:
+                              type:
+                              - string
+                              - 'null'
+                            hit:
+                              type:
+                              - boolean
+                              - 'null'
+                            id: {}
+                          additionalProperties: false
+                          required:
+                          - at
+                          - verdict
+                      ledger:
+                        type: string
+                    additionalProperties: false
+                    required:
+                    - markers
+                    - ledger
+                  gem:
+                    type:
+                    - object
+                    - 'null'
+                    additionalProperties: true
+                    description: 'The coin''s Gem Screener reading; null when it is not a Gem Screener coin, `ambiguous: true` when two coins share the ticker.'
+                  read_only:
+                    type: boolean
+                additionalProperties: false
+                required:
+                - symbol
+                - timeframe
+                - bots
+                - calls
+                - gem
+                - read_only
+                description: 'Three overlay layers for one chart: the signed-in caller''s own bots'' trades (none when anonymous), the page''s public POP/DUMP calls with their outcome, and the Gem Screener reading.'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    Body_analyze_upload_api_v1_chart_analyzer_upload_post:
+      properties:
+        file:
+          type: string
+          contentMediaType: application/octet-stream
+          title: File
+      type: object
+      required:
+      - file
+      title: Body_analyze_upload_api_v1_chart_analyzer_upload_post
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

@@ -1,0 +1,77 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Products Stream API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: products-stream
+paths:
+  /api/v1/products-stream:
+    get:
+      tags:
+      - products-stream
+      summary: Products Stream
+      description: 'Every product/app/service the platform ships — title + link, for the
+
+        landing-page ticker. Keyless: public product pages only.'
+      operationId: products_stream_api_v1_products_stream_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  count:
+                    type: integer
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        title:
+                          type: string
+                        url:
+                          type: string
+                        category:
+                          type: string
+                      additionalProperties: false
+                  error:
+                    type: string
+                    description: Present only on the 503 body (ok=false).
+                additionalProperties: false
+                required:
+                - ok
+                - count
+                - items
+                description: Every public product/app/tool page (title + link). A build failure answers 503 with the same shape, ok=false and an `error` string.
+      security: []
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

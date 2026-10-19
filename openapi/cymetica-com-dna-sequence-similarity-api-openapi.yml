@@ -1,0 +1,205 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public DNA sequence similarity API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: DNA sequence similarity
+paths:
+  /api/v1/dna/similar:
+    get:
+      tags:
+      - DNA sequence similarity
+      summary: Dna Similar
+      description: Top `limit` most similar sequences in the training set, best first (ObjectChecker score).
+      operationId: dna_similar_api_v1_dna_similar_get
+      parameters:
+      - name: q
+        in: query
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: The sequence of characters to match, e.g. incyclopedia
+          title: Q
+        description: The sequence of characters to match, e.g. incyclopedia
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 10
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  query:
+                    type: string
+                    description: The normalised query (lowercase, spaces as _).
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        rank:
+                          type: integer
+                        sequence:
+                          type: string
+                        score:
+                          type: number
+                        exact:
+                          type: boolean
+                      additionalProperties: true
+                  candidates_scored:
+                    type: integer
+                  training_set:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      label:
+                        type: string
+                      source:
+                        type: string
+                    additionalProperties: true
+                  algorithm:
+                    type: string
+                  seconds:
+                    type: number
+                additionalProperties: true
+                required:
+                - query
+                - results
+                - training_set
+                description: The most similar sequences in the training set, best first (ObjectChecker score).
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '503':
+          description: The index is not loaded.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                additionalProperties: true
+                required:
+                - error
+                - message
+      security: []
+  /api/v1/dna/status:
+    get:
+      tags:
+      - DNA sequence similarity
+      summary: Dna Status
+      description: Whether the index is present, and what it covers.
+      operationId: dna_status_api_v1_dna_status_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ready:
+                    type: boolean
+                  training_set:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      label:
+                        type: string
+                      source:
+                        type: string
+                    additionalProperties: true
+                  max_query_length:
+                    type: integer
+                  terms:
+                    type: integer
+                  objects:
+                    type: integer
+                additionalProperties: true
+                required:
+                - ready
+                - training_set
+                description: Index presence and coverage.
+      security: []
+components:
+  schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

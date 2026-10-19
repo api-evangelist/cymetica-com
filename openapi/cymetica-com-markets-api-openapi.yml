@@ -126,13 +126,163 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  markets:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        contract_address:
+                          type: string
+                        name:
+                          type: string
+                        description:
+                          type:
+                          - string
+                          - 'null'
+                        assets:
+                          type: array
+                          items: {}
+                        asset_type:
+                          type: string
+                          enum:
+                          - crypto
+                          - stock
+                          - bond
+                          - commodity
+                          - forex
+                          - derivative
+                          - structured_product
+                          - fund
+                          - prediction_contract
+                          - rwa
+                          - index
+                          - synthetic
+                          - custom
+                        token:
+                          type: string
+                        start_time:
+                          type: string
+                        end_time:
+                          type: string
+                        min_trade:
+                          type: number
+                        max_trade:
+                          type: number
+                        status:
+                          type: string
+                          enum:
+                          - pending
+                          - active
+                          - completed
+                          - cancelled
+                        total_pool:
+                          type:
+                          - number
+                          - 'null'
+                        market_analysis:
+                          type:
+                          - string
+                          - 'null'
+                        created_at:
+                          type:
+                          - string
+                          - 'null'
+                        updated_at:
+                          type:
+                          - string
+                          - 'null'
+                        source_url:
+                          type:
+                          - string
+                          - 'null'
+                        image_url:
+                          type:
+                          - string
+                          - 'null'
+                        og_title:
+                          type:
+                          - string
+                          - 'null'
+                        og_description:
+                          type:
+                          - string
+                          - 'null'
+                        is_featured:
+                          type: boolean
+                        duplicate_warning:
+                          type:
+                          - string
+                          - 'null'
+                        duplicate_info:
+                          type:
+                          - object
+                          - 'null'
+                        funding_wallet_address:
+                          type:
+                          - string
+                          - 'null'
+                        funding_balance_usd:
+                          type: number
+                      additionalProperties: false
+                      required:
+                      - contract_address
+                      - name
+                      - asset_type
+                      - token
+                      - start_time
+                      - end_time
+                      - min_trade
+                      - max_trade
+                      - status
+                  cursor:
+                    type:
+                    - string
+                    - 'null'
+                    description: Pass as `cursor` for the next page; null = last page.
+                additionalProperties: false
+                required:
+                - markets
+                description: Prediction markets, newest first (Kalshi-compatible list).
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '400':
+          description: Invalid pagination cursor.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
       security: []
 components:
   schemas:
@@ -160,6 +310,11 @@ components:
         type:
           type: string
           title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
       type: object
       required:
       - loc

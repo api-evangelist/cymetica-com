@@ -1,0 +1,673 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Nexus Subscription API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: nexus-subscription
+paths:
+  /api/v1/nexus/plans:
+    get:
+      tags:
+      - nexus-subscription
+      summary: List Plans
+      description: 'The four build plans (public, no auth). Prices in USDC per month;
+
+        allowances in usage units (compute at list price).'
+      operationId: list_plans_api_v1_nexus_plans_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enabled:
+                    type: boolean
+                    description: Whether build plans are open for subscription.
+                  plans:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code:
+                          type: string
+                          enum:
+                          - free
+                          - pro
+                          - max5
+                          - max20
+                        name:
+                          type: string
+                        price_usdc:
+                          type: string
+                          description: Decimal string, USDC per month.
+                        multiplier:
+                          type: string
+                          description: Allowance multiple of Pro, decimal string.
+                        session_units:
+                          type: string
+                          description: Usage units per session window.
+                        week_units:
+                          type: string
+                          description: Usage units per week.
+                        session_hours:
+                          type: integer
+                        features:
+                          type: array
+                          items:
+                            type: string
+                        et10_offer:
+                          type:
+                          - object
+                          - 'null'
+                          description: Limited-time ET10 subscriber offer for a paid plan while it is open; null otherwise.
+                          properties:
+                            et10_per_month:
+                              type: integer
+                            starts:
+                              type: string
+                            ends:
+                              type: string
+                            ends_label:
+                              type: string
+                          additionalProperties: true
+                      additionalProperties: false
+                      required:
+                      - code
+                      - name
+                      - price_usdc
+                  session_hours:
+                    type: integer
+                  week_days:
+                    type: integer
+                  filing_costs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        kind:
+                          type: string
+                        label:
+                          type: string
+                        units:
+                          type: string
+                          description: Decimal string, usage units.
+                        charged:
+                          type: string
+                        fits_session:
+                          type: object
+                          properties:
+                            free:
+                              type: boolean
+                            pro:
+                              type: boolean
+                            max5:
+                              type: boolean
+                            max20:
+                              type: boolean
+                          additionalProperties: true
+                          description: 'Per plan code: does one filing fit an empty session window.'
+                      additionalProperties: true
+                    description: What each metered filing costs in plan units.
+                  dynamic:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                      name:
+                        type: string
+                      available:
+                        type: boolean
+                      price_usdc:
+                        type:
+                        - string
+                        - 'null'
+                      pricing:
+                        type: string
+                      fee_pct:
+                        type: string
+                      rails:
+                        type: array
+                        items:
+                          type: string
+                      min_brrr_buy_usd:
+                        type: string
+                      features:
+                        type: array
+                        items:
+                          type: string
+                    additionalProperties: true
+                    description: The pay-as-you-go dynamic plan; may be absent.
+                  limit_rule:
+                    type: string
+                    description: How a filing is accepted or refused against the session and weekly allowance.
+                additionalProperties: false
+                required:
+                - enabled
+                - plans
+                - session_hours
+                - week_days
+      security: []
+  /api/v1/nexus/usage:
+    get:
+      tags:
+      - nexus-subscription
+      summary: Get Usage
+      description: 'The usage display: plan, session + weekly bars with reset times, extra
+
+        usage, limit resets, breakdown by kind for the chosen range, 7-day history.
+
+
+        ET-27414 (expire76): readable with the account''s own API key (X-API-Key)
+
+        as well as a session — an agent that files Build it Better requests against
+
+        these windows must be able to check its remaining window before it files.'
+      operationId: get_usage_api_v1_nexus_usage_get
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: range
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^(day|week)$
+          default: week
+          title: Range
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enabled:
+                    type: boolean
+                  plan:
+                    type: string
+                  plan_name:
+                    type: string
+                  multiplier:
+                    type: string
+                  price_usdc:
+                    type: string
+                  session:
+                    type: object
+                    properties:
+                      active:
+                        type: boolean
+                      used_units:
+                        type: string
+                      cap_units:
+                        type: string
+                      used_pct:
+                        type: integer
+                      started_at:
+                        type:
+                        - string
+                        - 'null'
+                      resets_at:
+                        type:
+                        - string
+                        - 'null'
+                      resets_in_s:
+                        type:
+                        - integer
+                        - 'null'
+                      resets_label:
+                        type:
+                        - string
+                        - 'null'
+                      hours:
+                        type: integer
+                    additionalProperties: false
+                    description: Current 5-hour session window; units are decimal strings.
+                  week:
+                    type: object
+                    properties:
+                      used_units:
+                        type: string
+                      cap_units:
+                        type: string
+                      used_pct:
+                        type: integer
+                      week_start:
+                        type: string
+                      resets_at:
+                        type: string
+                      resets_in_s:
+                        type: integer
+                      resets_label:
+                        type: string
+                      anchor:
+                        type: object
+                        properties:
+                          dow:
+                            type: integer
+                          minute:
+                            type: integer
+                        additionalProperties: false
+                    additionalProperties: false
+                  extra_usage:
+                    type:
+                    - object
+                    - 'null'
+                    properties:
+                      enabled:
+                        type: boolean
+                      month_spend_usdc:
+                        type: string
+                      monthly_cap_usdc:
+                        type:
+                        - string
+                        - 'null'
+                      markup:
+                        type: string
+                    description: Paid plans only; null otherwise.
+                  limit_resets_available:
+                    type: integer
+                  warn_pct:
+                    type: integer
+                  critical_pct:
+                    type: integer
+                  as_of:
+                    type: string
+                  degraded:
+                    type: boolean
+                    description: True when live counters were unavailable.
+                  breakdown:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        kind:
+                          type: string
+                        label:
+                          type: string
+                        units:
+                          type: string
+                        pct:
+                          type: integer
+                      additionalProperties: false
+                  flags:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        kind:
+                          type: string
+                        label:
+                          type: string
+                        pct:
+                          type: integer
+                      additionalProperties: false
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        kind:
+                          type: string
+                        label:
+                          type: string
+                        units:
+                          type: string
+                        at:
+                          type:
+                          - string
+                          - 'null'
+                        ref:
+                          type:
+                          - string
+                          - 'null'
+                        link:
+                          type:
+                          - string
+                          - 'null'
+                        overage:
+                          type: boolean
+                      additionalProperties: false
+                  history:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        day:
+                          type: string
+                        units:
+                          type: string
+                      additionalProperties: false
+                  plans:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code:
+                          type: string
+                          enum:
+                          - free
+                          - pro
+                          - max5
+                          - max20
+                        name:
+                          type: string
+                        price_usdc:
+                          type: string
+                          description: Decimal string, USDC per month.
+                        multiplier:
+                          type: string
+                          description: Allowance multiple of Pro, decimal string.
+                        session_units:
+                          type: string
+                          description: Usage units per session window.
+                        week_units:
+                          type: string
+                          description: Usage units per week.
+                        session_hours:
+                          type: integer
+                        features:
+                          type: array
+                          items:
+                            type: string
+                        et10_offer:
+                          type:
+                          - object
+                          - 'null'
+                          description: Limited-time ET10 subscriber offer for a paid plan while it is open; null otherwise.
+                          properties:
+                            et10_per_month:
+                              type: integer
+                            starts:
+                              type: string
+                            ends:
+                              type: string
+                            ends_label:
+                              type: string
+                          additionalProperties: true
+                      additionalProperties: false
+                      required:
+                      - code
+                      - name
+                      - price_usdc
+                additionalProperties: false
+                required:
+                - enabled
+                - plan
+                - plan_name
+                description: Your usage display. With build plans closed only {enabled:false, plan, plan_name}.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '503':
+          description: 'USAGE_UNAVAILABLE: usage is briefly unavailable; retry.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/nexus/subscription:
+    get:
+      tags:
+      - nexus-subscription
+      summary: Get Status
+      description: 'Get the user''s current Nexus subscription status and tier (session or
+
+        the account''s own API key — ET-27414).'
+      operationId: get_status_api_v1_nexus_subscription_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tier:
+                    type: string
+                    description: free | pay_per_use | premium | build-plan tier
+                  is_premium:
+                    type: boolean
+                  is_sim_mode:
+                    type: boolean
+                  usdc_balance:
+                    type: string
+                    description: Decimal string.
+                  interaction_fee:
+                    type: string
+                  premium_price:
+                    type: string
+                  subscription:
+                    type:
+                    - object
+                    - 'null'
+                    properties:
+                      id:
+                        type: integer
+                      user_id:
+                        type: integer
+                      tier:
+                        type:
+                        - string
+                        - 'null'
+                      status:
+                        type:
+                        - string
+                        - 'null'
+                      monthly_price:
+                        type:
+                        - string
+                        - 'null'
+                      interactions_this_period:
+                        type:
+                        - integer
+                        - 'null'
+                      period_start:
+                        type:
+                        - string
+                        - 'null'
+                      period_end:
+                        type:
+                        - string
+                        - 'null'
+                      auto_renew:
+                        type:
+                        - boolean
+                        - 'null'
+                      plan:
+                        type: string
+                      pending_tier:
+                        type:
+                        - string
+                        - 'null'
+                      week_anchor_dow:
+                        type:
+                        - integer
+                        - 'null'
+                      week_anchor_minute:
+                        type:
+                        - integer
+                        - 'null'
+                      extra_usage_enabled:
+                        type: boolean
+                      extra_usage_monthly_cap_usdc:
+                        type:
+                        - string
+                        - 'null'
+                      last_billing_at:
+                        type:
+                        - string
+                        - 'null'
+                      created_at:
+                        type:
+                        - string
+                        - 'null'
+                      cancelled_at:
+                        type:
+                        - string
+                        - 'null'
+                    additionalProperties: false
+                  build_plans_enabled:
+                    type: boolean
+                  plan:
+                    type: string
+                  plans:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code:
+                          type: string
+                          enum:
+                          - free
+                          - pro
+                          - max5
+                          - max20
+                        name:
+                          type: string
+                        price_usdc:
+                          type: string
+                          description: Decimal string, USDC per month.
+                        multiplier:
+                          type: string
+                          description: Allowance multiple of Pro, decimal string.
+                        session_units:
+                          type: string
+                          description: Usage units per session window.
+                        week_units:
+                          type: string
+                          description: Usage units per week.
+                        session_hours:
+                          type: integer
+                        features:
+                          type: array
+                          items:
+                            type: string
+                        et10_offer:
+                          type:
+                          - object
+                          - 'null'
+                          description: Limited-time ET10 subscriber offer for a paid plan while it is open; null otherwise.
+                          properties:
+                            et10_per_month:
+                              type: integer
+                            starts:
+                              type: string
+                            ends:
+                              type: string
+                            ends_label:
+                              type: string
+                          additionalProperties: true
+                      additionalProperties: false
+                      required:
+                      - code
+                      - name
+                      - price_usdc
+                  nexus_enabled:
+                    type: boolean
+                  microfund_covered_remaining:
+                    type: integer
+                    description: NEXUS interactions still covered by MicroFund backing.
+                additionalProperties: false
+                required:
+                - tier
+                - is_premium
+                - subscription
+                - plan
+                - nexus_enabled
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+components:
+  schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

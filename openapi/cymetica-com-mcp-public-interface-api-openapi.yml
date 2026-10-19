@@ -27,12 +27,53 @@ paths:
           - type: string
           - type: 'null'
           title: X-Api-Key
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
       responses:
         '200':
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  jsonrpc:
+                    type: string
+                    enum:
+                    - '2.0'
+                  id:
+                    type:
+                    - string
+                    - integer
+                    - 'null'
+                  result:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: 'Method-specific: initialize -> {protocolVersion, capabilities, serverInfo, _meta}; tools/list -> {tools: [{name, title, description, inputSchema, annotations}], _meta}; tools/call -> {content: [{type: ''text'', text: <JSON>}], isError}; resources/list -> {resources: [{uri, name, description}]}; resources/read -> {contents: [{uri, mimeType, text}]}; ping -> {}.'
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: integer
+                      message:
+                        type: string
+                    additionalProperties: false
+                    required:
+                    - code
+                    - message
+                    description: 'JSON-RPC error: -32700 parse, -32600 invalid request, -32601 unknown method, -32602 bad params, -32002 resource not found, -32603 internal.'
+                additionalProperties: false
+                required:
+                - jsonrpc
+                - id
+                description: 'JSON-RPC 2.0 response: exactly one of `result` / `error`. A notification (no id, method notifications/*) is answered 202 with an empty body.'
         '422':
           description: Validation Error
           content:
@@ -40,6 +81,45 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
       security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jsonrpc:
+                  type: string
+                  enum:
+                  - '2.0'
+                id:
+                  type:
+                  - string
+                  - integer
+                  - 'null'
+                method:
+                  type: string
+                  description: initialize | ping | tools/list | tools/call | resources/list | resources/read | notifications/*
+                params:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      description: 'tools/call: tool name.'
+                    arguments:
+                      type: object
+                      properties: {}
+                      additionalProperties: true
+                      description: 'tools/call: tool arguments.'
+                    uri:
+                      type: string
+                      description: 'resources/read: resource URI.'
+                  additionalProperties: true
+              additionalProperties: false
+              required:
+              - jsonrpc
+              - method
+              description: Single JSON-RPC 2.0 request (batches are refused).
   /mcp/v1/capabilities:
     get:
       tags:
@@ -56,12 +136,76 @@ paths:
           - type: string
           - type: 'null'
           title: X-Api-Key
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
       responses:
         '200':
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  protocol:
+                    type: string
+                  server:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      version:
+                        type: string
+                    additionalProperties: false
+                  trust_level:
+                    type: string
+                    description: unknown | recognized | trusted | allied
+                  capabilities:
+                    type: object
+                    properties:
+                      tools:
+                        type: integer
+                      resources:
+                        type: integer
+                      messaging:
+                        type: boolean
+                      webhooks:
+                        type: boolean
+                      websocket:
+                        type: boolean
+                    additionalProperties: false
+                    description: Counts and feature switches at this tier.
+                  tools_summary:
+                    type: array
+                    items:
+                      type: string
+                  resources_summary:
+                    type: array
+                    items:
+                      type: string
+                  rate_limits:
+                    type: object
+                    properties:
+                      requests_per_minute:
+                        type: integer
+                      requests_per_day:
+                        type: integer
+                    additionalProperties: false
+                  timestamp:
+                    type: string
+                additionalProperties: false
+                required:
+                - protocol
+                - server
+                - trust_level
+                - capabilities
+                - tools_summary
+                description: Platform capabilities at the caller's trust level (anonymous = unknown).
         '422':
           description: Validation Error
           content:
@@ -85,12 +229,67 @@ paths:
           - type: string
           - type: 'null'
           title: X-Api-Key
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
       responses:
         '200':
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  trust_level:
+                    type: string
+                    description: unknown | recognized | trusted | allied
+                  total_tools:
+                    type: integer
+                  tools_by_tier:
+                    type: object
+                    description: Tier name -> tools callable at that tier.
+                    additionalProperties:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                          description:
+                            type: string
+                          parameters:
+                            type: object
+                            properties: {}
+                            additionalProperties: true
+                            description: Parameter name -> spec.
+                          returns: {}
+                        additionalProperties: true
+                        required:
+                        - name
+                  timestamp:
+                    type: string
+                  caller:
+                    type: object
+                    properties:
+                      trust_level:
+                        type: string
+                      agent_id:
+                        type:
+                        - string
+                        - 'null'
+                    additionalProperties: false
+                    description: The calling key's own effective trust level (unknown when anonymous).
+                additionalProperties: false
+                required:
+                - trust_level
+                - total_tools
+                - tools_by_tier
+                - caller
         '422':
           description: Validation Error
           content:
@@ -133,13 +332,68 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  agent_id:
+                    type: string
+                  claimed:
+                    type: boolean
+                  new:
+                    type: boolean
+                    description: False when already claimed by you.
+                  counted_identities:
+                    type: array
+                    items:
+                      type: string
+                  bugs_confirmed:
+                    type: integer
+                  clob_fills:
+                    type: integer
+                  headline_positions:
+                    type: integer
+                additionalProperties: false
+                required:
+                - agent_id
+                - claimed
+                - new
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '403':
+          description: Called with an agent key, or your verified account email does not match the agent's contact email.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
   /mcp/v1/agents/{agent_id}/fund:
     post:
       tags:
@@ -183,13 +437,140 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  agent_id:
+                    type: string
+                  direction:
+                    type: string
+                    enum:
+                    - to_agent
+                    - to_owner
+                  currency:
+                    type: string
+                    enum:
+                    - USDC
+                  amount:
+                    type: string
+                    description: Decimal string, 6 dp.
+                  reference:
+                    type: string
+                  owner_available_after:
+                    type: string
+                    description: Decimal string, USDC.
+                  agent_available_after:
+                    type: string
+                    description: Decimal string, USDC.
+                  note:
+                    type: string
+                additionalProperties: false
+                required:
+                - agent_id
+                - direction
+                - currency
+                - amount
+                - reference
+                description: Internal ledger move between your account and the agent's spend account (nothing on-chain).
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '400':
+          description: Bad currency/direction, or amount exceeds the source account's available USDC.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '403':
+          description: Agent key used, or you have not claimed this agent.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: The agent has no spend account.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
   /mcp/v1/register:
     post:
       tags:
@@ -250,7 +631,78 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  owner_user_id:
+                    type: integer
+                  owner_usdc_available:
+                    type:
+                    - string
+                    - 'null'
+                    description: Decimal string; null if the read failed.
+                  agents:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        trust_level:
+                          type:
+                          - string
+                          - 'null'
+                        is_active:
+                          type: boolean
+                        spend_user_id:
+                          type:
+                          - integer
+                          - 'null'
+                        usdc_available:
+                          type:
+                          - string
+                          - 'null'
+                          description: Decimal string.
+                      additionalProperties: false
+                  fund_endpoint:
+                    type: string
+                additionalProperties: false
+                required:
+                - owner_user_id
+                - agents
+        '403':
+          description: Called with an agent key instead of the human owner's account.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
       security:
       - BearerJWT: []
       - ApiKeyAuth: []
@@ -264,16 +716,130 @@ paths:
       parameters:
       - name: x-api-key
         in: header
-        required: true
+        required: false
         schema:
-          type: string
+          anyOf:
+          - type: string
+          - type: 'null'
           title: X-Api-Key
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
       responses:
         '200':
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  description:
+                    type:
+                    - string
+                    - 'null'
+                  organization:
+                    type:
+                    - string
+                    - 'null'
+                  role:
+                    type:
+                    - string
+                    - 'null'
+                  trust_level:
+                    type: string
+                    description: unknown | recognized | trusted | allied
+                  trust_score:
+                    type: number
+                  is_verified:
+                    type: boolean
+                  created_at:
+                    type:
+                    - string
+                    - 'null'
+                  last_active_at:
+                    type:
+                    - string
+                    - 'null'
+                  metrics:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: Scoring metrics (observations, signals, clob_fills, bugs_confirmed, features_implemented, ...).
+                  progress:
+                    type: object
+                    properties:
+                      current_level:
+                        type: string
+                      next_level:
+                        type:
+                        - string
+                        - 'null'
+                      current_score:
+                        type: number
+                      points_needed:
+                        type: number
+                      next_threshold:
+                        type: number
+                      progress_percentage:
+                        type: number
+                      message:
+                        type: string
+                    additionalProperties: false
+                  trading_mode:
+                    type: object
+                    properties:
+                      account:
+                        type:
+                        - string
+                        - 'null'
+                        description: '"user:{id}" of the account the agent trades as.'
+                      simulation_mode:
+                        type:
+                        - boolean
+                        - 'null'
+                      paper_balance_usdc:
+                        type:
+                        - string
+                        - 'null'
+                      note:
+                        type: string
+                      account_note:
+                        type: string
+                    additionalProperties: false
+                  ai_nativeness:
+                    type: object
+                    properties:
+                      score:
+                        type: number
+                      classification:
+                        type:
+                        - string
+                        - 'null'
+                      assessed_at:
+                        type:
+                        - string
+                        - 'null'
+                    additionalProperties: false
+                    description: Present only when assessed.
+                additionalProperties: false
+                required:
+                - id
+                - name
+                - trust_level
+                - trust_score
+                - metrics
+                - progress
+                - trading_mode
+                description: The calling agent's profile (agent key required).
         '422':
           description: Validation Error
           content:
@@ -302,6 +868,14 @@ paths:
           - type: string
           - type: 'null'
           title: X-Api-Key
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
       requestBody:
         required: true
         content:
@@ -313,23 +887,193 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  tool:
+                    type: string
+                  result:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: The tool's own result object.
+                  latency_ms:
+                    type: integer
+                additionalProperties: false
+                required:
+                - success
+                - tool
+                - result
+                - latency_ms
+                description: Successful tool call. Failures are HTTP errors with `detail` {code, message} (or the tool's own typed failure payload with success=false and code).
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '400':
+          description: Tool reported a failure, or a parameter is missing/mistyped (detail.code says which).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '403':
+          description: 'INSUFFICIENT_TRUST: the tool needs a higher trust tier.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: TOOL_NOT_FOUND.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '429':
+          description: Rate limit for your trust tier exceeded.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
 components:
   schemas:
-    ToolInvokeRequest:
+    AgentFundRequest:
       properties:
-        params:
-          type: object
-          title: Params
+        amount:
+          anyOf:
+          - type: number
+            exclusiveMinimum: 0.0
+          - type: string
+          title: Amount
+          description: Amount to move (USDC)
+        currency:
+          type: string
+          title: Currency
+          description: Only USDC is supported
+          default: USDC
+        direction:
+          type: string
+          title: Direction
+          description: 'to_agent: owner -> agent spend account; to_owner: agent -> owner'
+          default: to_agent
       type: object
-      title: ToolInvokeRequest
-      description: Request to invoke a tool.
+      required:
+      - amount
+      title: AgentFundRequest
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
     AgentRegistrationRequest:
       properties:
         name:
@@ -372,6 +1116,13 @@ components:
           - type: 'null'
           title: Role
           description: 'Agent role: market_maker, trader, liquidity_provider, arbitrageur, analyst, bot_operator, other'
+        via:
+          anyOf:
+          - type: string
+            maxLength: 40
+          - type: 'null'
+          title: Via
+          description: 'Optional: which assistant/client is registering (muse, chatgpt, claude, …). Attribution only; also inferred from the agent name and User-Agent.'
       type: object
       required:
       - name
@@ -379,6 +1130,14 @@ components:
       - intended_use
       title: AgentRegistrationRequest
       description: Request to register a new MCP agent.
+    ToolInvokeRequest:
+      properties:
+        params:
+          type: object
+          title: Params
+      type: object
+      title: ToolInvokeRequest
+      description: Request to invoke a tool.
     ValidationError:
       properties:
         loc:
@@ -394,21 +1153,17 @@ components:
         type:
           type: string
           title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
       type: object
       required:
       - loc
       - msg
       - type
       title: ValidationError
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
     AgentRegistrationResponse:
       properties:
         agent_id:
@@ -460,11 +1215,11 @@ components:
           - type: string
           - type: 'null'
           title: Sdk Docs Url
-        profit_paths_count:
+        earning_mechanisms_count:
           anyOf:
           - type: integer
           - type: 'null'
-          title: Profit Paths Count
+          title: Earning Mechanisms Count
         paper_trading_available:
           anyOf:
           - type: boolean
@@ -515,29 +1270,6 @@ components:
         Extra keys (role guidance, welcome copy) are allowed so the documented shape
 
         is a floor, not a ceiling.'
-    AgentFundRequest:
-      properties:
-        amount:
-          anyOf:
-          - type: number
-            exclusiveMinimum: 0.0
-          - type: string
-          title: Amount
-          description: Amount to move (USDC)
-        currency:
-          type: string
-          title: Currency
-          description: Only USDC is supported
-          default: USDC
-        direction:
-          type: string
-          title: Direction
-          description: 'to_agent: owner -> agent spend account; to_owner: agent -> owner'
-          default: to_agent
-      type: object
-      required:
-      - amount
-      title: AgentFundRequest
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

@@ -132,6 +132,23 @@ paths:
                       required:
                       - run_id
                       description: One research-backtest run (index entry).
+                  figures_basis:
+                    type: object
+                    properties:
+                      headline:
+                        type: string
+                      round_trip_cost_pct:
+                        type:
+                        - number
+                        - 'null'
+                      net_field:
+                        type: string
+                      gross_field:
+                        type: string
+                      note:
+                        type: string
+                    additionalProperties: true
+                    description: 'Basis of the headline figures: gross of the round-trip cost; per-basket rows carry basket_gain_pct (gross) and basket_gain_net_pct (net).'
                 additionalProperties: false
                 required:
                 - runs
@@ -196,10 +213,38 @@ paths:
                     items:
                       type: object
                       additionalProperties: true
+                  summary:
+                    type: object
+                    additionalProperties: true
+                  parameters:
+                    type: object
+                    additionalProperties: true
+                  rows:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+                  figures_basis:
+                    type: object
+                    properties:
+                      headline:
+                        type: string
+                      round_trip_cost_pct:
+                        type:
+                        - number
+                        - 'null'
+                      net_field:
+                        type: string
+                      gross_field:
+                        type: string
+                      note:
+                        type: string
+                    additionalProperties: true
+                    description: 'Basis of the headline figures: gross of the round-trip cost; per-basket rows carry basket_gain_pct (gross) and basket_gain_net_pct (net).'
                 additionalProperties: true
                 required:
                 - run_id
-                description: Full stored run document (index fields + per-basket detail).
+                description: 'Full stored run document: the top-level fields above are aliases of summary/parameters/rows (`baskets` = `rows`). Headline figures are gross of the round-trip cost; each basket carries basket_gain_pct (gross) and basket_gain_net_pct (net).'
         '422':
           description: Validation Error
           content:
@@ -214,7 +259,7 @@ paths:
       summary: Run
       description: 'Enqueue a research backtest. Returns {run_id, instance_id, status} immediately; the client
 
-        streams progress over ws://…/ws/backtest/{instance_id}?run_id={run_id}.
+        streams progress over wss://cymetica.com/ws/backtest/{instance_id}?run_id={run_id}.
 
 
         Open to anonymous callers by design (the /backtest-rally page needs no login), bounded by
@@ -256,7 +301,7 @@ paths:
                     - queued
                   ws:
                     type: string
-                    description: 'Progress WebSocket path: /ws/backtest/{instance_id}?run_id=…'
+                    description: 'Progress WebSocket path: /ws/backtest/{instance_id}?run_id={job_id}'
                 additionalProperties: false
                 required:
                 - run_id
@@ -489,6 +534,298 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
       security: []
+  /api/v1/research-backtest/chart:
+    get:
+      tags:
+      - Research Backtest API
+      summary: Chart
+      description: 'BTC vs the all-time top backtest + current/recent live backtests (cumulative equity curves).
+
+
+        Powers the hero chart at the top of the leaderboard page. The page paints this once, then the
+
+        leaderboard WebSocket pushes a fresh copy on every run completion — no polling (R92).'
+      operationId: chart_api_v1_research_backtest_chart_get
+      parameters:
+      - name: live
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 4
+          title: Live
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  top:
+                    type:
+                    - object
+                    - 'null'
+                    properties:
+                      run_id:
+                        type: string
+                      label:
+                        type: string
+                      algo_model:
+                        type:
+                        - string
+                        - 'null'
+                      themes:
+                        type: array
+                        items:
+                          type: string
+                      mean_vs_btc_pct:
+                        type:
+                        - number
+                        - 'null'
+                      final_backtest:
+                        type: number
+                      final_btc:
+                        type: number
+                      points:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            t:
+                              type: string
+                            backtest:
+                              type: number
+                            btc:
+                              type: number
+                          additionalProperties: true
+                          required:
+                          - t
+                          - backtest
+                          - btc
+                    additionalProperties: true
+                    description: Cumulative % equity curve of one run (net of cost) vs BTC over the same trades.
+                  live:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        run_id:
+                          type: string
+                        label:
+                          type: string
+                        algo_model:
+                          type:
+                          - string
+                          - 'null'
+                        themes:
+                          type: array
+                          items:
+                            type: string
+                        mean_vs_btc_pct:
+                          type:
+                          - number
+                          - 'null'
+                        final_backtest:
+                          type: number
+                        final_btc:
+                          type: number
+                        points:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              t:
+                                type: string
+                              backtest:
+                                type: number
+                              btc:
+                                type: number
+                            additionalProperties: true
+                            required:
+                            - t
+                            - backtest
+                            - btc
+                      additionalProperties: true
+                      description: Cumulative % equity curve of one run (net of cost) vs BTC over the same trades.
+                additionalProperties: true
+                required:
+                - top
+                - live
+                description: '`top` = all-time best run by mean_vs_btc_pct (null when there are no runs); `live` = newest completed runs excluding `top`, up to the `live` query parameter (1..8, default 4). Query: `live` integer 1..8, default 4.'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/research-backtest/runs/{run_id}/launch-rally-card:
+    post:
+      tags:
+      - Research Backtest API
+      summary: Launch Rally Card
+      description: 'Launch a basket from a backtest run as a tradeable Rally Card (user''s own $0.99 fee, no
+
+        backing). Idempotent: launching the same basket again returns the existing card.'
+      operationId: launch_rally_card_api_v1_research_backtest_runs__run_id__launch_rally_card_post
+      security:
+      - BearerJWT: []
+      parameters:
+      - name: run_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Run Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              title: Body
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  card_id:
+                    type: string
+                  direction:
+                    type: string
+                  card_url:
+                    type: string
+                  is_public:
+                    type: boolean
+                  trade_symbol:
+                    type:
+                    - string
+                    - 'null'
+                  trade_url:
+                    type:
+                    - string
+                    - 'null'
+                  leaderboard_url:
+                    type:
+                    - string
+                    - 'null'
+                  rationale:
+                    type:
+                    - string
+                    - 'null'
+                  already_existed:
+                    type: boolean
+                    description: True when this basket was already launched (idempotent).
+                additionalProperties: true
+                required:
+                - ok
+                - card_id
+                description: Launched (or already-existing) Rally Card for the basket. Requires a session or X-API-Key.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '402':
+          description: Insufficient funds for the card creation fee.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '400':
+          description: Invalid basket_index or basket has no tradeable legs.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: Run not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
 components:
   schemas:
     HTTPValidationError:
@@ -500,6 +837,32 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
     ResearchBacktestRequest:
       properties:
         label:
@@ -700,27 +1063,6 @@ components:
           default: 0.0
       type: object
       title: ResearchBacktestRequest
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

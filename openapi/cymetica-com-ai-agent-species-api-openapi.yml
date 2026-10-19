@@ -1,0 +1,437 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public AI Agent Species API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: AI Agent Species
+paths:
+  /api/v1/agents/species:
+    get:
+      tags:
+      - AI Agent Species
+      summary: List Species
+      description: 'List all AI trading agent species.
+
+
+        Returns all platform species with their performance metrics.'
+      operationId: list_species_api_v1_agents_species_get
+      parameters:
+      - name: active_only
+        in: query
+        required: false
+        schema:
+          type: boolean
+          description: Only return active species
+          default: true
+          title: Active Only
+        description: Only return active species
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SpeciesResponse'
+                title: Response List Species Api V1 Agents Species Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/agents/instances/{instance_id}/events:
+    get:
+      tags:
+      - AI Agent Species
+      summary: Get Clone Events
+      description: 'The clone''s risk-engine timeline, newest first: trading_resumed,
+
+        stop_loss_triggered, take_profit_triggered, breakeven_triggered, ... with
+
+        the P&L % at the moment and the threshold judged against.
+
+
+        CentCom #27161/#27166 (2026-09-25): five paper clones auto-paused on
+
+        take-profit / stop-loss and the owner''s agent had nowhere to read why —
+
+        the my-clones rows carried no reason and the event log had no door.
+
+        Owner-only, like the rest of the instance surface.'
+      operationId: get_clone_events_api_v1_agents_instances__instance_id__events_get
+      parameters:
+      - name: instance_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Instance Id
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 100
+          title: Limit
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  instance_id:
+                    type: string
+                  is_trading:
+                    type:
+                    - boolean
+                    - 'null'
+                  auto_pause_reason:
+                    type:
+                    - string
+                    - 'null'
+                  auto_pause_pnl_pct:
+                    type:
+                    - number
+                    - 'null'
+                  auto_pause_at:
+                    type:
+                    - string
+                    - 'null'
+                  events:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        event_type:
+                          type: string
+                          description: e.g. trading_resumed, stop_loss_triggered, take_profit_triggered, breakeven_triggered.
+                        pnl_pct:
+                          type:
+                          - number
+                          - 'null'
+                        threshold_pct:
+                          type:
+                          - number
+                          - 'null'
+                        created_at:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: false
+                additionalProperties: false
+                required:
+                - instance_id
+                - events
+                description: The owner's clone risk-engine timeline, newest first (`limit` <= 500).
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '404':
+          description: Agent instance not found (or not owned by the caller).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/agents/species/{species_id}/trades:
+    get:
+      tags:
+      - AI Agent Species
+      summary: Get Species Trades
+      description: 'Recent REAL executions of a species, across all of its instances.
+
+
+        The species card''s figures (ai_agent_stats_sync) count every instance''s trades
+
+        that carry a real on-chain tx hash, clones included; this list is the same set,
+
+        so a species that shows 3,593 trades (FIB) lets a caller read 3,593 trades
+
+        (bounty report ET-29395: "FIB and PCPN list thousands of trades, none of which
+
+        can be retrieved" — the list used to cover platform instances only, and those
+
+        two species have none). No owner is named: a trade row carries the instance''s
+
+        symbol, side, size, tx hash and result only.'
+      operationId: get_species_trades_api_v1_agents_species__species_id__trades_get
+      parameters:
+      - name: species_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Species Id
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+          title: Page
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Page Size
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  trades:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        symbol:
+                          type: string
+                        side:
+                          type: string
+                        amount_usdc:
+                          type: number
+                        tx_hash:
+                          type:
+                          - string
+                          - 'null'
+                        basescan_url:
+                          type:
+                          - string
+                          - 'null'
+                        profit_usdc:
+                          type:
+                          - number
+                          - 'null'
+                        is_closed:
+                          type: boolean
+                        is_winner:
+                          type:
+                          - boolean
+                          - 'null'
+                        executed_at:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: true
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  total_count:
+                    type: integer
+                additionalProperties: true
+                required:
+                - trades
+                description: A species' real executions across every instance (clones included) — the same rows its public figures count — newest first; `species_id` is the species id or its symbol (FIB, PCPN, ...).
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+components:
+  schemas:
+    SpeciesResponse:
+      properties:
+        id:
+          type: string
+          title: Id
+        name:
+          type: string
+          title: Name
+        symbol:
+          type: string
+          title: Symbol
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        tagline:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Tagline
+        avatar_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Avatar Url
+        color_primary:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Color Primary
+        strategy_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Strategy Type
+        risk_profile:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Risk Profile
+        total_profit_usd:
+          type: number
+          title: Total Profit Usd
+        total_trades:
+          type: integer
+          title: Total Trades
+        win_rate:
+          type: number
+          title: Win Rate
+        rank:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Rank
+        rank_change_24h:
+          type: integer
+          title: Rank Change 24H
+        total_clones:
+          type: integer
+          title: Total Clones
+        is_active:
+          type: boolean
+          title: Is Active
+      type: object
+      required:
+      - id
+      - name
+      - symbol
+      - description
+      - tagline
+      - avatar_url
+      - color_primary
+      - strategy_type
+      - risk_profile
+      - total_profit_usd
+      - total_trades
+      - win_rate
+      - rank
+      - rank_change_24h
+      - total_clones
+      - is_active
+      title: SpeciesResponse
+      description: Response schema for agent species.
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

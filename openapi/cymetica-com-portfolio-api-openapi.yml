@@ -89,26 +89,6 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
-    PositionsResponse:
-      properties:
-        positions:
-          items:
-            $ref: '#/components/schemas/PositionItem'
-          type: array
-          title: Positions
-        total:
-          type: integer
-          title: Total
-        has_more:
-          type: boolean
-          title: Has More
-      type: object
-      required:
-      - positions
-      - total
-      - has_more
-      title: PositionsResponse
-      description: List of user positions.
     PositionItem:
       properties:
         market_title:
@@ -149,27 +129,26 @@ components:
       type: object
       title: PositionItem
       description: Single position entry.
-    ValidationError:
+    PositionsResponse:
       properties:
-        loc:
+        positions:
           items:
-            anyOf:
-            - type: string
-            - type: integer
+            $ref: '#/components/schemas/PositionItem'
           type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
+          title: Positions
+        total:
+          type: integer
+          title: Total
+        has_more:
+          type: boolean
+          title: Has More
       type: object
       required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
+      - positions
+      - total
+      - has_more
+      title: PositionsResponse
+      description: List of user positions.
     PortfolioSummaryResponse:
       properties:
         balance_usdc:
@@ -253,6 +232,32 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

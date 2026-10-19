@@ -1,0 +1,1687 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Supply Analyzer API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: Supply Analyzer
+paths:
+  /api/v1/supply-analyzer/analyze:
+    get:
+      tags:
+      - Supply Analyzer
+      summary: Analyze Get
+      description: 'A token''s supply: the five tiles (circulating, market cap to FDV, dilution over 12 months, to holders,
+
+        staked), the next unlock, tokens out month by month, every input with its source and date, the unknown
+
+        inputs by name.'
+      operationId: analyze_get_api_v1_supply_analyzer_analyze_get
+      parameters:
+      - name: symbol
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 40
+          - type: 'null'
+          description: Ticker (Gem Screener coins), slug or CoinGecko id
+          title: Symbol
+        description: Ticker (Gem Screener coins), slug or CoinGecko id
+      - name: contract
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 160
+          - type: 'null'
+          description: Token contract address; identifies it exactly
+          title: Contract
+        description: Token contract address; identifies it exactly
+      - name: chain
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 32
+          - type: 'null'
+          description: Chain of the contract (ethereum, bsc, arbitrum, ...)
+          title: Chain
+        description: Chain of the contract (ethereum, bsc, arbitrum, ...)
+      - name: include_months
+        in: query
+        required: false
+        schema:
+          type: boolean
+          description: Also return the monthly series
+          default: true
+          title: Include Months
+        description: Also return the monthly series
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      symbol:
+                        type: string
+                      gecko_id:
+                        type: string
+                      slug:
+                        type: string
+                      kind:
+                        type: string
+                      chain:
+                        type: string
+                      address:
+                        type: string
+                      logo:
+                        type: string
+                      gem_screener: {}
+                      by:
+                        type: string
+                      key:
+                        type: string
+                    additionalProperties: true
+                  type:
+                    type: string
+                    description: Always 'analysis'.
+                  status:
+                    type: string
+                    enum:
+                    - measured
+                    - range
+                    - unknown
+                  tiles:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: 'ET-31267: the five tiles on top of the page and the Gem Screener card. circulating {tokens, of, basis max|total, pct, price_usd}; fdv {market_cap_usd, fdv_usd, basis, x, tone red>=3x|green<=1.5x|plain}; dilution_12m {pct, net_of_buybacks_pct, new_tokens_12m, bought_back_12m, month_tokens, kinds, schedule_known, emissions_known, tone red>=25%|green<5%}; to_holders {paid, usd_month, share_pct, how, buyback_usd_month, payout_usd_month} or null; staked {tokens, locked_tokens, exit_days, exit_text, x_circulating, own_tokens, tone: red only when at least the circulating supply can leave within 7 days under a PUBLISHED exit rule} or null when staking is not measured; next_unlock_row {kind scheduled|none_scheduled|unknown, ts, days, tokens, pct_of_circulating, recipients[{who, tokens}], text, emissions_month}; supply_basis; not_issued (max minus total supply); schedule_known; emissions_known. Each tile is null when its inputs were not read.'
+                  dilution_12m_pct:
+                    type:
+                    - number
+                    - 'null'
+                    description: 'ET-31267: new tokens in the next 12 months (published schedule + measured emissions) / circulating, in %. Null when no schedule and no emissions were read: nothing is estimated in its place.'
+                  schedule_published:
+                    type: boolean
+                    description: 'ET-31644: false when no vesting schedule and no emissions were read. Then yearly_pct, yearly_range and out_by_month are null/empty: the change is unknown, never 0.'
+                  next_unlock:
+                    anyOf:
+                    - type: object
+                      properties:
+                        ts:
+                          type:
+                          - number
+                          - 'null'
+                        days:
+                          type:
+                          - number
+                          - 'null'
+                        tokens:
+                          type:
+                          - number
+                          - 'null'
+                        who:
+                          type:
+                          - string
+                          - 'null'
+                        tranches:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              ts:
+                                type: number
+                              tokens:
+                                type: number
+                              who:
+                                type:
+                                - string
+                                - 'null'
+                            additionalProperties: true
+                        kind:
+                          type: string
+                          description: 'Only when no day is ahead: unknown (no schedule read on any feed) or none_scheduled (a schedule was read and nothing is ahead).'
+                        why:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: true
+                      description: 'The next day on the schedule with tokens reaching their date: ts, days from now, the tokens of every tranche that day summed, the recipients named in who, and each part in tranches (ET-30853). Null when the record has no schedule data at all.'
+                    - type: 'null'
+                  next_unlock_counted_from:
+                    type: string
+                    description: ISO time the next unlock's days were counted from (the moment of serving, on REST, batch, MCP and the socket alike).
+                  out_by_month:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        label:
+                          type: string
+                        ts:
+                          type: number
+                        out:
+                          type: number
+                      additionalProperties: true
+                    description: 'ET-31267: tokens out at the end of each month = circulating + scheduled unlocks + emissions - buybacks - burns; empty when no schedule is published.'
+                  price_usd:
+                    type: number
+                  market_cap_usd:
+                    type: number
+                  market_as_of:
+                    type: string
+                    description: 'ET-31644: present when the price and market cap were brought up to the Gem Screener''s newer reading at serving time (one market cap on card and drawer).'
+                  max_supply:
+                    type:
+                    - number
+                    - 'null'
+                  total_supply:
+                    type: number
+                  circulating:
+                    type: number
+                  supply_gap:
+                    type:
+                    - number
+                    - 'null'
+                    description: 'Max supply minus total supply: not issued yet or burned (no feed says which).'
+                  max_supply_contradicted:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: Set when the feed's max supply is below the tokens that exist; max_supply is then null.
+                  staking_contradicted:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: Set when the feed's staked amount cannot sit beside the circulating and total supply (together they exceed the tokens that exist); the stake is then not used and named unknown.
+                  dilution_week_pct:
+                    type:
+                    - number
+                    - 'null'
+                    description: New tokens of the next 30 days at today's price, as % of market cap a week.
+                  inputs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                        value: {}
+                        unit:
+                          type: string
+                        source:
+                          type: string
+                        as_of: {}
+                        url:
+                          type: string
+                        estimated:
+                          type: boolean
+                        stale:
+                          type: boolean
+                        note:
+                          type: string
+                      additionalProperties: true
+                    description: Every figure used, with its source and date.
+                  unknown:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        input:
+                          type: string
+                        why:
+                          type: string
+                      additionalProperties: true
+                  unknown_names:
+                    type: array
+                    items:
+                      type: string
+                  source_unknown:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        input:
+                          type: string
+                        why:
+                          type: string
+                      additionalProperties: true
+                    description: The unknown inputs as the sources named them.
+                  sources_note:
+                    type:
+                    - string
+                    - 'null'
+                  note:
+                    type:
+                    - string
+                    - 'null'
+                  refreshed_at:
+                    type: string
+                  refreshed_ts:
+                    type: integer
+                  next_refresh_ts:
+                    type: integer
+                  from_cache:
+                    type: boolean
+                  version:
+                    type: string
+                  flow_version:
+                    type: string
+                  assembly_version:
+                    type: string
+                  definitions:
+                    type: array
+                    items:
+                      type: string
+                  test:
+                    type: string
+                  not_advice:
+                    type: string
+                  yearly_pct:
+                    type:
+                    - number
+                    - 'null'
+                    description: 'Secondary flow figure: (in - out) x 12 / circulating-and-unlocked supply, in %. Null when no schedule is published.'
+                  yearly_range:
+                    type: array
+                    items:
+                      type: number
+                    description: '[low, high] of yearly_pct when a buyback share is unstated; null when no schedule is published.'
+                  yearly_range_parts:
+                    type: array
+                    items:
+                      type: object
+                      properties: {}
+                      additionalProperties: true
+                    description: What makes the range as wide as it is.
+                  tone:
+                    type: string
+                    enum:
+                    - red
+                    - green
+                    - grey
+                  sentence:
+                    type: string
+                  pile_today:
+                    type:
+                    - number
+                    - 'null'
+                  in_play_today:
+                    type:
+                    - number
+                    - 'null'
+                  reserve_today:
+                    type:
+                    - number
+                    - 'null'
+                  slices_today:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                        name:
+                          type: string
+                        amount:
+                          type: number
+                        share_pct:
+                          type: number
+                      additionalProperties: true
+                    description: 'Flow internals: today''s split of the supply by state.'
+                  today:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: This month's row of months[].
+                  months:
+                    type: array
+                    items:
+                      type: object
+                      properties: {}
+                      additionalProperties: true
+                    description: 'One row a month from today to the last scheduled event (24-60): ts, label, pile, in {vesting, locks_ending, emissions, unstaking, total}, out {buyback, burn, staking, total}, slices, reserve, yearly_pct, yearly_range, tranches.'
+                  n_months:
+                    type: integer
+                  month_seconds:
+                    type: number
+                  last_vesting_ts:
+                    type:
+                    - number
+                    - 'null'
+                  last_vesting_month:
+                    type:
+                    - string
+                    - 'null'
+                  pile_not_available:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: '{free, staked, pile, total} when circulating plus staked exceeds the tokens that exist; the reason is in note.'
+                  inflow_unknown:
+                    type: boolean
+                  outflow_unknown:
+                    type: boolean
+                  buyback_share_unknown:
+                    type: boolean
+                  buyback_split_known:
+                    type: boolean
+                  circulating_includes_staked:
+                    type: boolean
+                  staked_own:
+                    type:
+                    - number
+                    - 'null'
+                  staking_exit_days:
+                    type:
+                    - number
+                    - 'null'
+                  insiders_moved:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: Tokens published insider wallets moved, when read.
+                  flow_inputs:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: The raw inputs the flow was computed from.
+                additionalProperties: true
+                required:
+                - token
+                - status
+                - inputs
+                - refreshed_at
+                description: 'A token''s supply: the five tiles, the next unlock, tokens out month by month, every input with source and date.'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '300':
+          description: 'AMBIGUOUS_TICKER: the ticker belongs to several Gem Screener tokens; `options[]` lists them (pick by slug, CoinGecko id or contract).'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '400':
+          description: MISSING_INPUT, INVALID_SYMBOL, INVALID_CONTRACT, CHAIN_NEEDED, UNSUPPORTED_CHAIN (any chain name no feed here reads, tron and bitcoin included; `supported[]` lists the chains), NO_PRICE, TOO_MANY_ITEMS (batch, max 300).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: 'UNKNOWN_SYMBOL: not a Gem Screener coin; pass its contract and chain.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '429':
+          description: Rate limited.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: 'UPSTREAM_UNAVAILABLE: the sources could not be read; the token is queued.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+    post:
+      tags:
+      - Supply Analyzer
+      summary: Analyze Post
+      description: 'Same as GET: {"symbol"} or {"contract","chain"}.'
+      operationId: analyze_post_api_v1_supply_analyzer_analyze_post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              title: Body
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      symbol:
+                        type: string
+                      gecko_id:
+                        type: string
+                      slug:
+                        type: string
+                      kind:
+                        type: string
+                      chain:
+                        type: string
+                      address:
+                        type: string
+                      logo:
+                        type: string
+                      gem_screener: {}
+                      by:
+                        type: string
+                      key:
+                        type: string
+                    additionalProperties: true
+                  type:
+                    type: string
+                    description: Always 'analysis'.
+                  status:
+                    type: string
+                    enum:
+                    - measured
+                    - range
+                    - unknown
+                  tiles:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: 'ET-31267: the five tiles on top of the page and the Gem Screener card. circulating {tokens, of, basis max|total, pct, price_usd}; fdv {market_cap_usd, fdv_usd, basis, x, tone red>=3x|green<=1.5x|plain}; dilution_12m {pct, net_of_buybacks_pct, new_tokens_12m, bought_back_12m, month_tokens, kinds, schedule_known, emissions_known, tone red>=25%|green<5%}; to_holders {paid, usd_month, share_pct, how, buyback_usd_month, payout_usd_month} or null; staked {tokens, locked_tokens, exit_days, exit_text, x_circulating, own_tokens, tone: red only when at least the circulating supply can leave within 7 days under a PUBLISHED exit rule} or null when staking is not measured; next_unlock_row {kind scheduled|none_scheduled|unknown, ts, days, tokens, pct_of_circulating, recipients[{who, tokens}], text, emissions_month}; supply_basis; not_issued (max minus total supply); schedule_known; emissions_known. Each tile is null when its inputs were not read.'
+                  dilution_12m_pct:
+                    type:
+                    - number
+                    - 'null'
+                    description: 'ET-31267: new tokens in the next 12 months (published schedule + measured emissions) / circulating, in %. Null when no schedule and no emissions were read: nothing is estimated in its place.'
+                  schedule_published:
+                    type: boolean
+                    description: 'ET-31644: false when no vesting schedule and no emissions were read. Then yearly_pct, yearly_range and out_by_month are null/empty: the change is unknown, never 0.'
+                  next_unlock:
+                    anyOf:
+                    - type: object
+                      properties:
+                        ts:
+                          type:
+                          - number
+                          - 'null'
+                        days:
+                          type:
+                          - number
+                          - 'null'
+                        tokens:
+                          type:
+                          - number
+                          - 'null'
+                        who:
+                          type:
+                          - string
+                          - 'null'
+                        tranches:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              ts:
+                                type: number
+                              tokens:
+                                type: number
+                              who:
+                                type:
+                                - string
+                                - 'null'
+                            additionalProperties: true
+                        kind:
+                          type: string
+                          description: 'Only when no day is ahead: unknown (no schedule read on any feed) or none_scheduled (a schedule was read and nothing is ahead).'
+                        why:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: true
+                      description: 'The next day on the schedule with tokens reaching their date: ts, days from now, the tokens of every tranche that day summed, the recipients named in who, and each part in tranches (ET-30853). Null when the record has no schedule data at all.'
+                    - type: 'null'
+                  next_unlock_counted_from:
+                    type: string
+                    description: ISO time the next unlock's days were counted from (the moment of serving, on REST, batch, MCP and the socket alike).
+                  out_by_month:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        label:
+                          type: string
+                        ts:
+                          type: number
+                        out:
+                          type: number
+                      additionalProperties: true
+                    description: 'ET-31267: tokens out at the end of each month = circulating + scheduled unlocks + emissions - buybacks - burns; empty when no schedule is published.'
+                  price_usd:
+                    type: number
+                  market_cap_usd:
+                    type: number
+                  market_as_of:
+                    type: string
+                    description: 'ET-31644: present when the price and market cap were brought up to the Gem Screener''s newer reading at serving time (one market cap on card and drawer).'
+                  max_supply:
+                    type:
+                    - number
+                    - 'null'
+                  total_supply:
+                    type: number
+                  circulating:
+                    type: number
+                  supply_gap:
+                    type:
+                    - number
+                    - 'null'
+                    description: 'Max supply minus total supply: not issued yet or burned (no feed says which).'
+                  max_supply_contradicted:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: Set when the feed's max supply is below the tokens that exist; max_supply is then null.
+                  staking_contradicted:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: Set when the feed's staked amount cannot sit beside the circulating and total supply (together they exceed the tokens that exist); the stake is then not used and named unknown.
+                  dilution_week_pct:
+                    type:
+                    - number
+                    - 'null'
+                    description: New tokens of the next 30 days at today's price, as % of market cap a week.
+                  inputs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                        value: {}
+                        unit:
+                          type: string
+                        source:
+                          type: string
+                        as_of: {}
+                        url:
+                          type: string
+                        estimated:
+                          type: boolean
+                        stale:
+                          type: boolean
+                        note:
+                          type: string
+                      additionalProperties: true
+                    description: Every figure used, with its source and date.
+                  unknown:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        input:
+                          type: string
+                        why:
+                          type: string
+                      additionalProperties: true
+                  unknown_names:
+                    type: array
+                    items:
+                      type: string
+                  source_unknown:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        input:
+                          type: string
+                        why:
+                          type: string
+                      additionalProperties: true
+                    description: The unknown inputs as the sources named them.
+                  sources_note:
+                    type:
+                    - string
+                    - 'null'
+                  note:
+                    type:
+                    - string
+                    - 'null'
+                  refreshed_at:
+                    type: string
+                  refreshed_ts:
+                    type: integer
+                  next_refresh_ts:
+                    type: integer
+                  from_cache:
+                    type: boolean
+                  version:
+                    type: string
+                  flow_version:
+                    type: string
+                  assembly_version:
+                    type: string
+                  definitions:
+                    type: array
+                    items:
+                      type: string
+                  test:
+                    type: string
+                  not_advice:
+                    type: string
+                  yearly_pct:
+                    type:
+                    - number
+                    - 'null'
+                    description: 'Secondary flow figure: (in - out) x 12 / circulating-and-unlocked supply, in %. Null when no schedule is published.'
+                  yearly_range:
+                    type: array
+                    items:
+                      type: number
+                    description: '[low, high] of yearly_pct when a buyback share is unstated; null when no schedule is published.'
+                  yearly_range_parts:
+                    type: array
+                    items:
+                      type: object
+                      properties: {}
+                      additionalProperties: true
+                    description: What makes the range as wide as it is.
+                  tone:
+                    type: string
+                    enum:
+                    - red
+                    - green
+                    - grey
+                  sentence:
+                    type: string
+                  pile_today:
+                    type:
+                    - number
+                    - 'null'
+                  in_play_today:
+                    type:
+                    - number
+                    - 'null'
+                  reserve_today:
+                    type:
+                    - number
+                    - 'null'
+                  slices_today:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                        name:
+                          type: string
+                        amount:
+                          type: number
+                        share_pct:
+                          type: number
+                      additionalProperties: true
+                    description: 'Flow internals: today''s split of the supply by state.'
+                  today:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: This month's row of months[].
+                  months:
+                    type: array
+                    items:
+                      type: object
+                      properties: {}
+                      additionalProperties: true
+                    description: 'One row a month from today to the last scheduled event (24-60): ts, label, pile, in {vesting, locks_ending, emissions, unstaking, total}, out {buyback, burn, staking, total}, slices, reserve, yearly_pct, yearly_range, tranches.'
+                  n_months:
+                    type: integer
+                  month_seconds:
+                    type: number
+                  last_vesting_ts:
+                    type:
+                    - number
+                    - 'null'
+                  last_vesting_month:
+                    type:
+                    - string
+                    - 'null'
+                  pile_not_available:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: '{free, staked, pile, total} when circulating plus staked exceeds the tokens that exist; the reason is in note.'
+                  inflow_unknown:
+                    type: boolean
+                  outflow_unknown:
+                    type: boolean
+                  buyback_share_unknown:
+                    type: boolean
+                  buyback_split_known:
+                    type: boolean
+                  circulating_includes_staked:
+                    type: boolean
+                  staked_own:
+                    type:
+                    - number
+                    - 'null'
+                  staking_exit_days:
+                    type:
+                    - number
+                    - 'null'
+                  insiders_moved:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: Tokens published insider wallets moved, when read.
+                  flow_inputs:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: The raw inputs the flow was computed from.
+                additionalProperties: true
+                required:
+                - token
+                - status
+                - inputs
+                - refreshed_at
+                description: 'A token''s supply: the five tiles, the next unlock, tokens out month by month, every input with source and date.'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '300':
+          description: 'AMBIGUOUS_TICKER: the ticker belongs to several Gem Screener tokens; `options[]` lists them (pick by slug, CoinGecko id or contract).'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '400':
+          description: MISSING_INPUT, INVALID_SYMBOL, INVALID_CONTRACT, CHAIN_NEEDED, UNSUPPORTED_CHAIN (any chain name no feed here reads, tron and bitcoin included; `supported[]` lists the chains), NO_PRICE, TOO_MANY_ITEMS (batch, max 300).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: 'UNKNOWN_SYMBOL: not a Gem Screener coin; pass its contract and chain.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '429':
+          description: Rate limited.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: 'UPSTREAM_UNAVAILABLE: the sources could not be read; the token is queued.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+  /api/v1/supply-analyzer/batch:
+    post:
+      tags:
+      - Supply Analyzer
+      summary: Batch Post
+      description: 'Up to 300 tokens in one call: {"items":[{"symbol":"HYPE"},{"contract":"0x…","chain":"ethereum"}]}.'
+      operationId: batch_post_api_v1_supply_analyzer_batch_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              title: Body
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  statuses:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  elapsed_ms:
+                    type: integer
+                  as_of:
+                    type: string
+                  test:
+                    type: string
+                  not_advice:
+                    type: string
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties: {}
+                      additionalProperties: true
+                    description: 'Same order as the input. Each: token, status, tiles, dilution_12m_pct, schedule_published, next_unlock, next_unlock_counted_from, price_usd, market_cap_usd, market_as_of, circulating, total_supply, max_supply, dilution_week_pct, unknown_names, refreshed_at; flow internals yearly_pct, yearly_range, tone, pile_24m, curve_months (empty when no schedule is published).'
+                additionalProperties: true
+                required:
+                - count
+                - items
+                description: Many tokens' supply in one call.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '300':
+          description: 'AMBIGUOUS_TICKER: the ticker belongs to several Gem Screener tokens; `options[]` lists them (pick by slug, CoinGecko id or contract).'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '400':
+          description: MISSING_INPUT or TOO_MANY_ITEMS (max 300).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: 'UNKNOWN_SYMBOL: not a Gem Screener coin; pass its contract and chain.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '429':
+          description: Rate limited.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: 'UPSTREAM_UNAVAILABLE: the sources could not be read; the token is queued.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+  /api/v1/supply-analyzer/batch/gem-screener:
+    get:
+      tags:
+      - Supply Analyzer
+      summary: Batch Gem Screener
+      description: 'Every Gem Screener coin (apps and chains), one row each: the yearly change,
+
+        the slices of today''s pie, the next unlock and the dilution figure read from the same schedule.'
+      operationId: batch_gem_screener_api_v1_supply_analyzer_batch_gem_screener_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  statuses:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  elapsed_ms:
+                    type: integer
+                  as_of:
+                    type: string
+                  test:
+                    type: string
+                  not_advice:
+                    type: string
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties: {}
+                      additionalProperties: true
+                    description: 'Same order as the input. Each: token, status, tiles, dilution_12m_pct, schedule_published, next_unlock, next_unlock_counted_from, price_usd, market_cap_usd, market_as_of, circulating, total_supply, max_supply, dilution_week_pct, unknown_names, refreshed_at; flow internals yearly_pct, yearly_range, tone, pile_24m, curve_months (empty when no schedule is published).'
+                additionalProperties: true
+                required:
+                - count
+                - items
+                description: Many tokens' supply in one call.
+        '300':
+          description: 'AMBIGUOUS_TICKER: the ticker belongs to several Gem Screener tokens; `options[]` lists them (pick by slug, CoinGecko id or contract).'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '400':
+          description: MISSING_INPUT, INVALID_SYMBOL, INVALID_CONTRACT, CHAIN_NEEDED, UNSUPPORTED_CHAIN (any chain name no feed here reads, tron and bitcoin included; `supported[]` lists the chains), NO_PRICE, TOO_MANY_ITEMS (batch, max 300).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: 'UNKNOWN_SYMBOL: not a Gem Screener coin; pass its contract and chain.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '429':
+          description: Rate limited.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: 'UPSTREAM_UNAVAILABLE: the sources could not be read; the token is queued.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+  /api/v1/supply-analyzer/coverage:
+    get:
+      tags:
+      - Supply Analyzer
+      summary: Coverage Route
+      description: 'Item 6: for the Gem Screener''s rows, how many have every input and which input is missing on the others.'
+      operationId: coverage_route_api_v1_supply_analyzer_coverage_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rows:
+                    type: integer
+                  every_input_known:
+                    type: integer
+                  per_kind:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  missing_counts:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  note:
+                    type: string
+                additionalProperties: true
+                required:
+                - rows
+                description: How many Gem Screener coins have every input, and what is missing.
+      security: []
+  /api/v1/supply-analyzer/ledger:
+    get:
+      tags:
+      - Supply Analyzer
+      summary: Ledger Route
+      description: 'Item 12: the weekly record and the test written down before its first result.'
+      operationId: ledger_route_api_v1_supply_analyzer_ledger_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ranked_by:
+                    type: string
+                    description: 'The number the test ranks by: dilution_12m_pct (ET-31643).'
+                  count_from_week:
+                    type: string
+                  lines:
+                    type: integer
+                  weeks:
+                    type: array
+                    items:
+                      type: string
+                  first_week:
+                    type: string
+                  by_week:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        week:
+                          type: string
+                        ranked_by:
+                          type: string
+                        lines:
+                          type: integer
+                        ranked:
+                          type: integer
+                        left_out_no_schedule:
+                          type: integer
+                      additionalProperties: true
+                    description: Each week, the number it ranked by and how many tokens were left out for no published schedule (never ranked as 0).
+                  weeks_counted:
+                    type: integer
+                  weeks_needed:
+                    type: integer
+                  result:
+                    type: string
+                  closed_record:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: The earlier weeks ranked by the removed 1-10 pressure, kept as their own record; they do not count toward the 26 weeks.
+                  test:
+                    type: string
+                additionalProperties: true
+                description: The weekly record behind the open test (26 weeks needed, counted from count_from_week).
+      security: []
+  /api/v1/supply-analyzer/definitions:
+    get:
+      tags:
+      - Supply Analyzer
+      summary: Definitions
+      description: The formulas (item 5), the sources, what this version does not do.
+      operationId: definitions_api_v1_supply_analyzer_definitions_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  definitions:
+                    type: array
+                    items:
+                      type: string
+                  published_inputs:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  not_done:
+                    type: array
+                    items:
+                      type: string
+                  test:
+                    type: string
+                  not_advice:
+                    type: string
+                additionalProperties: true
+                description: Definitions, the published inputs, what this version does not do.
+      security: []
+components:
+  schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

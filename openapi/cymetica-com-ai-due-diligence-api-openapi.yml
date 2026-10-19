@@ -1,0 +1,829 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public AI Due Diligence API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: AI Due Diligence
+paths:
+  /api/v1/ai-due-diligence:
+    get:
+      tags:
+      - AI Due Diligence
+      summary: Assess Website Get
+      description: 'Agent-callable AI nativeness assessment (GET).
+
+
+        Built for AI agents doing research: call
+
+        ``GET /api/v1/ai-due-diligence?website=`` and get back the same 0-40
+
+        scored JSON as the POST endpoint — no body, no auth, easy to invoke from a
+
+        tool loop. Called with no ``website`` it returns a self-describing usage
+
+        document so an agent can discover how to use it.
+
+
+        Rate-limited to 5 assessments per IP per hour (only when a ``website`` is
+
+        actually assessed; the usage doc is free).'
+      operationId: assess_website_get_api_v1_ai_due_diligence_get
+      security: []
+      parameters:
+      - name: website
+        in: query
+        required: false
+        schema:
+          type: string
+          description: URL to assess for AI nativeness. Omit to get API usage docs.
+          title: Website
+        description: URL to assess for AI nativeness. Omit to get API usage docs.
+      - name: fresh
+        in: query
+        required: false
+        schema:
+          type: boolean
+          description: Re-assess even if a saved assessment exists
+          default: false
+          title: Fresh
+        description: Re-assess even if a saved assessment exists
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agent_id:
+                    type: string
+                  website:
+                    type: string
+                  partial:
+                    type: boolean
+                  timed_out_phases:
+                    type: array
+                    items:
+                      type: string
+                  time_budget_s:
+                    type: number
+                  total_score:
+                    type: number
+                    description: 0-40.
+                  classification:
+                    type: string
+                    enum:
+                    - legacy
+                    - ai_assisted
+                    - ai_integrated
+                    - ai_native
+                    - fully_agentic
+                  classification_description:
+                    type: string
+                  trust_bonus:
+                    type: number
+                  github_repo:
+                    type:
+                    - string
+                    - 'null'
+                  github_source:
+                    type:
+                    - string
+                    - 'null'
+                  questions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        question:
+                          type: string
+                        dimension:
+                          type: string
+                        score:
+                          type: number
+                        max_score:
+                          type: number
+                        details: {}
+                        error:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: true
+                  assessed_at:
+                    type:
+                    - string
+                    - 'null'
+                  duration_ms:
+                    type:
+                    - integer
+                    - 'null'
+                  cached:
+                    type: boolean
+                    description: true = saved assessment served without re-probing.
+                  elapsed_ms:
+                    type:
+                    - integer
+                    - 'null'
+                  analyzed_at:
+                    type:
+                    - string
+                    - 'null'
+                  assessment_id:
+                    type: integer
+                  service:
+                    type: string
+                  description:
+                    type: string
+                  usage:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  auth:
+                    type: string
+                  rate_limit:
+                    type: object
+                    properties:
+                      anonymous:
+                        type: string
+                      with_api_key:
+                        type: string
+                    additionalProperties: true
+                  dimensions:
+                    type: array
+                    items:
+                      type: string
+                  max_score:
+                    type: integer
+                  classifications:
+                    type: array
+                    items:
+                      type: string
+                additionalProperties: true
+                description: 'With `?website=`: the 0-40 AI-nativeness assessment (saved result unless `fresh=1`). Without it: a self-describing usage document (service/usage/rate_limit/...).'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '400':
+          description: Invalid website URL.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '429':
+          description: Assessment rate limit reached.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/ai-due-diligence/history:
+    get:
+      tags:
+      - AI Due Diligence
+      summary: Nativeness History
+      description: 'Assessment history: the latest saved assessment per website, newest first.
+
+
+        Signed-in callers get every website they assessed; anyone can also name
+
+        domains explicitly (the page keeps a local list for anonymous visitors).'
+      operationId: nativeness_history_api_v1_ai_due_diligence_history_get
+      security: []
+      parameters:
+      - name: domains
+        in: query
+        required: false
+        schema:
+          type: string
+          description: Comma-separated domains to include (the browser's local list)
+          default: ''
+          title: Domains
+        description: Comma-separated domains to include (the browser's local list)
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 50
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        domain:
+                          type: string
+                        website:
+                          type: string
+                        total_score:
+                          type: integer
+                        max_score:
+                          type: integer
+                        classification:
+                          type: string
+                        classification_description:
+                          type: string
+                        partial:
+                          type: boolean
+                        analyzed_at:
+                          type:
+                          - string
+                          - 'null'
+                        elapsed_ms:
+                          type:
+                          - integer
+                          - 'null'
+                      additionalProperties: false
+                      required:
+                      - id
+                      - domain
+                      - website
+                      - total_score
+                  count:
+                    type: integer
+                additionalProperties: false
+                required:
+                - items
+                - count
+                description: Latest saved assessment per website, newest first.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/ai-due-diligence/pivot/history:
+    get:
+      tags:
+      - AI Due Diligence
+      summary: Pivot History
+      description: 'Analysis history: the latest saved analysis per company, newest first.
+
+
+        Signed-in callers get every company they analysed; anyone can also name
+
+        domains explicitly (the page keeps a local list for anonymous visitors).'
+      operationId: pivot_history_api_v1_ai_due_diligence_pivot_history_get
+      security: []
+      parameters:
+      - name: domains
+        in: query
+        required: false
+        schema:
+          type: string
+          description: Comma-separated domains to include (the browser's local list)
+          default: ''
+          title: Domains
+        description: Comma-separated domains to include (the browser's local list)
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 50
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        domain:
+                          type: string
+                        website:
+                          type: string
+                        ai_pivot_score:
+                          type: integer
+                        ai_washing_score:
+                          type: integer
+                        classification:
+                          type: string
+                        classification_label:
+                          type: string
+                        pivot_started: {}
+                        analyzed_at:
+                          type:
+                          - string
+                          - 'null'
+                        elapsed_ms:
+                          type:
+                          - integer
+                          - 'null'
+                      additionalProperties: false
+                      required:
+                      - id
+                      - domain
+                      - website
+                      - ai_pivot_score
+                      - ai_washing_score
+                  count:
+                    type: integer
+                additionalProperties: false
+                required:
+                - items
+                - count
+                description: Latest saved AI Pivot analysis per company, newest first.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/ai-due-diligence/leaderboard:
+    get:
+      tags:
+      - AI Due Diligence
+      summary: Ai Crypto Leaderboard
+      description: Public AI nativeness ranking of the top AI crypto projects (0-40 scale).
+      operationId: ai_crypto_leaderboard_api_v1_ai_due_diligence_leaderboard_get
+      parameters:
+      - name: order
+        in: query
+        required: false
+        schema:
+          type: string
+          description: desc = most AI-native first (default), asc = least AI-native first
+          default: desc
+          title: Order
+        description: desc = most AI-native first (default), asc = least AI-native first
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order:
+                    type: string
+                    description: asc or desc.
+                  count:
+                    type: integer
+                  assessed_count:
+                    type: integer
+                  max_score:
+                    type: integer
+                  classifications:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                        label:
+                          type: string
+                        min_score:
+                          type: integer
+                        max_score:
+                          type: integer
+                      additionalProperties: true
+                  dimensions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        label:
+                          type: string
+                        description:
+                          type: string
+                      additionalProperties: true
+                  roster_source:
+                    type:
+                    - string
+                    - 'null'
+                  market_data_refreshed_at:
+                    type:
+                    - string
+                    - 'null'
+                  methodology:
+                    type: string
+                  assessment_engine:
+                    type: string
+                  export:
+                    type: string
+                  generated_at:
+                    type: string
+                  elapsed_ms:
+                    type: integer
+                  entries:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        symbol:
+                          type:
+                          - string
+                          - 'null'
+                        name:
+                          type:
+                          - string
+                          - 'null'
+                        website:
+                          type:
+                          - string
+                          - 'null'
+                        domain:
+                          type:
+                          - string
+                          - 'null'
+                        logo_url:
+                          type:
+                          - string
+                          - 'null'
+                        market_cap_rank:
+                          type:
+                          - integer
+                          - 'null'
+                        coingecko_id:
+                          type:
+                          - string
+                          - 'null'
+                        is_cymetica:
+                          type: boolean
+                        total_score:
+                          type:
+                          - number
+                          - 'null'
+                          description: 0-40; null = not yet assessed (never a zero).
+                        max_score:
+                          type: integer
+                        classification:
+                          type:
+                          - string
+                          - 'null'
+                        classification_description:
+                          type:
+                          - string
+                          - 'null'
+                        assessed_at:
+                          type:
+                          - string
+                          - 'null'
+                        partial:
+                          type: boolean
+                        questions:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type:
+                                - string
+                                - 'null'
+                              dimension:
+                                type:
+                                - string
+                                - 'null'
+                              score:
+                                type:
+                                - number
+                                - 'null'
+                              max_score:
+                                type: number
+                            additionalProperties: true
+                        assessment_url:
+                          type: string
+                          description: Where to re-run the same public assessment.
+                        rank:
+                          type:
+                          - integer
+                          - 'null'
+                          description: null for a project not yet assessed.
+                      additionalProperties: true
+                      required:
+                      - symbol
+                      - name
+                      - total_score
+                      - rank
+                additionalProperties: true
+                required:
+                - order
+                - count
+                - entries
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/ai-due-diligence/leaderboard/export.json:
+    get:
+      tags:
+      - AI Due Diligence
+      summary: Ai Crypto Leaderboard Export
+      description: 'Full machine-validatable export of the board, ETagged for cheap re-fetches.
+
+
+        Anyone can re-verify a row: take its ``website``, run the same public
+
+        assessment at ``/ai-due-diligence``, and compare the 0-40 total.'
+      operationId: ai_crypto_leaderboard_export_api_v1_ai_due_diligence_leaderboard_export_json_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order:
+                    type: string
+                    description: asc or desc.
+                  count:
+                    type: integer
+                  assessed_count:
+                    type: integer
+                  max_score:
+                    type: integer
+                  classifications:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                        label:
+                          type: string
+                        min_score:
+                          type: integer
+                        max_score:
+                          type: integer
+                      additionalProperties: true
+                  dimensions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        label:
+                          type: string
+                        description:
+                          type: string
+                      additionalProperties: true
+                  roster_source:
+                    type:
+                    - string
+                    - 'null'
+                  market_data_refreshed_at:
+                    type:
+                    - string
+                    - 'null'
+                  methodology:
+                    type: string
+                  assessment_engine:
+                    type: string
+                  export:
+                    type: string
+                  generated_at:
+                    type: string
+                  elapsed_ms:
+                    type: integer
+                  entries:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        symbol:
+                          type:
+                          - string
+                          - 'null'
+                        name:
+                          type:
+                          - string
+                          - 'null'
+                        website:
+                          type:
+                          - string
+                          - 'null'
+                        domain:
+                          type:
+                          - string
+                          - 'null'
+                        logo_url:
+                          type:
+                          - string
+                          - 'null'
+                        market_cap_rank:
+                          type:
+                          - integer
+                          - 'null'
+                        coingecko_id:
+                          type:
+                          - string
+                          - 'null'
+                        is_cymetica:
+                          type: boolean
+                        total_score:
+                          type:
+                          - number
+                          - 'null'
+                          description: 0-40; null = not yet assessed (never a zero).
+                        max_score:
+                          type: integer
+                        classification:
+                          type:
+                          - string
+                          - 'null'
+                        classification_description:
+                          type:
+                          - string
+                          - 'null'
+                        assessed_at:
+                          type:
+                          - string
+                          - 'null'
+                        partial:
+                          type: boolean
+                        questions:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type:
+                                - string
+                                - 'null'
+                              dimension:
+                                type:
+                                - string
+                                - 'null'
+                              score:
+                                type:
+                                - number
+                                - 'null'
+                              max_score:
+                                type: number
+                            additionalProperties: true
+                        assessment_url:
+                          type: string
+                          description: Where to re-run the same public assessment.
+                        rank:
+                          type:
+                          - integer
+                          - 'null'
+                          description: null for a project not yet assessed.
+                      additionalProperties: true
+                      required:
+                      - symbol
+                      - name
+                      - total_score
+                      - rank
+                  license:
+                    type: string
+                    description: CC BY 4.0 URL.
+                  verify:
+                    type: string
+                    description: How to re-verify any row.
+                additionalProperties: true
+                required:
+                - order
+                - count
+                - entries
+                - license
+        '304':
+          description: If-None-Match matched the ETag; no body.
+      security: []
+components:
+  schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

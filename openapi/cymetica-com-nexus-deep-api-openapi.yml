@@ -1,0 +1,347 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Nexus Deep API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: nexus-deep
+paths:
+  /api/v1/nexus/deep-answer:
+    post:
+      tags:
+      - nexus-deep
+      summary: Post Deep Answer
+      description: Start a verified deep investigation; returns a job id to poll.
+      operationId: post_deep_answer_api_v1_nexus_deep_answer_post
+      parameters:
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeepAnswerRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  job_id:
+                    type: string
+                  status:
+                    type: string
+                    description: running | queued
+                  note:
+                    type: string
+                  poll_after_s:
+                    type: integer
+                  hourly_quota:
+                    type: object
+                    properties:
+                      scope:
+                        type: string
+                        description: per_requester — your agent / API key, not global.
+                      hourly_limit:
+                        type: integer
+                      used_this_hour:
+                        type:
+                        - integer
+                        - 'null'
+                        description: null when the counter is unreadable.
+                      remaining:
+                        type:
+                        - integer
+                        - 'null'
+                      resets_in_s:
+                        type: integer
+                        description: Seconds to the top of the UTC hour.
+                      counted:
+                        type: string
+                    additionalProperties: false
+                    required:
+                    - scope
+                    - hourly_limit
+                    - resets_in_s
+                    description: Deep-answer hourly limit, counted once per question (queue waits and retries are free).
+                additionalProperties: false
+                required:
+                - job_id
+                - status
+                description: A job to poll with GET /api/v1/nexus/deep-answer/{job_id}. Queued = waiting behind a capacity window; it runs by itself, do not resubmit.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '429':
+          description: Hourly deep-answer limit reached — retry after the top of the UTC hour.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: Deep answers at capacity and the queue is full; retry later.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/nexus/deep-answer/{job_id}:
+    get:
+      tags:
+      - nexus-deep
+      summary: Get Deep Answer Status
+      description: Poll a deep investigation. Requester-scoped — only your own jobs.
+      operationId: get_deep_answer_status_api_v1_nexus_deep_answer__job_id__get
+      parameters:
+      - name: job_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Job Id
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  job_id:
+                    type: string
+                  status:
+                    type: string
+                    description: queued | running | done | failed
+                  created_at:
+                    type:
+                    - string
+                    - 'null'
+                  finished_at:
+                    type:
+                    - string
+                    - 'null'
+                  answer:
+                    type: string
+                    description: Present when status=done.
+                  error:
+                    type: string
+                    description: Present when status=failed.
+                  retryable:
+                    type: boolean
+                  retry_after_s:
+                    type: integer
+                  hourly_limit:
+                    type: integer
+                  fallback:
+                    type: object
+                    properties:
+                      sync:
+                        type: string
+                      async:
+                        type: string
+                    additionalProperties: false
+                  note:
+                    type: string
+                  poll_after_s:
+                    type: integer
+                  time_budget_s:
+                    type: integer
+                additionalProperties: false
+                required:
+                - job_id
+                - status
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '404':
+          description: No such job for this requester.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+components:
+  schemas:
+    DeepAnswerRequest:
+      properties:
+        question:
+          type: string
+          maxLength: 4000
+          minLength: 1
+          title: Question
+      type: object
+      required:
+      - question
+      title: DeepAnswerRequest
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

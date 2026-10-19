@@ -1,0 +1,199 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Skills API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: Skills
+paths:
+  /api/v1/skills:
+    get:
+      tags:
+      - Skills
+      summary: List Skills
+      description: List all skills, optionally filtered by category or slot type.
+      operationId: list_skills_api_v1_skills_get
+      parameters:
+      - name: category
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Filter by category
+          title: Category
+        description: Filter by category
+      - name: slot_type
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Filter by slot type
+          title: Slot Type
+        description: Filter by slot type
+      - name: implemented_only
+        in: query
+        required: false
+        schema:
+          type: boolean
+          description: Only show implemented skills
+          default: false
+          title: Implemented Only
+        description: Only show implemented skills
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  skills:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        description:
+                          type: string
+                        category:
+                          type: string
+                        icon:
+                          type:
+                          - string
+                          - 'null'
+                        slot_type:
+                          type: string
+                          description: passive, primary or secondary.
+                        effectiveness_rating:
+                          type:
+                          - string
+                          - 'null'
+                          description: Decimal string, 0-1. A curated design-time default, not a measured statistic; read `rating_source`.
+                        rating_source:
+                          type: string
+                          description: 'Where `effectiveness_rating` and `win_rate_impact` come from: `curated_default`.'
+                        is_implemented:
+                          type: boolean
+                        is_premium:
+                          type: boolean
+                        win_rate_impact:
+                          type:
+                          - string
+                          - 'null'
+                          description: Decimal string; curated default, see `rating_source`.
+                        sort_order:
+                          type: integer
+                        eli5:
+                          type:
+                          - string
+                          - 'null'
+                        example:
+                          type:
+                          - string
+                          - 'null'
+                        used_by_species:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              symbol:
+                                type: string
+                              name:
+                                type: string
+                            additionalProperties: true
+                        used_by_bots:
+                          type: integer
+                          description: Distinct bot instances with this skill equipped, from the equip table.
+                        price_usdc:
+                          type: number
+                          description: Marketplace price; present only for priced skills.
+                        duration_hours:
+                          type: integer
+                          description: Marketplace duration; present only for timed skills.
+                      additionalProperties: true
+                      required:
+                      - id
+                      - name
+                      - rating_source
+                  total:
+                    type: integer
+                additionalProperties: false
+                required:
+                - skills
+                - total
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+components:
+  schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

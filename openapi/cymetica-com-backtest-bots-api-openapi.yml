@@ -1,0 +1,987 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Backtest Bots API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: Backtest Bots
+paths:
+  /api/v1/backtest/leaderboard:
+    get:
+      tags:
+      - Backtest Bots
+      summary: Get Leaderboard
+      description: 'List backtested bots sorted by the chosen metric.
+
+
+        Returns a paginated leaderboard of bot cards with headline performance
+
+        metrics, sparkline data, and clone counts. Every row carries
+
+        ``data_kind`` (historical | synthetic | none | unknown) and ``record_source``;
+
+        the default ranking holds ``historical`` rows only (ET-29394) and
+
+        ``synthetic_excluded`` says how many matching rows were left out.'
+      operationId: get_leaderboard_api_v1_backtest_leaderboard_get
+      parameters:
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          description: 'Sort field: return, clones, win_rate, drawdown'
+          default: return
+          title: Sort
+        description: 'Sort field: return, clones, win_rate, drawdown'
+      - name: category
+        in: query
+        required: false
+        schema:
+          type: string
+          description: 'Category filter: crypto, politics, sports, finance, all'
+          default: all
+          title: Category
+        description: 'Category filter: crypto, politics, sports, finance, all'
+      - name: team
+        in: query
+        required: false
+        schema:
+          type: string
+          description: 'Team filter: blue (upside), red (downside), all'
+          default: all
+          title: Team
+        description: 'Team filter: blue (upside), red (downside), all'
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      - name: period
+        in: query
+        required: false
+        schema:
+          type: string
+          description: 'Headline period filter: only rows whose headline_return_pct was measured over this period (e.g. 30d, 6m, 24h, ''30 days''). headline_return_pct is NOT comparable across periods; use this to rank within one. all = no filter.'
+          default: all
+          title: Period
+        description: 'Headline period filter: only rows whose headline_return_pct was measured over this period (e.g. 30d, 6m, 24h, ''30 days''). headline_return_pct is NOT comparable across periods; use this to rank within one. all = no filter.'
+      - name: include_synthetic
+        in: query
+        required: false
+        schema:
+          type: boolean
+          description: 'By default only bots whose figures rest on a stored HISTORICAL record (data_kind=historical: a backtest trade log or recorded paper trades on real prices) are ranked. Set to 1/true to also list bots whose trade list is synthetic (generated from summary metrics, is_synthetic=true, prices 90-110) or who have no record; every row is labelled by data_kind either way.'
+          default: false
+          title: Include Synthetic
+        description: 'By default only bots whose figures rest on a stored HISTORICAL record (data_kind=historical: a backtest trade log or recorded paper trades on real prices) are ranked. Set to 1/true to also list bots whose trade list is synthetic (generated from summary metrics, is_synthetic=true, prices 90-110) or who have no record; every row is labelled by data_kind either way.'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/src__api__routes__backtest_bots__LeaderboardResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/backtest/bots/{slug}:
+    get:
+      tags:
+      - Backtest Bots
+      summary: Get Bot Profile
+      description: 'Get full profile for a backtested bot.
+
+
+        Returns bot details including description, strategy info, and all
+
+        headline metrics. Joins the related BacktestStrategy for strategy
+
+        category and indicator list.
+
+
+        If species headline metrics are empty (0 trades), falls back to the
+
+        best BacktestResult for this bot''s strategy and updates the species
+
+        record in the background.'
+      operationId: get_bot_profile_api_v1_backtest_bots__slug__get
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BotProfileResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/backtest/bots/{slug}/equity:
+    get:
+      tags:
+      - Backtest Bots
+      summary: Get Bot Equity
+      description: 'Get equity curve data for a bot.
+
+
+        Returns sparkline_data from the species if available, otherwise falls
+
+        back to the full equity_curve from the best BacktestResult (highest
+
+        total_return_pct).'
+      operationId: get_bot_equity_api_v1_backtest_bots__slug__equity_get
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EquityCurveResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/backtest/bots/{slug}/trades:
+    get:
+      tags:
+      - Backtest Bots
+      summary: Get Bot Trades
+      description: 'Get trade history for a bot from its best backtest result.
+
+
+        Returns the trade_log (JSONB array) from the highest-return
+
+        BacktestResult for this bot''s strategy. Paginated with limit/offset.'
+      operationId: get_bot_trades_api_v1_backtest_bots__slug__trades_get
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 50
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TradeHistoryResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/backtest/bots/{slug}/paper-trades:
+    get:
+      tags:
+      - Backtest Bots
+      summary: Get Paper Trades
+      description: Get paginated paper trades for a bot.
+      operationId: get_paper_trades_api_v1_backtest_bots__slug__paper_trades_get
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          description: 'Filter: open, closed, all'
+          default: all
+          title: Status
+        description: 'Filter: open, closed, all'
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 50
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaperTradesResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/backtest/bots/{slug}/paper-status:
+    get:
+      tags:
+      - Backtest Bots
+      summary: Get Paper Status
+      description: Get live paper trading status for a bot.
+      operationId: get_paper_status_api_v1_backtest_bots__slug__paper_status_get
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaperStatusResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/backtest/bots/{slug}/run-backtest:
+    post:
+      tags:
+      - Backtest Bots
+      summary: Run Paper Bot Backtest
+      description: 'Trigger a fresh backtest for a paper trading bot.
+
+
+        Enqueues the backtest as a background task and returns immediately.
+
+        Only works for paper trading bots (those with asset_universe_type set).
+
+        Requires authentication to prevent unauthenticated resource exhaustion.'
+      operationId: run_paper_bot_backtest_api_v1_backtest_bots__slug__run_backtest_post
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+                additionalProperties: true
+                description: The backtest was accepted and runs in the background; read the result at the bot's trades and equity routes.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/backtest/bots/{slug}/settings:
+    patch:
+      tags:
+      - Backtest Bots
+      summary: Update Species Settings
+      description: 'Update name or avatar for a backtest bot species.
+
+
+        Only the species owner can modify settings.'
+      operationId: update_species_settings_api_v1_backtest_bots__slug__settings_patch
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSpeciesRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Update Species Settings Api V1 Backtest Bots  Slug  Settings Patch
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    LeaderboardBotCard:
+      properties:
+        id:
+          type: integer
+          title: Id
+        name:
+          type: string
+          title: Name
+        slug:
+          type: string
+          title: Slug
+        avatar_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Avatar Url
+        headline_return_pct:
+          type: number
+          title: Headline Return Pct
+        headline_period:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Headline Period
+        headline_period_hours:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Headline Period Hours
+        win_rate:
+          type: number
+          title: Win Rate
+        sharpe_ratio:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Sharpe Ratio
+        max_drawdown_pct:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Max Drawdown Pct
+        total_trades:
+          type: integer
+          title: Total Trades
+        total_clones:
+          type: integer
+          title: Total Clones
+        category:
+          type: string
+          title: Category
+        data_sources:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Data Sources
+        sparkline_data:
+          anyOf:
+          - items: {}
+            type: array
+          - type: 'null'
+          title: Sparkline Data
+        market_direction:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Market Direction
+        asset_universe_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Asset Universe Type
+        record_source:
+          type: string
+          title: Record Source
+          description: 'What the figures rest on: backtest (stored backtest trade log), paper (recorded paper trades), synthetic (no record; trade list generated from the summary metrics, prices 90-110), none (no trades), unknown (lookup failed).'
+          default: none
+        synthetic:
+          type: boolean
+          title: Synthetic
+          default: false
+        data_kind:
+          type: string
+          title: Data Kind
+          description: historical (backtest or paper record on real prices), synthetic (generated from summary metrics — not a backtest of the named assets), none, or unknown. The default leaderboard ranks historical rows only.
+          default: none
+        is_synthetic:
+          type: boolean
+          title: Is Synthetic
+          description: True when data_kind is synthetic.
+          default: false
+      type: object
+      required:
+      - id
+      - name
+      - slug
+      - headline_return_pct
+      - win_rate
+      - total_trades
+      - total_clones
+      - category
+      title: LeaderboardBotCard
+      description: Summary card for a bot on the leaderboard.
+    PaperStatusResponse:
+      properties:
+        slug:
+          type: string
+          title: Slug
+        paper_trading_enabled:
+          type: boolean
+          title: Paper Trading Enabled
+        current_capital:
+          type: number
+          title: Current Capital
+        starting_capital:
+          type: number
+          title: Starting Capital
+        pnl_usd:
+          type: number
+          title: Pnl Usd
+        pnl_pct:
+          type: number
+          title: Pnl Pct
+        open_positions:
+          type: integer
+          title: Open Positions
+        total_trades:
+          type: integer
+          title: Total Trades
+        last_trade_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Last Trade At
+      type: object
+      required:
+      - slug
+      - paper_trading_enabled
+      - current_capital
+      - starting_capital
+      - pnl_usd
+      - pnl_pct
+      - open_positions
+      - total_trades
+      title: PaperStatusResponse
+      description: Live paper trading status for a bot.
+    BotProfileResponse:
+      properties:
+        id:
+          type: integer
+          title: Id
+        name:
+          type: string
+          title: Name
+        slug:
+          type: string
+          title: Slug
+        avatar_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Avatar Url
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        headline_return_pct:
+          type: number
+          title: Headline Return Pct
+        headline_period:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Headline Period
+        win_rate:
+          type: number
+          title: Win Rate
+        sharpe_ratio:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Sharpe Ratio
+        max_drawdown_pct:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Max Drawdown Pct
+        total_trades:
+          type: integer
+          title: Total Trades
+        total_clones:
+          type: integer
+          title: Total Clones
+        active_clones:
+          type: integer
+          title: Active Clones
+        category:
+          type: string
+          title: Category
+        data_sources:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Data Sources
+        strategy_category:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Strategy Category
+        indicators:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Indicators
+        status:
+          type: string
+          title: Status
+        market_direction:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Market Direction
+        asset_universe_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Asset Universe Type
+        starting_capital:
+          type: number
+          title: Starting Capital
+          default: 1000.0
+        balance:
+          type: number
+          title: Balance
+          default: 1000.0
+        record_source:
+          type: string
+          title: Record Source
+          default: none
+        synthetic:
+          type: boolean
+          title: Synthetic
+          default: false
+        data_kind:
+          type: string
+          title: Data Kind
+          description: historical | synthetic | none | unknown (see leaderboard).
+          default: none
+        is_synthetic:
+          type: boolean
+          title: Is Synthetic
+          default: false
+      type: object
+      required:
+      - id
+      - name
+      - slug
+      - headline_return_pct
+      - win_rate
+      - total_trades
+      - total_clones
+      - active_clones
+      - category
+      - status
+      title: BotProfileResponse
+      description: Full bot profile with strategy details.
+    src__api__routes__backtest_bots__LeaderboardResponse:
+      properties:
+        bots:
+          items:
+            $ref: '#/components/schemas/LeaderboardBotCard'
+          type: array
+          title: Bots
+        total:
+          type: integer
+          title: Total
+        offset:
+          type: integer
+          title: Offset
+        limit:
+          type: integer
+          title: Limit
+        include_synthetic:
+          type: boolean
+          title: Include Synthetic
+          default: false
+        synthetic_excluded:
+          type: integer
+          title: Synthetic Excluded
+          description: Rows matching the filters that are NOT ranked because they have no historical record (data_kind synthetic/none/unknown). Pass include_synthetic=1 to list them, each labelled by data_kind.
+          default: 0
+      type: object
+      required:
+      - bots
+      - total
+      - offset
+      - limit
+      title: LeaderboardResponse
+      description: Paginated leaderboard response.
+    TradeHistoryResponse:
+      properties:
+        slug:
+          type: string
+          title: Slug
+        trades:
+          items: {}
+          type: array
+          title: Trades
+        total:
+          type: integer
+          title: Total
+        offset:
+          type: integer
+          title: Offset
+        limit:
+          type: integer
+          title: Limit
+        record_source:
+          type: string
+          title: Record Source
+          default: none
+        synthetic:
+          type: boolean
+          title: Synthetic
+          default: false
+        data_kind:
+          type: string
+          title: Data Kind
+          description: historical | synthetic | none | unknown.
+          default: none
+        is_synthetic:
+          type: boolean
+          title: Is Synthetic
+          default: false
+      type: object
+      required:
+      - slug
+      - trades
+      - total
+      - offset
+      - limit
+      title: TradeHistoryResponse
+      description: Paginated trade history from backtest results.
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    EquityCurveResponse:
+      properties:
+        slug:
+          type: string
+          title: Slug
+        sparkline_data:
+          anyOf:
+          - items: {}
+            type: array
+          - type: 'null'
+          title: Sparkline Data
+        equity_curve:
+          anyOf:
+          - items: {}
+            type: array
+          - type: 'null'
+          title: Equity Curve
+        source:
+          type: string
+          title: Source
+      type: object
+      required:
+      - slug
+      - source
+      title: EquityCurveResponse
+      description: Equity curve data for chart rendering.
+    PaperTradesResponse:
+      properties:
+        slug:
+          type: string
+          title: Slug
+        trades:
+          items:
+            $ref: '#/components/schemas/PaperTradeItem'
+          type: array
+          title: Trades
+        total:
+          type: integer
+          title: Total
+        offset:
+          type: integer
+          title: Offset
+        limit:
+          type: integer
+          title: Limit
+      type: object
+      required:
+      - slug
+      - trades
+      - total
+      - offset
+      - limit
+      title: PaperTradesResponse
+      description: Paginated paper trades.
+    UpdateSpeciesRequest:
+      properties:
+        name:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Name
+        avatar_url:
+          anyOf:
+          - type: string
+            maxLength: 500
+          - type: 'null'
+          title: Avatar Url
+      type: object
+      title: UpdateSpeciesRequest
+      description: Request to update backtest bot species name or avatar.
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    PaperTradeItem:
+      properties:
+        id:
+          type: integer
+          title: Id
+        bot_slug:
+          type: string
+          title: Bot Slug
+        wta_market_id:
+          type: string
+          title: Wta Market Id
+        symbol:
+          type: string
+          title: Symbol
+        asset_type:
+          type: string
+          title: Asset Type
+        side:
+          type: string
+          title: Side
+        entry_price:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Entry Price
+        exit_price:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Exit Price
+        entry_time:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Entry Time
+        exit_time:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Exit Time
+        scheduled_exit_time:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Scheduled Exit Time
+        allocation_usd:
+          type: number
+          title: Allocation Usd
+        weight:
+          type: number
+          title: Weight
+        pnl_usd:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Pnl Usd
+        pnl_pct:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Pnl Pct
+        capital_after:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Capital After
+        status:
+          type: string
+          title: Status
+        tuatara_score:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Tuatara Score
+        macd_hist_at_entry:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Macd Hist At Entry
+        pct_change_24h:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Pct Change 24H
+        sentiment_score:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Sentiment Score
+      type: object
+      required:
+      - id
+      - bot_slug
+      - wta_market_id
+      - symbol
+      - asset_type
+      - side
+      - allocation_usd
+      - weight
+      - status
+      title: PaperTradeItem
+      description: Single paper trade.
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

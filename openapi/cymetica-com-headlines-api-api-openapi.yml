@@ -1,0 +1,1214 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Headlines API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: Headlines API
+paths:
+  /api/v1/headlines-api:
+    get:
+      tags:
+      - Headlines API
+      summary: About
+      description: What the Headlines API is, who can use it, fields, limits, 24 h coverage. No key needed.
+      operationId: about_api_v1_headlines_api_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  what:
+                    type: string
+                  access:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  endpoints:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  list_parameters:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  fields:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        type:
+                          type: string
+                        meaning:
+                          type: string
+                      additionalProperties: true
+                  coverage:
+                    type:
+                    - object
+                    - 'null'
+                    description: Share of the last 24 h of headlines carrying each field.
+                  limits:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  event_cards:
+                    type: string
+                  not_included:
+                    type: array
+                    items:
+                      type: string
+                additionalProperties: true
+                required:
+                - name
+                - access
+                - fields
+                - limits
+      security: []
+  /api/v1/headlines-api/sample:
+    get:
+      tags:
+      - Headlines API
+      summary: Public Sample
+      description: Five headlines at least 60 minutes old, fixed, no filters. No key needed.
+      operationId: public_sample_api_v1_headlines_api_sample_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          description: Stable id, ascending in ingestion order (since_id / cursor).
+                        title:
+                          type: string
+                          description: The headline as published.
+                        url:
+                          type:
+                          - string
+                          - 'null'
+                          description: Link to the original article; bodies are not redistributed.
+                        source:
+                          type: string
+                          description: Publisher or feed name; `Wire` for aggregated wires.
+                        published_at:
+                          type: string
+                          description: The source's timestamp, ISO 8601.
+                        ingested_at:
+                          type: string
+                          description: When the engine picked it up, ISO 8601.
+                        language:
+                          type:
+                          - string
+                          - 'null'
+                          description: '`en` or `und`.'
+                        topics:
+                          type: array
+                          items:
+                            type: string
+                          description: 'Rule-based tags: ma, stocks, crypto, global. Never empty.'
+                        tickers:
+                          type: array
+                          items:
+                            type: string
+                        deal_value_usd:
+                          type:
+                          - number
+                          - 'null'
+                          description: Deal size stated in an M&A headline, USD.
+                        sector:
+                          type:
+                          - string
+                          - 'null'
+                          description: Event Card keyword-rule sector of the title, null when none.
+                        sector_label:
+                          type:
+                          - string
+                          - 'null'
+                        sentiment_score:
+                          type:
+                          - number
+                          - 'null'
+                          description: -1 most bearish .. +1 most bullish, from the AI headline scorer; null when not scored.
+                        sentiment_status:
+                          type: string
+                          enum:
+                          - scored
+                          - not_scored
+                        price_moves_pct:
+                          type: object
+                          properties: {}
+                          additionalProperties:
+                            type: number
+                          description: '{SYMBOL: % move since the headline}'
+                        event_card:
+                          type:
+                          - object
+                          - 'null'
+                          description: '{id, url} of the headline''s Event Card, if one exists.'
+                        actions:
+                          type: object
+                          properties:
+                            make_event_card:
+                              type:
+                              - string
+                              - 'null'
+                          additionalProperties: true
+                      additionalProperties: true
+                      required:
+                      - id
+                      - title
+                      - source
+                      - published_at
+                      - topics
+                      - tickers
+                      - sentiment_score
+                      - sentiment_status
+                      - event_card
+                      - actions
+                  delay_minutes:
+                    type: integer
+                  size:
+                    type: integer
+                  note:
+                    type: string
+                  docs:
+                    type: string
+                additionalProperties: true
+                required:
+                - items
+                - delay_minutes
+                - size
+      security: []
+  /api/v1/headlines-api/headlines:
+    get:
+      tags:
+      - Headlines API
+      summary: List Headlines
+      description: Headlines newest first, filtered, cursor-paginated. Needs an active paid NEXUS plan.
+      operationId: list_headlines_api_v1_headlines_api_headlines_get
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          description: 1-200, default 50
+          title: Limit
+        description: 1-200, default 50
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          description: next_cursor from the previous page
+          title: Cursor
+        description: next_cursor from the previous page
+      - name: since_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          description: only headlines with a larger id
+          title: Since Id
+        description: only headlines with a larger id
+      - name: from
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 40
+          - type: 'null'
+          description: ISO 8601, published_at >=
+          title: From
+        description: ISO 8601, published_at >=
+      - name: to
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 40
+          - type: 'null'
+          description: ISO 8601, published_at <
+          title: To
+        description: ISO 8601, published_at <
+      - name: source
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 64
+          - type: 'null'
+          title: Source
+      - name: ticker
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 400
+          - type: 'null'
+          description: comma-separated symbols
+          title: Ticker
+        description: comma-separated symbols
+      - name: topic
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 16
+          - type: 'null'
+          title: Topic
+      - name: sector
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 32
+          - type: 'null'
+          title: Sector
+      - name: lang
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 8
+          - type: 'null'
+          title: Lang
+      - name: min_sentiment
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Min Sentiment
+      - name: max_sentiment
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Max Sentiment
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          description: Stable id, ascending in ingestion order (since_id / cursor).
+                        title:
+                          type: string
+                          description: The headline as published.
+                        url:
+                          type:
+                          - string
+                          - 'null'
+                          description: Link to the original article; bodies are not redistributed.
+                        source:
+                          type: string
+                          description: Publisher or feed name; `Wire` for aggregated wires.
+                        published_at:
+                          type: string
+                          description: The source's timestamp, ISO 8601.
+                        ingested_at:
+                          type: string
+                          description: When the engine picked it up, ISO 8601.
+                        language:
+                          type:
+                          - string
+                          - 'null'
+                          description: '`en` or `und`.'
+                        topics:
+                          type: array
+                          items:
+                            type: string
+                          description: 'Rule-based tags: ma, stocks, crypto, global. Never empty.'
+                        tickers:
+                          type: array
+                          items:
+                            type: string
+                        deal_value_usd:
+                          type:
+                          - number
+                          - 'null'
+                          description: Deal size stated in an M&A headline, USD.
+                        sector:
+                          type:
+                          - string
+                          - 'null'
+                          description: Event Card keyword-rule sector of the title, null when none.
+                        sector_label:
+                          type:
+                          - string
+                          - 'null'
+                        sentiment_score:
+                          type:
+                          - number
+                          - 'null'
+                          description: -1 most bearish .. +1 most bullish, from the AI headline scorer; null when not scored.
+                        sentiment_status:
+                          type: string
+                          enum:
+                          - scored
+                          - not_scored
+                        price_moves_pct:
+                          type: object
+                          properties: {}
+                          additionalProperties:
+                            type: number
+                          description: '{SYMBOL: % move since the headline}'
+                        event_card:
+                          type:
+                          - object
+                          - 'null'
+                          description: '{id, url} of the headline''s Event Card, if one exists.'
+                        actions:
+                          type: object
+                          properties:
+                            make_event_card:
+                              type:
+                              - string
+                              - 'null'
+                          additionalProperties: true
+                      additionalProperties: true
+                      required:
+                      - id
+                      - title
+                      - source
+                      - published_at
+                      - topics
+                      - tickers
+                      - sentiment_score
+                      - sentiment_status
+                      - event_card
+                      - actions
+                  count:
+                    type: integer
+                  limit:
+                    type: integer
+                  max_limit:
+                    type: integer
+                  next_cursor:
+                    type:
+                    - integer
+                    - 'null'
+                  filters:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                additionalProperties: true
+                required:
+                - items
+                - count
+                - limit
+                - max_limit
+                - next_cursor
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 'No credentials: send X-API-Key (or Bearer).'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '402':
+          description: 'No active paid NEXUS plan: detail.code PAID_PLAN_REQUIRED, detail.plans_url.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '429':
+          description: Rate limit (60 requests a minute per account; 10 event-card builds an hour).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: The plan check failed; access is denied until it works.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/headlines-api/headlines/{row_id}/event-card:
+    get:
+      tags:
+      - Headlines API
+      summary: Event Card Status
+      description: 'Event Card status for a headline: exists, pending, refused or not_requested. No side effects.'
+      operationId: event_card_status_api_v1_headlines_api_headlines__row_id__event_card_get
+      parameters:
+      - name: row_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Row Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  headline_id:
+                    type: integer
+                  status:
+                    type: string
+                    enum:
+                    - exists
+                    - created
+                    - pending
+                    - refused
+                    - not_requested
+                  cards:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        url:
+                          type: string
+                        status:
+                          type: string
+                      additionalProperties: true
+                  reason:
+                    type:
+                    - string
+                    - 'null'
+                  retry_after:
+                    type:
+                    - string
+                    - 'null'
+                  message:
+                    type: string
+                additionalProperties: true
+                required:
+                - headline_id
+                - status
+                - cards
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 'No credentials: send X-API-Key (or Bearer).'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '402':
+          description: 'No active paid NEXUS plan: detail.code PAID_PLAN_REQUIRED, detail.plans_url.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '429':
+          description: Rate limit (60 requests a minute per account; 10 event-card builds an hour).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: The plan check failed; access is denied until it works.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: No such headline in the feed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+    post:
+      tags:
+      - Headlines API
+      summary: Make Event Card
+      description: 'Make an Event Card from a headline, through the feed''s own card pipeline.
+
+
+        Idempotent: an existing card is returned, a running build is reported as
+
+        pending, and a refused headline is not retried before its retry_after.'
+      operationId: make_event_card_api_v1_headlines_api_headlines__row_id__event_card_post
+      parameters:
+      - name: row_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Row Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  headline_id:
+                    type: integer
+                  status:
+                    type: string
+                    enum:
+                    - exists
+                    - created
+                    - pending
+                    - refused
+                    - not_requested
+                  cards:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        url:
+                          type: string
+                        status:
+                          type: string
+                      additionalProperties: true
+                  reason:
+                    type:
+                    - string
+                    - 'null'
+                  retry_after:
+                    type:
+                    - string
+                    - 'null'
+                  message:
+                    type: string
+                additionalProperties: true
+                required:
+                - headline_id
+                - status
+                - cards
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 'No credentials: send X-API-Key (or Bearer).'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '402':
+          description: 'No active paid NEXUS plan: detail.code PAID_PLAN_REQUIRED, detail.plans_url.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '429':
+          description: Rate limit (60 requests a minute per account; 10 event-card builds an hour).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: The plan check failed; access is denied until it works.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: No such headline in the feed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '201':
+          description: 'created: a new Event Card, public at once.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  headline_id:
+                    type: integer
+                  status:
+                    type: string
+                    enum:
+                    - exists
+                    - created
+                    - pending
+                    - refused
+                    - not_requested
+                  cards:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        url:
+                          type: string
+                        status:
+                          type: string
+                      additionalProperties: true
+                  reason:
+                    type:
+                    - string
+                    - 'null'
+                  retry_after:
+                    type:
+                    - string
+                    - 'null'
+                  message:
+                    type: string
+                additionalProperties: true
+                required:
+                - headline_id
+                - status
+                - cards
+        '202':
+          description: 'pending: the card is being built; GET the same path.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  headline_id:
+                    type: integer
+                  status:
+                    type: string
+                    enum:
+                    - exists
+                    - created
+                    - pending
+                    - refused
+                    - not_requested
+                  cards:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        url:
+                          type: string
+                        status:
+                          type: string
+                      additionalProperties: true
+                  reason:
+                    type:
+                    - string
+                    - 'null'
+                  retry_after:
+                    type:
+                    - string
+                    - 'null'
+                  message:
+                    type: string
+                additionalProperties: true
+                required:
+                - headline_id
+                - status
+                - cards
+components:
+  schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

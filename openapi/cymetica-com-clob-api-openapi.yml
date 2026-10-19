@@ -29,13 +29,348 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  order_id:
+                    type: string
+                  fills:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        pair:
+                          type: string
+                        price:
+                          type: string
+                          description: Decimal as a string
+                        quantity:
+                          type: string
+                          description: Decimal as a string
+                        maker_order_id:
+                          type: string
+                        taker_order_id:
+                          type: string
+                        maker_user_id:
+                          type: integer
+                        taker_user_id:
+                          type: integer
+                        taker_side:
+                          type: string
+                        maker_fee:
+                          type: string
+                          description: Decimal as a string
+                        taker_fee:
+                          type: string
+                          description: Decimal as a string
+                        maker_rebate:
+                          type: string
+                          description: Decimal as a string
+                        timestamp:
+                          type: integer
+                          description: Epoch microseconds
+                        is_amm_fill:
+                          type: boolean
+                        is_amm_poster_fill:
+                          type: boolean
+                        chain:
+                          type: string
+                        amm_dex:
+                          type: string
+                        amm_pool_address:
+                          type: string
+                        tx_hash:
+                          type: string
+                      additionalProperties: true
+                      description: One match between maker and taker.
+                  remaining:
+                    type: string
+                    description: Decimal as a string
+                  status:
+                    type: string
+                    description: open | partial | filled | cancelled (or simulated_fill on the simulation path). Never 'filled' unless the whole quantity executed.
+                  total_filled:
+                    type: string
+                    description: Decimal as a string
+                  avg_fill_price:
+                    type: string
+                    description: Decimal as a string
+                  resting_order:
+                    anyOf:
+                    - type: object
+                      properties:
+                        id:
+                          type: string
+                        user_id:
+                          type: integer
+                        pair:
+                          type: string
+                        side:
+                          type: string
+                          enum:
+                          - buy
+                          - sell
+                        order_type:
+                          type: string
+                        price:
+                          type: string
+                          description: Decimal as a string
+                        quantity:
+                          type: string
+                          description: Decimal as a string
+                        remaining:
+                          type: string
+                          description: Decimal as a string
+                        filled_quantity:
+                          type: string
+                          description: Decimal as a string
+                        status:
+                          type: string
+                          enum:
+                          - open
+                          - partial
+                          - filled
+                          - cancelled
+                        timestamp:
+                          type: integer
+                          description: Epoch microseconds
+                        seq:
+                          type: integer
+                        expire_at:
+                          type: integer
+                        stop_price:
+                          type: string
+                          description: Decimal as a string
+                        display_qty:
+                          type: string
+                          description: Decimal as a string
+                        hidden_qty:
+                          type: string
+                          description: Decimal as a string
+                        total_qty:
+                          type: string
+                          description: Decimal as a string
+                      additionalProperties: true
+                      required:
+                      - id
+                      - pair
+                      - side
+                      - price
+                      - quantity
+                      - remaining
+                      - status
+                      description: A CLOB order. expire_at / stop_price / display_qty+hidden_qty+total_qty appear only when set.
+                    - type: 'null'
+                  reject_reason:
+                    type: string
+                  amm_pending:
+                    type: string
+                    description: Remainder being worked on a DEX in the background.
+                  settlement_status:
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - ledger_settled
+                    - pending
+                    - null
+                  tx_hash:
+                    type:
+                    - string
+                    - 'null'
+                    description: '`ledger:<hash>` for ledger-only settlement, else null until settled.'
+                  settlement_info:
+                    type: string
+                  settlement_eta_seconds:
+                    type: integer
+                  settlement_notifications:
+                    type: object
+                    properties:
+                      websocket_event:
+                        type: string
+                      channel:
+                        type: string
+                      statuses:
+                        type: array
+                        items:
+                          type: string
+                      note:
+                        type: string
+                    additionalProperties: true
+                  server_timing:
+                    type: object
+                    properties:
+                      pre_match_ms:
+                        type: number
+                      match_ms:
+                        type: number
+                      commit_ms:
+                        type: number
+                      total_ms:
+                        type: number
+                    additionalProperties: true
+                  market_protection:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: Protection band applied to a converted market order.
+                  ioc_cancelled:
+                    type: boolean
+                  ioc_note:
+                    type: string
+                  order_state:
+                    type: string
+                    enum:
+                    - new
+                    - partially_filled
+                    - filled
+                    - cancelled
+                    - expired
+                    - rejected
+                    - pending_swap
+                  order_state_label:
+                    type: string
+                  execution:
+                    type: object
+                    properties:
+                      filled:
+                        type: string
+                        description: Decimal as a string
+                      quantity:
+                        type:
+                        - string
+                        - 'null'
+                      remaining:
+                        type:
+                        - string
+                        - 'null'
+                      fully_filled:
+                        type: boolean
+                      resting:
+                        type: boolean
+                      on_chain_swap_pending:
+                        type: boolean
+                    additionalProperties: true
+                  sim_tx_hash:
+                    type: string
+                  side:
+                    type: string
+                  price:
+                    type: string
+                    description: Decimal as a string
+                  quantity:
+                    type: string
+                    description: Decimal as a string
+                  is_simulated:
+                    type: boolean
+                  message:
+                    type: string
+                additionalProperties: true
+                required:
+                - order_id
+                - status
+                description: 'Order acknowledgement: the match result (fills + resting remainder), settlement status, and the FIX-style `order_state`. A simulation-mode account gets the short `status=simulated_fill` shape instead (sim_tx_hash/side/price/quantity/is_simulated/message).'
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '403':
+          description: Sells disabled for this pair (SELL_DISABLED).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '409':
+          description: Duplicate order / same idempotency key still in flight (DUPLICATE_ORDER, ORDER_IN_FLIGHT).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: Risk gate or pricing temporarily unavailable; retry.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
       security:
       - BearerJWT: []
       - ApiKeyAuth: []
@@ -50,7 +385,46 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  cancelled:
+                    type: integer
+                    description: Number of open orders cancelled across all pairs.
+                additionalProperties: true
+                required:
+                - cancelled
+        '503':
+          description: Cancel could not be routed to the matching leader; retry.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
       security:
       - BearerJWT: []
       - ApiKeyAuth: []
@@ -92,13 +466,149 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - amended
+                  order:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      user_id:
+                        type: integer
+                      pair:
+                        type: string
+                      side:
+                        type: string
+                        enum:
+                        - buy
+                        - sell
+                      order_type:
+                        type: string
+                      price:
+                        type: string
+                        description: Decimal as a string
+                      quantity:
+                        type: string
+                        description: Decimal as a string
+                      remaining:
+                        type: string
+                        description: Decimal as a string
+                      filled_quantity:
+                        type: string
+                        description: Decimal as a string
+                      status:
+                        type: string
+                        enum:
+                        - open
+                        - partial
+                        - filled
+                        - cancelled
+                      timestamp:
+                        type: integer
+                        description: Epoch microseconds
+                      seq:
+                        type: integer
+                      expire_at:
+                        type: integer
+                      stop_price:
+                        type: string
+                        description: Decimal as a string
+                      display_qty:
+                        type: string
+                        description: Decimal as a string
+                      hidden_qty:
+                        type: string
+                        description: Decimal as a string
+                      total_qty:
+                        type: string
+                        description: Decimal as a string
+                    additionalProperties: true
+                    required:
+                    - id
+                    - pair
+                    - side
+                    - price
+                    - quantity
+                    - remaining
+                    - status
+                    description: A CLOB order. expire_at / stop_price / display_qty+hidden_qty+total_qty appear only when set.
+                additionalProperties: true
+                required:
+                - status
+                - order
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '404':
+          description: Order not found, not yours, or not amendable (must be open or partial).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: Amend could not be routed to the matching leader; retry.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
     delete:
       tags:
       - CLOB
@@ -120,13 +630,290 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  order_id:
+                    type: string
+                  unlock:
+                    type: string
+                    description: '''deferred'' when the fund release is queued.'
+                  status:
+                    type: string
+                    description: Terminal status, present only when reconciled after a leader ack timeout.
+                  filled_quantity:
+                    type: string
+                    description: Decimal as a string
+                  reconciled_after_ack_timeout:
+                    type: boolean
+                additionalProperties: true
+                required:
+                - success
+                - order_id
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '403':
+          description: Not your order.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: Order not found or already filled.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: Cancel status unknown after an ack timeout (CANCEL_STATUS_UNKNOWN) — check GET /api/v1/clob/orders.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/clob/book/hybrid:
+    get:
+      tags:
+      - CLOB
+      summary: Get Hybrid Orderbook
+      description: 'Get L2 orderbook with AMM depth merged.
+
+
+        Uses Redis 2s TTL cache so all workers return identical data and avoid
+
+        redundant AMM fetches that cause 3-9s latency spikes.'
+      operationId: get_hybrid_orderbook_api_v1_clob_book_hybrid_get
+      parameters:
+      - name: pair
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Pair
+      - name: depth
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 500
+          minimum: 1
+          default: 20
+          title: Depth
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pair:
+                    type: string
+                  bids:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        price:
+                          type: string
+                          description: Decimal as a string
+                        quantity:
+                          type: string
+                          description: Decimal as a string
+                        order_count:
+                          type: integer
+                        is_amm:
+                          type: boolean
+                          description: True = virtual AMM/DEX depth, not a resting order.
+                        chain:
+                          type: string
+                          description: '''clob'' or the DEX chain'
+                        dex:
+                          type: string
+                      additionalProperties: true
+                  asks:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        price:
+                          type: string
+                          description: Decimal as a string
+                        quantity:
+                          type: string
+                          description: Decimal as a string
+                        order_count:
+                          type: integer
+                        is_amm:
+                          type: boolean
+                          description: True = virtual AMM/DEX depth, not a resting order.
+                        chain:
+                          type: string
+                          description: '''clob'' or the DEX chain'
+                        dex:
+                          type: string
+                      additionalProperties: true
+                  best_bid:
+                    type:
+                    - string
+                    - 'null'
+                  best_ask:
+                    type:
+                    - string
+                    - 'null'
+                  spread:
+                    type:
+                    - string
+                    - 'null'
+                  mid_price:
+                    type:
+                    - string
+                    - 'null'
+                  last_trade_price:
+                    type:
+                    - string
+                    - 'null'
+                  sequence:
+                    type: integer
+                  amm_mid_price:
+                    type: string
+                  amm_spread_pct:
+                    type: string
+                  has_amm_depth:
+                    type: boolean
+                  amm_chains:
+                    type: array
+                    items:
+                      type: string
+                  total_liquidity_usd:
+                    type:
+                    - string
+                    - number
+                additionalProperties: true
+                required:
+                - bids
+                - asks
+                description: L2 book merging CLOB resting orders with DEX/AMM depth (`is_amm` per level). Prices/quantities are decimal strings.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '404':
+          description: Unknown pair.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
 components:
   schemas:
     HTTPValidationError:
@@ -138,25 +925,6 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
-    AmendOrderRequest:
-      properties:
-        price:
-          anyOf:
-          - type: string
-            maxLength: 50
-          - type: 'null'
-          title: Price
-          description: New limit price
-        quantity:
-          anyOf:
-          - type: string
-            maxLength: 50
-          - type: 'null'
-          title: Quantity
-          description: New quantity
-      type: object
-      title: AmendOrderRequest
-      description: Amend a resting order's price and/or quantity atomically.
     ValidationError:
       properties:
         loc:
@@ -172,6 +940,11 @@ components:
         type:
           type: string
           title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
       type: object
       required:
       - loc
@@ -264,6 +1037,25 @@ components:
         ACCOUNT_IN_PAPER_MODE) so a paper-mode caller never spends real balance by
 
         omission — pass paper=false to trade live deliberately (ET-22652).'
+    AmendOrderRequest:
+      properties:
+        price:
+          anyOf:
+          - type: string
+            maxLength: 50
+          - type: 'null'
+          title: Price
+          description: New limit price
+        quantity:
+          anyOf:
+          - type: string
+            maxLength: 50
+          - type: 'null'
+          title: Quantity
+          description: New quantity
+      type: object
+      title: AmendOrderRequest
+      description: Amend a resting order's price and/or quantity atomically.
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

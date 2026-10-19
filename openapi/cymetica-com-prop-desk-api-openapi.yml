@@ -1,0 +1,246 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Prop Desk API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: Prop Desk
+paths:
+  /api/v1/prop/config:
+    get:
+      tags:
+      - Prop Desk
+      summary: Get Public Config
+      description: Public pricing & rules for the landing/tiers pages.
+      operationId: get_public_config_api_v1_prop_config_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profit_target_pct:
+                    type: string
+                    description: Decimal amount serialized as a string.
+                  max_drawdown_pct:
+                    type: string
+                    description: Decimal amount serialized as a string.
+                  daily_loss_limit_pct:
+                    type: string
+                    description: Decimal amount serialized as a string.
+                  max_leverage:
+                    type: integer
+                  min_trade_count:
+                    type: integer
+                  min_trading_days:
+                    type: integer
+                  tracks:
+                    type: object
+                    properties:
+                      free:
+                        type: object
+                        properties:
+                          allocation_usdc:
+                            type: string
+                          fee_usdc:
+                            type: string
+                          split_pct:
+                            type: string
+                        additionalProperties: false
+                      paid:
+                        type: object
+                        properties:
+                          allocation_usdc:
+                            type: string
+                          fee_usdc:
+                            type: string
+                          split_pct:
+                            type: string
+                        additionalProperties: false
+                    additionalProperties: false
+                    required:
+                    - free
+                    - paid
+                  real_capital_live:
+                    type: boolean
+                  venues:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        display_name:
+                          type: string
+                        description:
+                          type: string
+                        href:
+                          type:
+                          - string
+                          - 'null'
+                        real_capital_eligible:
+                          type: boolean
+                        real_capital_live:
+                          type: boolean
+                      additionalProperties: true
+                      required:
+                      - id
+                      - display_name
+                      - real_capital_live
+                  tiers:
+                    anyOf:
+                    - type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                          slug:
+                            type: string
+                          display_name:
+                            type: string
+                          allocation_usdc:
+                            type: string
+                          fee_usdc:
+                            type: string
+                          profit_target_pct:
+                            type: string
+                          max_drawdown_pct:
+                            type: string
+                          daily_loss_pct:
+                            type: string
+                          split_pct:
+                            type: string
+                          max_leverage:
+                            type:
+                            - integer
+                            - 'null'
+                          funded_max_leverage:
+                            type:
+                            - integer
+                            - 'null'
+                        additionalProperties: false
+                    - type: 'null'
+                    description: Account-size ladder; null when tiers are disabled.
+                additionalProperties: false
+                required:
+                - profit_target_pct
+                - max_drawdown_pct
+                - tracks
+                - real_capital_live
+                - venues
+                - tiers
+                description: Prop Desk public rules and pricing. Percent and USDC amounts are decimal strings.
+      security: []
+  /api/v1/prop/stats:
+    get:
+      tags:
+      - Prop Desk
+      summary: Get Public Stats
+      description: Public funnel stats for the landing page.
+      operationId: get_public_stats_api_v1_prop_stats_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  funded_traders:
+                    type: integer
+                  in_evaluation:
+                    type: integer
+                  total_paid_out_usdc:
+                    type: string
+                    description: Decimal amount serialized as a string.
+                  real_capital_live:
+                    type: boolean
+                additionalProperties: false
+                required:
+                - funded_traders
+                - in_evaluation
+                - total_paid_out_usdc
+                - real_capital_live
+      security: []
+  /api/v1/prop/reserve:
+    get:
+      tags:
+      - Prop Desk
+      summary: Prop Reserve
+      description: 'Prop Desk wallet status read: the wallet''s live on-chain USDC vs total real-funded
+
+        allocation. The desk is simulated (no funded capital, no payouts) and the public page
+
+        no longer presents this as a proof of reserve. Fail-closed: an RPC read failure reports
+
+        0 on-chain (never 500, never an inflated figure).'
+      operationId: prop_reserve_api_v1_prop_reserve_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  wallet_address:
+                    type:
+                    - string
+                    - 'null'
+                  onchain_usdc:
+                    type: string
+                    description: Live on-chain USDC of the Prop Desk wallet; 0 on an RPC read failure (fail-closed).
+                  total_allocated_usdc:
+                    type: string
+                  available_usdc:
+                    type: string
+                  coverage_pct:
+                    type:
+                    - string
+                    - 'null'
+                    description: onchain / allocated x 100; null when nothing is allocated.
+                  real_capital_live:
+                    type: boolean
+                  checked_at:
+                    type: string
+                  explorer_url:
+                    type:
+                    - string
+                    - 'null'
+                additionalProperties: false
+                required:
+                - onchain_usdc
+                - total_allocated_usdc
+                - available_usdc
+                - checked_at
+                description: Proof-of-reserve for the Prop Desk wallet. Amounts are decimal strings.
+      security: []
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

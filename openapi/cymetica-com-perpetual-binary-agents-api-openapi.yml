@@ -1,0 +1,236 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Perpetual Binary Agents API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: Perpetual Binary Agents
+paths:
+  /api/v1/perpetual/agents/{symbol}/bets:
+    get:
+      tags:
+      - Perpetual Binary Agents
+      summary: Get Agent Bets
+      description: 'Get bet history for an agent.
+
+
+        Returns paginated list of bets with optional filtering.
+
+        Use chain_id=46630 for Robinhood Testnet bets.'
+      operationId: get_agent_bets_api_v1_perpetual_agents__symbol__bets_get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 50
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      - name: market
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Filter by market symbol
+          title: Market
+        description: Filter by market symbol
+      - name: resolved
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          description: Filter by resolution status
+          title: Resolved
+        description: Filter by resolution status
+      - name: chain_id
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: Chain ID to filter bets by
+          default: 8453
+          title: Chain Id
+        description: Chain ID to filter bets by
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PerpetualAgentBetResponse'
+                title: Response Get Agent Bets Api V1 Perpetual Agents  Symbol  Bets Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    PerpetualAgentBetResponse:
+      properties:
+        id:
+          type: string
+          title: Id
+        agent_instance_id:
+          type: string
+          title: Agent Instance Id
+        market_address:
+          type: string
+          title: Market Address
+        market_symbol:
+          type: string
+          title: Market Symbol
+        epoch:
+          type: integer
+          title: Epoch
+        side:
+          type: string
+          title: Side
+        amount_usdc:
+          type: number
+          title: Amount Usdc
+        tx_hash:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Tx Hash
+        tx_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Tx Url
+        is_offchain:
+          type: boolean
+          title: Is Offchain
+          default: false
+        is_resolved:
+          type: boolean
+          title: Is Resolved
+          default: false
+        is_winner:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Winner
+        payout_usdc:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Payout Usdc
+        profit_usdc:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Profit Usdc
+        strategy_rationale:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Strategy Rationale
+        placed_at:
+          type: string
+          format: date-time
+          title: Placed At
+      type: object
+      required:
+      - id
+      - agent_instance_id
+      - market_address
+      - market_symbol
+      - epoch
+      - side
+      - amount_usdc
+      - placed_at
+      title: PerpetualAgentBetResponse
+      description: API response for a perpetual agent bet.
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

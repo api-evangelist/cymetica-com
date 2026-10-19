@@ -1,0 +1,57 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Robinhood Testnet API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: Robinhood Testnet
+paths:
+  /api/v1/robinhood/wallet:
+    get:
+      tags:
+      - Robinhood Testnet
+      summary: Get Testnet Wallet
+      description: 'Get user''s derived testnet wallet address and balances.
+
+
+        Accepts a Bearer session OR a trusted X-API-Key (ET-24581) — llms.txt
+
+        documents this route for agent consumption; it was previously
+
+        bearer-session-only, unlike 44 other documented GETs.'
+      operationId: get_testnet_wallet_api_v1_robinhood_wallet_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

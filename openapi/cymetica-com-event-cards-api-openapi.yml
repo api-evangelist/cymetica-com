@@ -173,13 +173,147 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  reason:
+                    type:
+                    - string
+                    - 'null'
+                  card_id:
+                    type: string
+                  book:
+                    type: string
+                    description: Paper book id `ec:<card_id>`
+                  run_ref:
+                    type: string
+                  side:
+                    type: string
+                  requested_usd:
+                    type: string
+                    description: Decimal as a string
+                  filled_usd:
+                    type: string
+                    description: Decimal as a string
+                  coverage:
+                    type: number
+                    description: Fraction of legs filled (0..1)
+                  weight_coverage:
+                    type: number
+                    description: Fraction of basket weight filled (0..1)
+                  skipped_weight:
+                    type: number
+                  full_coverage:
+                    type: boolean
+                  fills:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        symbol:
+                          type: string
+                        weight:
+                          type: string
+                        target_usd:
+                          type: string
+                        status:
+                          type: string
+                          enum:
+                          - filled
+                          - skipped
+                        asset_class:
+                          type:
+                          - string
+                          - 'null'
+                        quantity: {}
+                        price_usd: {}
+                        reason:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: true
+                  portfolio:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: The paper book's priced portfolio summary.
+                additionalProperties: true
+                required:
+                - ok
+                - card_id
+                - book
+                - fills
+                description: Simulated basket fill; no real funds move.
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '404':
+          description: Event Card not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: Paper trade temporarily unavailable.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
   /api/v1/event-cards/{card_id}/historical-analogs:
     post:
       tags:
@@ -221,13 +355,237 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  card_id:
+                    type: string
+                  sector:
+                    type:
+                    - string
+                    - 'null'
+                  window_days:
+                    type: integer
+                  subject:
+                    anyOf:
+                    - type: object
+                      properties:
+                        title:
+                          type: string
+                        event_date:
+                          type: string
+                        return_pct:
+                          type:
+                          - number
+                          - 'null'
+                        max_drawdown_pct:
+                          type:
+                          - number
+                          - 'null'
+                        n_days:
+                          type: integer
+                        series:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              d:
+                                type: integer
+                                description: Day offset from the event date
+                              index:
+                                type: number
+                            additionalProperties: true
+                        in_progress:
+                          type: boolean
+                      additionalProperties: true
+                    - type: 'null'
+                  analogs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        title:
+                          type: string
+                        event_date:
+                          type: string
+                        return_pct:
+                          type:
+                          - number
+                          - 'null'
+                        max_drawdown_pct:
+                          type:
+                          - number
+                          - 'null'
+                        n_days:
+                          type: integer
+                        series:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              d:
+                                type: integer
+                                description: Day offset from the event date
+                              index:
+                                type: number
+                            additionalProperties: true
+                        headline_id: {}
+                        similarity:
+                          type: number
+                        card_id:
+                          type:
+                          - string
+                          - 'null'
+                        basket:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              symbol:
+                                type: string
+                              weight:
+                                type: number
+                            additionalProperties: true
+                      additionalProperties: true
+                  aggregate:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                      median_return_pct:
+                        type:
+                        - number
+                        - 'null'
+                      mean_return_pct:
+                        type:
+                        - number
+                        - 'null'
+                      pct_positive:
+                        type:
+                        - number
+                        - 'null'
+                      best:
+                        anyOf:
+                        - type: object
+                          properties:
+                            title:
+                              type: string
+                            event_date:
+                              type: string
+                            return_pct:
+                              type: number
+                          additionalProperties: true
+                        - type: 'null'
+                      worst:
+                        anyOf:
+                        - type: object
+                          properties:
+                            title:
+                              type: string
+                            event_date:
+                              type: string
+                            return_pct:
+                              type: number
+                          additionalProperties: true
+                        - type: 'null'
+                      median_series:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            d:
+                              type: integer
+                              description: Day offset from the event date
+                            index:
+                              type: number
+                          additionalProperties: true
+                    additionalProperties: true
+                  meta:
+                    type: object
+                    properties:
+                      candidates_scanned:
+                        type: integer
+                      matched:
+                        type: integer
+                      requested_limit:
+                        type: integer
+                      note:
+                        type: string
+                    additionalProperties: true
+                additionalProperties: true
+                required:
+                - card_id
+                - analogs
+                - aggregate
+                description: Forward returns of real past events similar to this card (returns in percent).
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '404':
+          description: Event Card not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: Historical analogs temporarily unavailable.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
   /api/v1/event-cards:
     get:
       tags:
@@ -366,7 +724,290 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  cards:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        title:
+                          type: string
+                        summary:
+                          type:
+                          - string
+                          - 'null'
+                        image_url:
+                          type:
+                          - string
+                          - 'null'
+                        source_url:
+                          type:
+                          - string
+                          - 'null'
+                        report_url:
+                          type:
+                          - string
+                          - 'null'
+                        status:
+                          type: string
+                        card_url:
+                          type: string
+                        share_url:
+                          type: string
+                        share_price_usd:
+                          type:
+                          - string
+                          - 'null'
+                          description: 4-dp decimal string
+                        index_base:
+                          type: number
+                        current_index:
+                          type:
+                          - number
+                          - 'null'
+                        pw_index:
+                          type:
+                          - number
+                          - 'null'
+                        pw_base:
+                          type:
+                          - number
+                          - 'null'
+                        pw_live: {}
+                        bull_notional_usdc:
+                          type: number
+                        bear_notional_usdc:
+                          type: number
+                        created_at:
+                          type:
+                          - string
+                          - 'null'
+                        is_featured:
+                          type: boolean
+                        published_at:
+                          type:
+                          - string
+                          - 'null'
+                        basket:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              symbol:
+                                type: string
+                              name:
+                                type: string
+                              weight:
+                                type: number
+                              venue:
+                                type:
+                                - string
+                                - 'null'
+                              image_url:
+                                type:
+                                - string
+                                - 'null'
+                              market_cap_rank:
+                                type:
+                                - integer
+                                - 'null'
+                              asset_type:
+                                type:
+                                - string
+                                - 'null'
+                              association_score:
+                                type:
+                                - number
+                                - 'null'
+                              is_direct:
+                                type:
+                                - boolean
+                                - 'null'
+                            additionalProperties: true
+                            required:
+                            - symbol
+                            - weight
+                            description: Basket leg (`name`/`market_cap_rank` only on the full detail).
+                        effective_relevance:
+                          type:
+                          - number
+                          - 'null'
+                        vehicle_structure:
+                          type:
+                          - string
+                          - 'null'
+                        vehicle_structure_name:
+                          type:
+                          - string
+                          - 'null'
+                        pons_coin: {}
+                        arc_coin: {}
+                        evcdx_symbol:
+                          type:
+                          - string
+                          - 'null'
+                        pro_terminal_url:
+                          type:
+                          - string
+                          - 'null'
+                        short_execution:
+                          type: string
+                          enum:
+                          - perp
+                          - spot_bear
+                        perp_symbol:
+                          type:
+                          - string
+                          - 'null'
+                        headline_sentiment_score:
+                          type:
+                          - number
+                          - 'null'
+                        headline_impact_score:
+                          type:
+                          - number
+                          - 'null'
+                        headline_impact_score_is_ai_scored:
+                          type:
+                          - boolean
+                          - 'null'
+                        direction:
+                          type:
+                          - string
+                          - 'null'
+                        strategy_name:
+                          type:
+                          - string
+                          - 'null'
+                        contract_spec:
+                          anyOf:
+                          - type: object
+                            properties:
+                              resolution_source:
+                                type:
+                                - string
+                                - 'null'
+                              fallback_source:
+                                type:
+                                - string
+                                - 'null'
+                              methodology:
+                                type:
+                                - string
+                                - 'null'
+                              resolution_at_utc:
+                                type:
+                                - string
+                                - 'null'
+                              resolution_basis:
+                                type: string
+                                enum:
+                                - trading_close
+                                - perpetual
+                            additionalProperties: true
+                          - type: 'null'
+                        trading_closes_at:
+                          type:
+                          - string
+                          - 'null'
+                        seconds_to_close:
+                          type:
+                          - integer
+                          - 'null'
+                        user_position:
+                          anyOf:
+                          - type: object
+                            properties:
+                              has_position:
+                                type: boolean
+                              positions:
+                                type: array
+                                items:
+                                  type: object
+                                  properties:
+                                    position_id:
+                                      type: string
+                                    side:
+                                      type: string
+                                    notional_usdc:
+                                      type: number
+                                    unrealized_pnl_usdc:
+                                      type: number
+                                  additionalProperties: true
+                              total_unrealized_pnl_usdc:
+                                type: number
+                            additionalProperties: true
+                          - type: 'null'
+                        tradeable_now:
+                          type: boolean
+                        trading_blocked_reason:
+                          type:
+                          - string
+                          - 'null'
+                        has_stock_legs:
+                          type:
+                          - boolean
+                          - 'null'
+                        us_market_open:
+                          type:
+                          - boolean
+                          - 'null'
+                        upvotes:
+                          type: integer
+                        upvoted_by_me:
+                          type: boolean
+                      additionalProperties: true
+                      required:
+                      - id
+                      - title
+                      - status
+                      - basket
+                      description: An Event Card.
+                  count:
+                    type: integer
+                    description: Cards on this page
+                  total:
+                    type: integer
+                    description: Cards matching the filter
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+                  us_market_open:
+                    type: boolean
+                  user_harvest_target_pct: {}
+                  filters:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                      origin:
+                        type:
+                        - string
+                        - 'null'
+                      include_user_submitted:
+                        type: boolean
+                      q:
+                        type:
+                        - string
+                        - 'null'
+                      symbol:
+                        type:
+                        - string
+                        - 'null'
+                    additionalProperties: true
+                additionalProperties: true
+                required:
+                - cards
+                - count
+                - total
+                - limit
+                - offset
+                description: Paginated Event Card feed (limit/offset or page).
         '422':
           description: Validation Error
           content:
@@ -387,17 +1028,141 @@ paths:
 
         perp short path was previously invisible on /positions — CentCom
 
-        #5970 (expire76): "shorted event card doesn''t appear in positions".'
+        #5970 (expire76): "shorted event card doesn''t appear in positions".
+
+
+        2026-10-09: one user holds 72,369 spot rows and this handler ran one card
+
+        query PER ROW — 43-56 s per call (5 today), the phone gave up (nginx 499)
+
+        and the request kept a threadpool slot for the duration. Cards are now
+
+        fetched in one query per 1,000 distinct ids, and callers that render a
+
+        subset (the account card: open rows + 10 closed) can ask for exactly that.
+
+        Defaults are unchanged for the public API: every row, newest first.'
       operationId: my_positions_api_v1_event_cards_positions_get
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^(all|open|closed)$
+          description: open = status 'open'; closed = anything else; all (default) = every row
+          default: all
+          title: Status
+        description: open = status 'open'; closed = anything else; all (default) = every row
+      - name: limit
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+            maximum: 5000
+            minimum: 1
+          - type: 'null'
+          description: newest-first page size; omit for every row
+          title: Limit
+        description: newest-first page size; omit for every row
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
       responses:
         '200':
           description: Successful Response
           content:
             application/json:
-              schema: {}
-      security:
-      - BearerJWT: []
-      - ApiKeyAuth: []
+              schema:
+                type: object
+                properties:
+                  positions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        position_id:
+                          type: string
+                        card_id:
+                          type:
+                          - string
+                          - 'null'
+                        card_title:
+                          type:
+                          - string
+                          - 'null'
+                        side:
+                          type: string
+                          description: bull | bear (spot) or long | short (perp)
+                        status:
+                          type: string
+                        notional_usdc:
+                          type: number
+                        entry_index:
+                          type: number
+                        units:
+                          type: number
+                        current_index:
+                          type:
+                          - number
+                          - 'null'
+                        current_value_usdc:
+                          type:
+                          - number
+                          - 'null'
+                        unrealized_pnl_usdc:
+                          type:
+                          - number
+                          - 'null'
+                        realized_pnl_usdc:
+                          type: number
+                        opened_at:
+                          type:
+                          - string
+                          - 'null'
+                        is_paper:
+                          type: boolean
+                        position_type:
+                          type: string
+                          enum:
+                          - spot
+                          - perp
+                        leverage:
+                          type: integer
+                          description: perp only
+                        initial_margin_usdc:
+                          type: number
+                          description: perp only
+                      additionalProperties: true
+                      required:
+                      - position_id
+                      - side
+                      - status
+                      - position_type
+                  count:
+                    type: integer
+                  total:
+                    type: integer
+                additionalProperties: false
+                required:
+                - positions
+                - count
+                description: Your spot (bull/bear) and perp (long/short) Event Card positions with live valuation. `count` is the rows returned, `total` the rows matching `status` before `limit`/`offset`.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/event-cards/symbols/search:
     get:
       tags:
@@ -450,7 +1215,61 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        symbol:
+                          type: string
+                        name:
+                          type:
+                          - string
+                          - 'null'
+                        coingecko_id:
+                          type:
+                          - string
+                          - 'null'
+                        price_usd:
+                          type:
+                          - number
+                          - 'null'
+                        market_cap_rank:
+                          type:
+                          - integer
+                          - 'null'
+                        image_url:
+                          type:
+                          - string
+                          - 'null'
+                        asset_type:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: true
+                      required:
+                      - symbol
+                  unavailable:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        symbol:
+                          type: string
+                        name:
+                          type:
+                          - string
+                          - 'null'
+                        reason:
+                          type: string
+                      additionalProperties: true
+                additionalProperties: true
+                required:
+                - results
+                description: Priceable symbols for basket customization; `unavailable` lists matches with no live feed.
         '422':
           description: Validation Error
           content:
@@ -479,13 +1298,304 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  title:
+                    type: string
+                  summary:
+                    type:
+                    - string
+                    - 'null'
+                  image_url:
+                    type:
+                    - string
+                    - 'null'
+                  source_url:
+                    type:
+                    - string
+                    - 'null'
+                  report_url:
+                    type:
+                    - string
+                    - 'null'
+                  status:
+                    type: string
+                  card_url:
+                    type: string
+                  share_url:
+                    type: string
+                  share_price_usd:
+                    type:
+                    - string
+                    - 'null'
+                    description: 4-dp decimal string
+                  index_base:
+                    type: number
+                  current_index:
+                    type:
+                    - number
+                    - 'null'
+                  pw_index:
+                    type:
+                    - number
+                    - 'null'
+                  pw_base:
+                    type:
+                    - number
+                    - 'null'
+                  pw_live: {}
+                  bull_notional_usdc:
+                    type: number
+                  bear_notional_usdc:
+                    type: number
+                  created_at:
+                    type:
+                    - string
+                    - 'null'
+                  is_featured:
+                    type: boolean
+                  published_at:
+                    type:
+                    - string
+                    - 'null'
+                  basket:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        symbol:
+                          type: string
+                        name:
+                          type: string
+                        weight:
+                          type: number
+                        venue:
+                          type:
+                          - string
+                          - 'null'
+                        image_url:
+                          type:
+                          - string
+                          - 'null'
+                        market_cap_rank:
+                          type:
+                          - integer
+                          - 'null'
+                        asset_type:
+                          type:
+                          - string
+                          - 'null'
+                        association_score:
+                          type:
+                          - number
+                          - 'null'
+                        is_direct:
+                          type:
+                          - boolean
+                          - 'null'
+                      additionalProperties: true
+                      required:
+                      - symbol
+                      - weight
+                      description: Basket leg (`name`/`market_cap_rank` only on the full detail).
+                  effective_relevance:
+                    type:
+                    - number
+                    - 'null'
+                  vehicle_structure:
+                    type:
+                    - string
+                    - 'null'
+                  vehicle_structure_name:
+                    type:
+                    - string
+                    - 'null'
+                  pons_coin: {}
+                  arc_coin: {}
+                  evcdx_symbol:
+                    type:
+                    - string
+                    - 'null'
+                  pro_terminal_url:
+                    type:
+                    - string
+                    - 'null'
+                  short_execution:
+                    type: string
+                    enum:
+                    - perp
+                    - spot_bear
+                  perp_symbol:
+                    type:
+                    - string
+                    - 'null'
+                  headline_sentiment_score:
+                    type:
+                    - number
+                    - 'null'
+                  headline_impact_score:
+                    type:
+                    - number
+                    - 'null'
+                  headline_impact_score_is_ai_scored:
+                    type:
+                    - boolean
+                    - 'null'
+                  direction:
+                    type:
+                    - string
+                    - 'null'
+                  strategy_name:
+                    type:
+                    - string
+                    - 'null'
+                  contract_spec:
+                    anyOf:
+                    - type: object
+                      properties:
+                        resolution_source:
+                          type:
+                          - string
+                          - 'null'
+                        fallback_source:
+                          type:
+                          - string
+                          - 'null'
+                        methodology:
+                          type:
+                          - string
+                          - 'null'
+                        resolution_at_utc:
+                          type:
+                          - string
+                          - 'null'
+                        resolution_basis:
+                          type: string
+                          enum:
+                          - trading_close
+                          - perpetual
+                      additionalProperties: true
+                    - type: 'null'
+                  trading_closes_at:
+                    type:
+                    - string
+                    - 'null'
+                  seconds_to_close:
+                    type:
+                    - integer
+                    - 'null'
+                  user_position:
+                    anyOf:
+                    - type: object
+                      properties:
+                        has_position:
+                          type: boolean
+                        positions:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              position_id:
+                                type: string
+                              side:
+                                type: string
+                              notional_usdc:
+                                type: number
+                              unrealized_pnl_usdc:
+                                type: number
+                            additionalProperties: true
+                        total_unrealized_pnl_usdc:
+                          type: number
+                      additionalProperties: true
+                    - type: 'null'
+                  tradeable_now:
+                    type: boolean
+                  trading_blocked_reason:
+                    type:
+                    - string
+                    - 'null'
+                  has_stock_legs:
+                    type:
+                    - boolean
+                    - 'null'
+                  us_market_open:
+                    type:
+                    - boolean
+                    - 'null'
+                  upvotes:
+                    type: integer
+                  upvoted_by_me:
+                    type: boolean
+                  pipeline_status:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: On-chain token listing pipeline status (not a trade gate).
+                  tradeability:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  holdings:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        symbol:
+                          type: string
+                        venue:
+                          type:
+                          - string
+                          - 'null'
+                        quantity:
+                          type: number
+                      additionalProperties: true
+                additionalProperties: true
+                required:
+                - id
+                - title
+                - status
+                - basket
+                description: Full Event Card detail (the listing fields plus pipeline_status, tradeability, holdings).
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '404':
+          description: Event Card not found (or private).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
   /api/v1/event-cards/{card_id}/index-history:
     get:
       tags:
@@ -518,20 +1628,91 @@ paths:
         required: false
         schema:
           type: string
+          pattern: ^(1d|5d|30d|all)$
+          description: 1d | 5d | 30d | all. all = since inception (use it for settled cards older than the window; the default 5d returns an empty points list for them).
           default: 5d
           title: Interval
+        description: 1d | 5d | 30d | all. all = since inception (use it for settled cards older than the window; the default 5d returns an empty points list for them).
       responses:
         '200':
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  card_id:
+                    type: string
+                  interval:
+                    type: string
+                    enum:
+                    - 1d
+                    - 5d
+                    - 30d
+                    - all
+                  index_base:
+                    type: number
+                  nav_base_usd:
+                    type: number
+                  points:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        t:
+                          type: string
+                        index:
+                          type: number
+                        share_price:
+                          type: number
+                          description: USD
+                      additionalProperties: false
+                      required:
+                      - t
+                      - index
+                additionalProperties: false
+                required:
+                - card_id
+                - interval
+                - points
+                description: Index series downsampled to ≤300 points.
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '404':
+          description: Event Card not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
   /api/v1/event-cards/{card_id}/buy:
     post:
       tags:
@@ -576,13 +1757,150 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  position_id:
+                    type: string
+                  card_id:
+                    type: string
+                  side:
+                    type: string
+                  asset_class:
+                    type:
+                    - string
+                    - 'null'
+                  notional_usdc:
+                    type: number
+                  entry_index:
+                    type: number
+                  units:
+                    type: number
+                  paper:
+                    type: boolean
+                  broker:
+                    type:
+                    - string
+                    - 'null'
+                  forced_paper_reason:
+                    type:
+                    - string
+                    - 'null'
+                  legs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        symbol:
+                          type: string
+                        venue:
+                          type:
+                          - string
+                          - 'null'
+                        usdc:
+                          type: number
+                        price:
+                          type:
+                          - number
+                          - 'null'
+                        ok:
+                          type: boolean
+                        error:
+                          type:
+                          - string
+                          - 'null'
+                        shares:
+                          type: number
+                        order_id:
+                          type: string
+                      additionalProperties: true
+                  ok:
+                    type: boolean
+                  symbol:
+                    type: string
+                  shares:
+                    type: string
+                    description: Decimal as a string
+                  ask_price:
+                    type: string
+                    description: Decimal as a string
+                  nav:
+                    type: string
+                    description: Decimal as a string
+                  fee:
+                    type: string
+                    description: Decimal as a string
+                  proofs: {}
+                additionalProperties: true
+                description: 'Bull position opened (position_id…legs). For a Trend Card backed by a tokenized AIB, a live buy mints index shares instead: {ok, symbol, shares, ask_price, nav, fee, proofs}.'
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '404':
+          description: Index not found (Trend Card).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '409':
+          description: Purchases closed or the buy was refused.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
   /api/v1/event-cards/{card_id}/sell:
     post:
       tags:
@@ -633,7 +1951,38 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  position_id:
+                    type: string
+                  closed_fraction:
+                    type: number
+                  proceeds_usdc:
+                    type: number
+                  realized_pnl_usdc:
+                    type: number
+                  status:
+                    type: string
+                  paper:
+                    type: boolean
+                  broker:
+                    type: string
+                  exit_index:
+                    type: number
+                  payout_usdc:
+                    type: number
+                  cover_cost_usdc:
+                    type: number
+                  execution:
+                    type: string
+                additionalProperties: true
+                required:
+                - position_id
+                - realized_pnl_usdc
+                - status
+                - paper
+                description: 'Bull close: closed_fraction/proceeds_usdc. Bear close (full only): exit_index/payout_usdc (+cover_cost_usdc for a broker short).'
         '422':
           description: Validation Error
           content:
@@ -673,7 +2022,81 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  position_id:
+                    type: string
+                  symbol:
+                    type: string
+                  side:
+                    type: string
+                  size:
+                    type: string
+                    description: Decimal as a string
+                  entry_price:
+                    type: string
+                    description: Decimal as a string
+                  margin_usdc:
+                    type: string
+                    description: Decimal as a string
+                  leverage:
+                    type: integer
+                  liquidation_price:
+                    type: string
+                    description: Decimal as a string
+                  card_id:
+                    type: string
+                  collateral_usdc:
+                    type: number
+                  entry_index:
+                    type: number
+                  paper:
+                    type: boolean
+                  forced_paper_reason:
+                    type:
+                    - string
+                    - 'null'
+                  requested_usdc:
+                    type: number
+                  shorted_usdc:
+                    type: number
+                  execution:
+                    type: string
+                  broker:
+                    type: string
+                  legs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        symbol:
+                          type: string
+                        venue:
+                          type:
+                          - string
+                          - 'null'
+                        usdc:
+                          type: number
+                        price:
+                          type:
+                          - number
+                          - 'null'
+                        ok:
+                          type: boolean
+                        error:
+                          type:
+                          - string
+                          - 'null'
+                        shares:
+                          type: number
+                        order_id:
+                          type: string
+                      additionalProperties: true
+                additionalProperties: true
+                required:
+                - position_id
+                description: 'Perp card (short_execution=perp): {position_id, symbol, side, size, entry_price, margin_usdc, leverage, liquidation_price}. Otherwise a 1x fully-collateralized spot bear (side=bear, collateral_usdc, entry_index, paper; broker shorts add legs).'
         '422':
           description: Validation Error
           content:
@@ -682,57 +2105,6 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
-    SellRequest:
-      properties:
-        position_id:
-          type: string
-          title: Position Id
-        fraction:
-          type: number
-          maximum: 1.0
-          exclusiveMinimum: 0.0
-          title: Fraction
-          default: 1.0
-        paper:
-          anyOf:
-          - type: boolean
-          - type: 'null'
-          title: Paper
-          description: Per-trade paper override; see BuyRequest.paper
-      type: object
-      required:
-      - position_id
-      title: SellRequest
-    IdeaConstituent:
-      properties:
-        symbol:
-          type: string
-          maxLength: 32
-          minLength: 1
-          title: Symbol
-        coingecko_id:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Coingecko Id
-          description: CoinGecko id keyed into historical_prices, for a CRYPTO leg. If omitted we best-effort resolve it from the symbol; unresolvable symbols are returned in unresolved_symbols and excluded.
-        asset_type:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Asset Type
-          description: '''stock'' or ''crypto''. Tells the resolver which price table and catalog to use, and prevents a ticker that exists as BOTH an equity and a crypto token (e.g. REAL = The RealReal Inc. stock, also the symbol of an unrelated ''RealLink'' crypto token) from being resolved to the wrong instrument. If omitted, we best-effort detect it from event_card_assets / the catalogs; pass it explicitly whenever the symbol is a known collision.'
-        weight:
-          type: number
-          minimum: 0.0
-          title: Weight
-          description: Relative basket weight (renormalized). 0 is accepted and excluded.
-      type: object
-      required:
-      - symbol
-      - weight
-      title: IdeaConstituent
-      description: One leg of an ad-hoc basket idea.
     ShortRequest:
       properties:
         margin_usdc:
@@ -784,6 +2156,57 @@ components:
       description: 'Paper-trade a saved card''s whole basket — open SIMULATED positions in the
 
         card''s constituents, weighted, at live spot. No real money moves.'
+    IdeaConstituent:
+      properties:
+        symbol:
+          type: string
+          maxLength: 32
+          minLength: 1
+          title: Symbol
+        coingecko_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Coingecko Id
+          description: CoinGecko id keyed into historical_prices, for a CRYPTO leg. If omitted we best-effort resolve it from the symbol; unresolvable symbols are returned in unresolved_symbols and excluded.
+        asset_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Asset Type
+          description: '''stock'' or ''crypto''. Tells the resolver which price table and catalog to use, and prevents a ticker that exists as BOTH an equity and a crypto token (e.g. REAL = The RealReal Inc. stock, also the symbol of an unrelated ''RealLink'' crypto token) from being resolved to the wrong instrument. If omitted, we best-effort detect it from event_card_assets / the catalogs; pass it explicitly whenever the symbol is a known collision.'
+        weight:
+          type: number
+          minimum: 0.0
+          title: Weight
+          description: Relative basket weight (renormalized). 0 is accepted and excluded.
+      type: object
+      required:
+      - symbol
+      - weight
+      title: IdeaConstituent
+      description: One leg of an ad-hoc basket idea.
+    SellRequest:
+      properties:
+        position_id:
+          type: string
+          title: Position Id
+        fraction:
+          type: number
+          maximum: 1.0
+          exclusiveMinimum: 0.0
+          title: Fraction
+          default: 1.0
+        paper:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Paper
+          description: Per-trade paper override; see BuyRequest.paper
+      type: object
+      required:
+      - position_id
+      title: SellRequest
     BuyRequest:
       properties:
         amount_usdc:
@@ -807,44 +2230,15 @@ components:
       required:
       - amount_usdc
       title: BuyRequest
-    HistoricalAnalogsRequest:
+    HTTPValidationError:
       properties:
-        window_days:
-          type: integer
-          title: Window Days
-          default: 30
-        limit:
-          type: integer
-          maximum: 20.0
-          minimum: 1.0
-          title: Limit
-          default: 10
-      type: object
-      title: HistoricalAnalogsRequest
-      description: 'Backtest how similar PAST events performed over the window FOLLOWING each
-
-        event — read-only, no money, no card creation.'
-    ValidationError:
-      properties:
-        loc:
+        detail:
           items:
-            anyOf:
-            - type: string
-            - type: integer
+            $ref: '#/components/schemas/ValidationError'
           type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
+          title: Detail
       type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
+      title: HTTPValidationError
     BacktestIdeaRequest:
       properties:
         constituents:
@@ -883,15 +2277,49 @@ components:
       description: 'Backtest an arbitrary basket the user defines — an ''event card idea'' —
 
         without creating a card or moving any money.'
-    HTTPValidationError:
+    ValidationError:
       properties:
-        detail:
+        loc:
           items:
-            $ref: '#/components/schemas/ValidationError'
+            anyOf:
+            - type: string
+            - type: integer
           type: array
-          title: Detail
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
       type: object
-      title: HTTPValidationError
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    HistoricalAnalogsRequest:
+      properties:
+        window_days:
+          type: integer
+          title: Window Days
+          default: 30
+        limit:
+          type: integer
+          maximum: 20.0
+          minimum: 1.0
+          title: Limit
+          default: 10
+      type: object
+      title: HistoricalAnalogsRequest
+      description: 'Backtest how similar PAST events performed over the window FOLLOWING each
+
+        event — read-only, no money, no card creation.'
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

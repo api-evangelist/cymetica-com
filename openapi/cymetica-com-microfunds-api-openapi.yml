@@ -1,0 +1,222 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Microfunds API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: microfunds
+paths:
+  /api/v1/microfunds:
+    get:
+      tags:
+      - microfunds
+      summary: List Microfunds
+      description: 'Browseable list. `status=all` returns every microfund; any other
+
+        value must match one of the known mf_status values.
+
+
+        `q` (ET-25489): search by microfund number (``449``, ``#449``, ``APP-7``)
+
+        or title substring — applied server-side BEFORE the limit, because the
+
+        open list alone is ~280 funds and the page only loads 100. `backed=1`
+
+        keeps only funds with at least one real (transferred) backer, so the
+
+        long tail of unbacked pitches can be hidden.'
+      operationId: list_microfunds_api_v1_microfunds_get
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          default: open
+          title: Status
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 50
+          title: Limit
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          default: ''
+          title: Q
+      - name: backed
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+          title: Backed
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MicrofundListResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+components:
+  schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    MicrofundListEntry:
+      properties:
+        feature_request_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Feature Request Id
+        ai_app_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Ai App Id
+        original_feature_request_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Original Feature Request Id
+        title:
+          type: string
+          title: Title
+        mf_status:
+          type: string
+          title: Mf Status
+        raise_target_usd:
+          type: integer
+          title: Raise Target Usd
+        raised_usdc:
+          type: string
+          title: Raised Usdc
+        backer_count:
+          type: integer
+          title: Backer Count
+        platform_capital_usdc:
+          type: string
+          title: Platform Capital Usdc
+          default: '0'
+        backer_revenue_share_bps:
+          type: integer
+          title: Backer Revenue Share Bps
+        revenue_share_cap_multiplier:
+          type: string
+          title: Revenue Share Cap Multiplier
+        revenue_to_date_usdc:
+          type: string
+          title: Revenue To Date Usdc
+        total_spend_usdc:
+          type: string
+          title: Total Spend Usdc
+          default: '0'
+        last_spend_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Last Spend At
+        deadline_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Deadline At
+        migrated_to_ai_app_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Migrated To Ai App Id
+      type: object
+      required:
+      - title
+      - mf_status
+      - raise_target_usd
+      - raised_usdc
+      - backer_count
+      - backer_revenue_share_bps
+      - revenue_share_cap_multiplier
+      - revenue_to_date_usdc
+      - deadline_at
+      title: MicrofundListEntry
+    MicrofundListResponse:
+      properties:
+        entries:
+          items:
+            $ref: '#/components/schemas/MicrofundListEntry'
+          type: array
+          title: Entries
+      type: object
+      required:
+      - entries
+      title: MicrofundListResponse
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

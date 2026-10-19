@@ -1,0 +1,217 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Premium Chat API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: premium-chat
+paths:
+  /api/v1/chat/stream:
+    post:
+      tags:
+      - premium-chat
+      summary: Stream Chat
+      description: 'Stream a chat response from Claude AI.
+
+
+        This endpoint uses Server-Sent Events (SSE) to stream the response in real-time.
+
+        The stream includes:
+
+        - `text`: Text chunks as they''re generated
+
+        - `tool_start`: When Claude starts using a tool
+
+        - `tool_call`: Tool execution with results
+
+        - `embed`: Rich embed data (market cards, charts)
+
+        - `action`: Trading action buttons
+
+        - `usage`: Token usage statistics
+
+        - `done`: Stream complete
+
+        - `error`: Error occurred
+
+
+        **Example client:**
+
+        ```javascript
+
+        const eventSource = new EventSource(''/api/v1/chat/stream'');
+
+        eventSource.addEventListener(''text'', (e) => {
+
+        const data = JSON.parse(e.data);
+
+        appendToChat(data.content);
+
+        });
+
+        ```'
+      operationId: stream_chat_api_v1_chat_stream_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatMessageRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: 'Server-Sent Events stream. Each event is `event: <name>\ndata: <JSON>\n\n`. Event names: `session` {session_id, conversation_id}; `status` {state: thinking|degraded|working, message?}; `text` {content} (answer text chunks, append in order); `tool_start` / `tool_result` (tool use progress); `embed` (rich card/chart data); `action` (trade action buttons); `usage_limit` (plan usage cap reached); `error` {error, message?}; `done` {usage: {input_tokens, output_tokens}, ...} ends the stream.'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - BearerJWT: []
+      - ApiKeyAuth: []
+components:
+  schemas:
+    ChatAttachment:
+      properties:
+        upload_id:
+          type: string
+          title: Upload Id
+          description: Upload ID returned by /api/v1/chat/upload
+      type: object
+      required:
+      - upload_id
+      title: ChatAttachment
+      description: Reference to an uploaded media file for chat.
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ChatMessageRequest:
+      properties:
+        message:
+          type: string
+          maxLength: 10000
+          minLength: 1
+          title: Message
+          description: The message to send
+        session_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Session Id
+          description: Session ID for conversation continuity
+        is_voice_input:
+          type: boolean
+          title: Is Voice Input
+          description: Whether the message was voice input
+          default: false
+        agent_type:
+          type: string
+          title: Agent Type
+          description: 'Agent type: ''default'' or ''nexus'''
+          default: default
+        current_page:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Current Page
+          description: Current page URL path (e.g. /profile)
+        page_title:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Page Title
+          description: Current page document title
+        page_context:
+          anyOf:
+          - type: object
+          - type: 'null'
+          title: Page Context
+          description: 'Feature #210: what the user sees — {route, title, h1, items:[{label,text}], selection:{label,text,kind}} collected by nexus-page-context.js. Untrusted; validated, capped (40 items / 6 KB / 2 KB selection) and secret-scrubbed server-side.'
+        bot_instance_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Bot Instance Id
+          description: Cloned bot instance ID for per-bot chat context
+        attachments:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/ChatAttachment'
+            type: array
+          - type: 'null'
+          title: Attachments
+          description: Uploaded media references
+        agent_code:
+          anyOf:
+          - type: string
+            maxLength: 10
+          - type: 'null'
+          title: Agent Code
+          description: Perpetual agent species symbol (e.g. 'MOMO'). When present, the server looks up the agent's name/strategy and builds the persona system prompt itself — the client must NOT concatenate any role instruction onto `message`. Unknown/invalid codes are rejected (422).
+      type: object
+      required:
+      - message
+      title: ChatMessageRequest
+      description: Request body for sending a chat message.
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

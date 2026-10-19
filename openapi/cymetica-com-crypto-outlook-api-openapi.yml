@@ -23,7 +23,58 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  coins:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        symbol:
+                          type: string
+                        name:
+                          type: string
+                      additionalProperties: false
+                      required:
+                      - symbol
+                      - name
+                additionalProperties: false
+                required:
+                - coins
+                description: 'Autocomplete roster: largest coins by market cap with real recent volume.'
+        '404':
+          description: Crypto Outlook is disabled.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
   /api/v1/crypto-outlook/{symbol}.txt:
     get:
       tags:
@@ -60,6 +111,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '404':
+          description: 'Unknown coin: a plain-text line naming the supported list.'
+          content:
+            text/plain:
+              schema:
+                type: string
+      security:
+      - {}
+      - ApiKeyAuth: []
+      - OAuth2: []
   /api/v1/crypto-outlook/{symbol}:
     get:
       tags:
@@ -97,13 +158,154 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  symbol:
+                    type: string
+                  name:
+                    type: string
+                  as_of_price:
+                    type: number
+                    description: Spot price in USD the multiples are applied to.
+                  as_of:
+                    type:
+                    - string
+                    - 'null'
+                  price_source:
+                    type:
+                    - string
+                    - 'null'
+                  horizons:
+                    type: object
+                    properties: {}
+                    additionalProperties:
+                      type: object
+                      properties:
+                        months:
+                          type: integer
+                        price:
+                          type: object
+                          properties:
+                            p5:
+                              type: number
+                            p25:
+                              type: number
+                            p50:
+                              type: number
+                            p75:
+                              type: number
+                            p95:
+                              type: number
+                          additionalProperties: true
+                          description: Percentile end price in USD.
+                        return_pct:
+                          type: object
+                          properties:
+                            p5:
+                              type: number
+                            p25:
+                              type: number
+                            p50:
+                              type: number
+                            p75:
+                              type: number
+                            p95:
+                              type: number
+                          additionalProperties: true
+                          description: Percentile return in percent.
+                        p_below_today:
+                          type:
+                          - number
+                          - 'null'
+                          description: Share of paths ending below today (0..1).
+                        p_halve:
+                          type:
+                          - number
+                          - 'null'
+                      additionalProperties: true
+                    description: 'Keyed by horizon: 1mo, 3mo, 6mo, 1y, 5y, 10y.'
+                  n_paths:
+                    type:
+                    - integer
+                    - 'null'
+                  scenario_pool:
+                    type: integer
+                  draw:
+                    type: integer
+                  computed_at:
+                    type:
+                    - string
+                    - 'null'
+                  calibration: {}
+                  assumptions: {}
+                  disclosure:
+                    type: string
+                  page_url:
+                    type: string
+                  months:
+                    type: array
+                    items:
+                      type: integer
+                    description: Only with ?paths=1.
+                  bands_monthly_price:
+                    type: object
+                    properties: {}
+                    additionalProperties:
+                      type: array
+                      items:
+                        type: number
+                    description: 'Only with ?paths=1: percentile key → monthly USD prices.'
+                  scenarios:
+                    type: array
+                    items:
+                      type: array
+                      items:
+                        type: number
+                    description: 'Only with ?paths=1: 40 scenario paths of monthly USD prices.'
+                additionalProperties: true
+                required:
+                - symbol
+                - name
+                - as_of_price
+                - horizons
+                - disclosure
+                description: 'Simulated price scenarios (not a forecast). A 202 `{status: computing, symbol, retry_after}` is returned while a coin''s first simulation runs.'
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '404':
+          description: Unknown coin (`UNKNOWN_COIN`) or no outlook available right now (`OUTLOOK_UNAVAILABLE`).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    enum:
+                    - UNKNOWN_COIN
+                    - OUTLOOK_UNAVAILABLE
+                  code:
+                    type: string
+                  symbol:
+                    type: string
+                  message:
+                    type: string
+                  coins_url:
+                    type: string
+                additionalProperties: true
+                required:
+                - error
+                - code
+                - message
+      security:
+      - {}
+      - ApiKeyAuth: []
+      - OAuth2: []
 components:
   schemas:
     HTTPValidationError:
@@ -130,6 +332,11 @@ components:
         type:
           type: string
           title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
       type: object
       required:
       - loc

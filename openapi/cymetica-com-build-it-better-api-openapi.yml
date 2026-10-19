@@ -1,0 +1,4497 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Build it Better API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: Build it Better
+paths:
+  /api/v1/build-it-better/communities/{community}:
+    get:
+      tags:
+      - Build it Better
+      summary: Community Hub Json
+      operationId: community_hub_json_api_v1_build_it_better_communities__community__get
+      parameters:
+      - name: community
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Community
+      - name: coin
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 15
+          - type: 'null'
+          title: Coin
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  community:
+                    type: string
+                  slug:
+                    type: string
+                  coin:
+                    type:
+                    - string
+                    - 'null'
+                  file_url:
+                    type: string
+                  hub_url:
+                    type: string
+                  kit_url:
+                    type: string
+                  builds:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        ticket:
+                          type:
+                          - string
+                          - 'null'
+                        app_name:
+                          type:
+                          - string
+                          - 'null'
+                        stage:
+                          type:
+                          - string
+                          - 'null'
+                        our_url:
+                          type:
+                          - string
+                          - 'null'
+                        improvements:
+                          type: string
+                      additionalProperties: false
+                  counts:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      shipped:
+                        type: integer
+                    additionalProperties: false
+                    required:
+                    - total
+                    - shipped
+                  disclaimer:
+                    type: string
+                additionalProperties: false
+                required:
+                - community
+                - slug
+                - builds
+                - counts
+                - disclaimer
+                description: 'A crypto community''s Build it Better hub: the community''s builds from the public board and the link that files a build addressed to it. Open pages, not run by the community''s team.'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '404':
+          description: Name the community, e.g. /build-it-better/c/coti.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+  /api/v1/build-it-better/apps:
+    get:
+      tags:
+      - Build it Better
+      summary: Search Apps
+      description: 'Typeahead: apps we have ALREADY rebuilt (the /tools registry).'
+      operationId: search_apps_api_v1_build_it_better_apps_get
+      parameters:
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 80
+          default: ''
+          title: Q
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  query:
+                    type: string
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        slug:
+                          type: string
+                        name:
+                          type: string
+                        url:
+                          type: string
+                        desc:
+                          type: string
+                      additionalProperties: false
+                additionalProperties: false
+                required:
+                - query
+                - results
+                description: Typeahead over apps already rebuilt (max 8; empty for a query under 2 characters).
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/build-it-better/requests:
+    post:
+      tags:
+      - Build it Better
+      summary: File Request
+      description: 'File a Build it Better request for an app (a link) or a new app idea (a name).
+
+
+        One open request per app: while the app''s ticket is open, a second request with
+
+        improvements gets 409 naming the open ticket — add scope there with a BB-CHANGE.
+
+        After it ships, a new request with improvements files a new follow-up ticket. A bare
+
+        link (no improvements) files nothing new: it points to our page or joins the open ticket.'
+      operationId: file_request_api_v1_build_it_better_requests_post
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BBRequestIn'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ticket:
+                    type: string
+                    description: ET-nnnnn
+                  app_name:
+                    type: string
+                  app_url:
+                    type:
+                    - string
+                    - 'null'
+                  is_idea:
+                    type: boolean
+                    description: True when the request is for an app that does not exist yet.
+                  improvements:
+                    type:
+                    - string
+                    - 'null'
+                  requester_kind:
+                    type: string
+                    description: agent | human
+                  stage:
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - requested
+                    - funded
+                    - building
+                    - shipped
+                    - closed
+                    - null
+                    description: Public stage of the build (null while the queue status maps to no stage).
+                  queue_status:
+                    type:
+                    - string
+                    - 'null'
+                  spec_status:
+                    type: string
+                    description: proposed | accepted | withdrawn
+                  ready_to_build:
+                    type: boolean
+                  verdict:
+                    type:
+                    - string
+                    - 'null'
+                    description: pass | fail | null
+                  funding:
+                    type:
+                    - object
+                    - 'null'
+                    description: Gate/funding payload of the build queue row.
+                  coin:
+                    type:
+                    - object
+                    - 'null'
+                    description: The build's coin (symbol, name, …) when one exists.
+                  submitted_at:
+                    type:
+                    - string
+                    - 'null'
+                  clock_started_at:
+                    type:
+                    - string
+                    - 'null'
+                  deadline_at:
+                    type:
+                    - string
+                    - 'null'
+                  resolved_at:
+                    type:
+                    - string
+                    - 'null'
+                  elapsed_seconds:
+                    type:
+                    - integer
+                    - 'null'
+                    description: Seconds on the 24-hour clock so far (null before it starts).
+                  on_time:
+                    type:
+                    - boolean
+                    - 'null'
+                  our_url:
+                    type:
+                    - string
+                    - 'null'
+                    description: Site path of the shipped app; always set when stage is shipped.
+                  closed_reason:
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - withdrawn
+                    - no_build_url
+                    - null
+                    description: 'Set only when stage is closed: withdrawn by the requester, or closed with no build address on record.'
+                  closed_note:
+                    type:
+                    - string
+                    - 'null'
+                    description: Plain-words reason for a closed record.
+                  spec_text:
+                    type:
+                    - string
+                    - 'null'
+                    description: The BB-SPEC (scope) text.
+                  verdict_note:
+                    type:
+                    - string
+                    - 'null'
+                  messages:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        kind:
+                          type: string
+                          description: BB-REQUEST | BB-SPEC | BB-ACCEPT | BB-CHANGE | BB-VERDICT | BB-SHIPPED | BB-WITHDRAW | BB-CORRECTION
+                        from:
+                          type: string
+                          description: requester | system
+                        author:
+                          type:
+                          - string
+                          - 'null'
+                        body:
+                          type:
+                          - string
+                          - 'null'
+                        at:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: false
+                  yours:
+                    type: boolean
+                    description: True when the signed-in caller filed this build (accept/change/verdict/withdraw allowed without X-BB-Token).
+                  created:
+                    type: boolean
+                    description: True when a new build was filed (HTTP 201); false for a join or a lookup.
+                  already_rebuilt:
+                    type: object
+                    properties:
+                      slug:
+                        type: string
+                      name:
+                        type: string
+                      url:
+                        type: string
+                    additionalProperties: true
+                    required:
+                    - slug
+                    - name
+                    - url
+                    description: 'Lookup only (HTTP 200, nothing filed): the page we already have.'
+                  existing_page:
+                    type: object
+                    properties:
+                      slug:
+                        type: string
+                      name:
+                        type: string
+                      url:
+                        type: string
+                    additionalProperties: true
+                    required:
+                    - slug
+                    - name
+                    - url
+                    description: An app we already rebuilt; `url` is its site path.
+                  request_token:
+                    type: string
+                    description: 'New filings only: keep it — it is the X-BB-Token header for accept/change/verdict/withdraw.'
+                  message:
+                    type: string
+                additionalProperties: true
+                required:
+                - created
+                - message
+                description: 'HTTP 200 with `created: false` + `already_rebuilt` is a lookup (nothing filed). HTTP 201 is a filing (or a join of an existing request) with the full request detail.'
+        '409':
+          description: 'One open request per app. A request that says what to build, for an app whose Build it Better ticket is still open (requested, funded or building), is refused and nothing is filed or charged: add the scope to the open ticket with a BB-CHANGE (POST /api/v1/build-it-better/requests/{ticket}/change), or wait until it ships and send it again as a follow-up. Body: {detail, code: OPEN_REQUEST_EXISTS, open_ticket, stage, ticket_url, change_route, your_text_was_not_filed: true, improvements (your text, echoed back)}. Also returned when a chosen ticker is taken.'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '403':
+          description: The account does not meet the Build it Better eligibility rule.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '429':
+          description: Too many requests from this address or build window used up.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: The queue is busy — retry shortly.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+    get:
+      tags:
+      - Build it Better
+      summary: Board
+      description: 'The public Build it Better board: every request with its stage and clock.
+
+
+        Live updates: wss://cymetica.com/ws/build-it-better (public, read-only, no credential). It sends
+
+        ``hello`` on connect, then ``bb_update`` with ``kind``, ``ticket`` and ``stage`` whenever a
+
+        build changes; re-read that one ticket instead of polling this route.'
+      operationId: board_api_v1_build_it_better_requests_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sla_hours:
+                    type: number
+                  min_et10:
+                    type:
+                    - number
+                    - 'null'
+                    description: The ET10 holding floor — null when `request_gate` is `nexus_build_plan` (the plan replaces it; see `plans_url`), a number only when `request_gate` is `et10_holding`.
+                  request_gate:
+                    type: string
+                    description: '`et10_holding` (hold `min_et10` ET10) or `nexus_build_plan` (a signed-in account within its NEXUS build plan allowance, Free plan included; details at `plans_url`).'
+                  plans_url:
+                    type:
+                    - string
+                    - 'null'
+                    description: 'Set only when `request_gate` is `nexus_build_plan`: GET this for the plan table.'
+                  rebuilt_apps:
+                    type: integer
+                    description: Apps already rebuilt (/tools).
+                  stats:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      requested:
+                        type: integer
+                      funded:
+                        type: integer
+                      building:
+                        type: integer
+                      shipped:
+                        type: integer
+                      closed:
+                        type: integer
+                      on_time:
+                        type: integer
+                      overdue:
+                        type: integer
+                      median_build_seconds:
+                        type:
+                        - integer
+                        - 'null'
+                    additionalProperties: true
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        ticket:
+                          type: string
+                          description: ET-nnnnn
+                        app_name:
+                          type: string
+                        app_url:
+                          type:
+                          - string
+                          - 'null'
+                        is_idea:
+                          type: boolean
+                          description: True when the request is for an app that does not exist yet.
+                        improvements:
+                          type:
+                          - string
+                          - 'null'
+                        requester_kind:
+                          type: string
+                          description: agent | human
+                        stage:
+                          type:
+                          - string
+                          - 'null'
+                          enum:
+                          - requested
+                          - funded
+                          - building
+                          - shipped
+                          - closed
+                          - null
+                          description: Public stage of the build (null while the queue status maps to no stage).
+                        queue_status:
+                          type:
+                          - string
+                          - 'null'
+                        spec_status:
+                          type: string
+                          description: proposed | accepted | withdrawn
+                        ready_to_build:
+                          type: boolean
+                        verdict:
+                          type:
+                          - string
+                          - 'null'
+                          description: pass | fail | null
+                        funding:
+                          type:
+                          - object
+                          - 'null'
+                          description: Gate/funding payload of the build queue row.
+                        coin:
+                          type:
+                          - object
+                          - 'null'
+                          description: The build's coin (symbol, name, …) when one exists.
+                        submitted_at:
+                          type:
+                          - string
+                          - 'null'
+                        clock_started_at:
+                          type:
+                          - string
+                          - 'null'
+                        deadline_at:
+                          type:
+                          - string
+                          - 'null'
+                        resolved_at:
+                          type:
+                          - string
+                          - 'null'
+                        elapsed_seconds:
+                          type:
+                          - integer
+                          - 'null'
+                          description: Seconds on the 24-hour clock so far (null before it starts).
+                        on_time:
+                          type:
+                          - boolean
+                          - 'null'
+                        our_url:
+                          type:
+                          - string
+                          - 'null'
+                          description: Site path of the shipped app; always set when stage is shipped.
+                        closed_reason:
+                          type:
+                          - string
+                          - 'null'
+                          enum:
+                          - withdrawn
+                          - no_build_url
+                          - null
+                          description: 'Set only when stage is closed: withdrawn by the requester, or closed with no build address on record.'
+                        closed_note:
+                          type:
+                          - string
+                          - 'null'
+                          description: Plain-words reason for a closed record.
+                        traffic:
+                          type: object
+                          properties:
+                            path:
+                              type: string
+                            views:
+                              type: integer
+                            visitors:
+                              type: integer
+                            uses:
+                              type: integer
+                          additionalProperties: true
+                          description: 'Shipped builds only: 30-day traffic.'
+                      additionalProperties: true
+                      required:
+                      - ticket
+                      - app_name
+                      - stage
+                      - spec_status
+                      description: One Build it Better request as listed on the board.
+                additionalProperties: true
+                required:
+                - sla_hours
+                - min_et10
+                - request_gate
+                - rebuilt_apps
+                - stats
+                - items
+                description: 'The public board, newest first (up to 200). Live changes: wss://cymetica.com/ws/build-it-better.'
+      security: []
+  /api/v1/build-it-better/apps/stats:
+    get:
+      tags:
+      - Build it Better
+      summary: Get App Stats
+      description: 'Public traffic for one rebuilt app: views, daily visitors, uses and likes — all-time,
+
+        last 7 and 30 days, plus a 30-day daily series. ``path`` is the app''s page, e.g.
+
+        ``/finviz-alternative`` (a full https://cymetica.com/… URL works too).'
+      operationId: get_app_stats_api_v1_build_it_better_apps_stats_get
+      parameters:
+      - name: path
+        in: query
+        required: true
+        schema:
+          type: string
+          maxLength: 300
+          title: Path
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  path:
+                    type: string
+                  name:
+                    type: string
+                  url:
+                    type: string
+                  all_time:
+                    type: object
+                    properties:
+                      views:
+                        type: integer
+                      visitors:
+                        type: integer
+                      uses:
+                        type: integer
+                    additionalProperties: false
+                    required:
+                    - views
+                    - visitors
+                    - uses
+                  first_counted:
+                    type:
+                    - string
+                    - 'null'
+                    description: ISO date of the first counted day.
+                  last_7d:
+                    type: object
+                    properties:
+                      views:
+                        type: integer
+                      visitors:
+                        type: integer
+                      uses:
+                        type: integer
+                    additionalProperties: false
+                    required:
+                    - views
+                    - visitors
+                    - uses
+                  last_30d:
+                    type: object
+                    properties:
+                      views:
+                        type: integer
+                      visitors:
+                        type: integer
+                      uses:
+                        type: integer
+                    additionalProperties: false
+                    required:
+                    - views
+                    - visitors
+                    - uses
+                  daily:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        day:
+                          type: string
+                        views:
+                          type: integer
+                        visitors:
+                          type: integer
+                        uses:
+                          type: integer
+                      additionalProperties: false
+                  likes:
+                    type: integer
+                  liked:
+                    type: boolean
+                    description: Whether the caller likes the app.
+                  definitions:
+                    type: object
+                    properties: {}
+                    additionalProperties:
+                      type: string
+                    description: Counter name → definition.
+                additionalProperties: true
+                required:
+                - path
+                - name
+                - url
+                - all_time
+                - last_7d
+                - last_30d
+                - daily
+                - likes
+                description: Traffic for one rebuilt app; `daily` is the last 30 days, oldest first.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '404':
+          description: '`path` is not a Build it Better app.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+  /api/v1/build-it-better/apps/leaderboard:
+    get:
+      tags:
+      - Build it Better
+      summary: Apps Leaderboard
+      description: 'Every rebuilt app ranked by traffic or likes. ``sort``: visitors | views | uses | likes.
+
+        Apps with no traffic yet are listed with zeros. ``liked`` is whether the caller likes it.'
+      operationId: apps_leaderboard_api_v1_build_it_better_apps_leaderboard_get
+      parameters:
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          default: visitors
+          title: Sort
+      - name: days
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 3650
+          minimum: 1
+          default: 30
+          title: Days
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 500
+          minimum: 1
+          default: 200
+          title: Limit
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  days:
+                    type: integer
+                  sort:
+                    type: string
+                    description: visitors | views | uses | likes
+                  count:
+                    type: integer
+                  counting_since:
+                    type: string
+                    description: ISO date counting began.
+                  definitions:
+                    type: object
+                    properties: {}
+                    additionalProperties:
+                      type: string
+                  apps:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        path:
+                          type: string
+                        name:
+                          type: string
+                        url:
+                          type: string
+                        views:
+                          type: integer
+                        visitors:
+                          type: integer
+                        uses:
+                          type: integer
+                        likes:
+                          type: integer
+                        liked:
+                          type: boolean
+                      additionalProperties: false
+                additionalProperties: false
+                required:
+                - days
+                - sort
+                - count
+                - apps
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/build-it-better/startups/terms:
+    get:
+      tags:
+      - Build it Better
+      summary: Startup Terms
+      description: What applying means. The same text the form shows.
+      operationId: startup_terms_api_v1_build_it_better_startups_terms_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  terms:
+                    type: string
+                  holding_rule:
+                    type: string
+                  min_et10:
+                    type: number
+                  statuses:
+                    type: object
+                    properties: {}
+                    additionalProperties:
+                      type: string
+                    description: status → meaning (submitted | reviewing | accepted | declined)
+                  socials:
+                    type: array
+                    items:
+                      type: string
+                  token_chains:
+                    type: object
+                    properties: {}
+                    additionalProperties:
+                      type: string
+                    description: chain key → label
+                  apply:
+                    type: string
+                    description: URL of the application form.
+                additionalProperties: false
+                required:
+                - terms
+                - holding_rule
+                - min_et10
+                - statuses
+                - socials
+                - token_chains
+                - apply
+      security: []
+  /api/v1/build-it-better/startups:
+    post:
+      tags:
+      - Build it Better
+      summary: Apply Startup
+      description: 'Turn your App into a Startup: apply to have your app spun out as its own company.
+
+        Needs a signed-in account holding 100k ET10. Nothing is registered, formed or charged by applying.'
+      operationId: apply_startup_api_v1_build_it_better_startups_post
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BBStartupIn'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  created:
+                    type: boolean
+                  application:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      status:
+                        type: string
+                        description: submitted | reviewing | accepted | declined
+                      status_text:
+                        type: string
+                      status_note:
+                        type:
+                        - string
+                        - 'null'
+                      startup_name:
+                        type: string
+                      description:
+                        type: string
+                      app_name:
+                        type:
+                        - string
+                        - 'null'
+                      app_url:
+                        type:
+                        - string
+                        - 'null'
+                      ticket:
+                        type:
+                        - string
+                        - 'null'
+                      ticket_verified:
+                        type: boolean
+                      has_website:
+                        type: boolean
+                      website:
+                        type:
+                        - string
+                        - 'null'
+                      desired_domain:
+                        type:
+                        - string
+                        - 'null'
+                      socials:
+                        type: object
+                        properties: {}
+                        additionalProperties: true
+                        description: network → handle/url
+                      extra:
+                        type:
+                        - string
+                        - 'null'
+                      token:
+                        type:
+                        - object
+                        - 'null'
+                        properties:
+                          symbol:
+                            type: string
+                          chain:
+                            type:
+                            - string
+                            - 'null'
+                          chain_name:
+                            type:
+                            - string
+                            - 'null'
+                          max_supply:
+                            type:
+                            - string
+                            - integer
+                            - 'null'
+                      created_at:
+                        type:
+                        - string
+                        - 'null'
+                      updated_at:
+                        type:
+                        - string
+                        - 'null'
+                      founder_name:
+                        type: string
+                      email:
+                        type: string
+                      bid_et10:
+                        type:
+                        - string
+                        - 'null'
+                        description: Standing ET10 bid as a decimal string (never collected).
+                      position:
+                        type:
+                        - integer
+                        - 'null'
+                        description: Place in the public line (null when not in line).
+                      line_length:
+                        type:
+                        - integer
+                        - 'null'
+                    additionalProperties: true
+                    required:
+                    - id
+                    - status
+                    - startup_name
+                    description: One of the caller's startup applications.
+                  terms:
+                    type: string
+                  rules:
+                    type: string
+                  bid:
+                    type:
+                    - object
+                    - 'null'
+                    properties:
+                      application_id:
+                        type: integer
+                      bid_et10:
+                        type: string
+                      collected:
+                        type: boolean
+                      raised_from_et10:
+                        type:
+                        - string
+                        - 'null'
+                    description: The opening bid when one was given and placed.
+                  bid_error:
+                    type:
+                    - string
+                    - 'null'
+                    description: Why the opening bid was refused (the application is still saved).
+                  message:
+                    type: string
+                additionalProperties: false
+                required:
+                - created
+                - application
+                - terms
+                - rules
+                - message
+                description: Application received (served with HTTP 201).
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '403':
+          description: The account does not hold the ET10 minimum.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: '`ticket` is not a Build it Better ticket.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '409':
+          description: You already have an open application under that startup name.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '429':
+          description: Too many applications today or build window used up.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: The ET10 holding could not be checked; nothing was sent.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/build-it-better/startups/line:
+    get:
+      tags:
+      - Build it Better
+      summary: Startup Line
+      description: 'The public line for "Turn your App into a Startup": highest bid first, equal bids by who bid
+
+        first, then applications with no bid in arrival order. Startup name and bid only.'
+      operationId: startup_line_api_v1_build_it_better_startups_line_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rules:
+                    type: string
+                  bid_currency:
+                    type: string
+                    description: Always ET10.
+                  collected:
+                    type: boolean
+                    description: 'Always false: bids are never collected.'
+                  min_holding_et10:
+                    type: number
+                  count:
+                    type: integer
+                  line:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        position:
+                          type: integer
+                        application_id:
+                          type: integer
+                        startup_name:
+                          type: string
+                        status:
+                          type: string
+                        bid_et10:
+                          type:
+                          - string
+                          - 'null'
+                          description: Decimal string; null = no bid.
+                        bid_at:
+                          type:
+                          - string
+                          - 'null'
+                        applied_at:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: false
+                      required:
+                      - position
+                      - application_id
+                      - startup_name
+                additionalProperties: false
+                required:
+                - rules
+                - bid_currency
+                - collected
+                - count
+                - line
+                description: 'Public line: highest bid first, then applications without a bid in arrival order.'
+      security: []
+  /api/v1/build-it-better/startups/{app_id}/bid:
+    post:
+      tags:
+      - Build it Better
+      summary: Bid On Startup
+      description: 'Place or raise your ET10 bid for a place in the line. A bid is never collected: nothing is charged,
+
+        locked or paid. The account must hold at least 100,000 ET10, and at least the ET10 it bids.'
+      operationId: bid_on_startup_api_v1_build_it_better_startups__app_id__bid_post
+      parameters:
+      - name: app_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: App Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BBStartupBidIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  application_id:
+                    type: integer
+                  bid_et10:
+                    type: string
+                    description: The bid, decimal string (ET10).
+                  collected:
+                    type: boolean
+                    description: Always false.
+                  raised_from_et10:
+                    type:
+                    - string
+                    - 'null'
+                    description: Previous standing bid; null for a first bid.
+                  position:
+                    type:
+                    - integer
+                    - 'null'
+                  rules:
+                    type: string
+                  message:
+                    type: string
+                additionalProperties: false
+                required:
+                - application_id
+                - bid_et10
+                - collected
+                - message
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '404':
+          description: That is not one of your applications.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '429':
+          description: Build window used up.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: Usage could not be checked right now.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/build-it-better/startups/mine:
+    get:
+      tags:
+      - Build it Better
+      summary: My Startups
+      description: Your own applications and where each one stands.
+      operationId: my_startups_api_v1_build_it_better_startups_mine_get
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  applications:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        status:
+                          type: string
+                          description: submitted | reviewing | accepted | declined
+                        status_text:
+                          type: string
+                        status_note:
+                          type:
+                          - string
+                          - 'null'
+                        startup_name:
+                          type: string
+                        description:
+                          type: string
+                        app_name:
+                          type:
+                          - string
+                          - 'null'
+                        app_url:
+                          type:
+                          - string
+                          - 'null'
+                        ticket:
+                          type:
+                          - string
+                          - 'null'
+                        ticket_verified:
+                          type: boolean
+                        has_website:
+                          type: boolean
+                        website:
+                          type:
+                          - string
+                          - 'null'
+                        desired_domain:
+                          type:
+                          - string
+                          - 'null'
+                        socials:
+                          type: object
+                          properties: {}
+                          additionalProperties: true
+                          description: network → handle/url
+                        extra:
+                          type:
+                          - string
+                          - 'null'
+                        token:
+                          type:
+                          - object
+                          - 'null'
+                          properties:
+                            symbol:
+                              type: string
+                            chain:
+                              type:
+                              - string
+                              - 'null'
+                            chain_name:
+                              type:
+                              - string
+                              - 'null'
+                            max_supply:
+                              type:
+                              - string
+                              - integer
+                              - 'null'
+                        created_at:
+                          type:
+                          - string
+                          - 'null'
+                        updated_at:
+                          type:
+                          - string
+                          - 'null'
+                        founder_name:
+                          type: string
+                        email:
+                          type: string
+                        bid_et10:
+                          type:
+                          - string
+                          - 'null'
+                          description: Standing ET10 bid as a decimal string (never collected).
+                        position:
+                          type:
+                          - integer
+                          - 'null'
+                          description: Place in the public line (null when not in line).
+                        line_length:
+                          type:
+                          - integer
+                          - 'null'
+                      additionalProperties: true
+                      required:
+                      - id
+                      - status
+                      - startup_name
+                      description: One of the caller's startup applications.
+                additionalProperties: false
+                required:
+                - applications
+                description: The caller's own applications (newest first, up to 50).
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/build-it-better/requests/{ticket}:
+    get:
+      tags:
+      - Build it Better
+      summary: Get Request
+      operationId: get_request_api_v1_build_it_better_requests__ticket__get
+      parameters:
+      - name: ticket
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Ticket
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ticket:
+                    type: string
+                    description: ET-nnnnn
+                  app_name:
+                    type: string
+                  app_url:
+                    type:
+                    - string
+                    - 'null'
+                  is_idea:
+                    type: boolean
+                    description: True when the request is for an app that does not exist yet.
+                  improvements:
+                    type:
+                    - string
+                    - 'null'
+                  requester_kind:
+                    type: string
+                    description: agent | human
+                  stage:
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - requested
+                    - funded
+                    - building
+                    - shipped
+                    - closed
+                    - null
+                    description: Public stage of the build (null while the queue status maps to no stage).
+                  queue_status:
+                    type:
+                    - string
+                    - 'null'
+                  spec_status:
+                    type: string
+                    description: proposed | accepted | withdrawn
+                  ready_to_build:
+                    type: boolean
+                  verdict:
+                    type:
+                    - string
+                    - 'null'
+                    description: pass | fail | null
+                  funding:
+                    type:
+                    - object
+                    - 'null'
+                    description: Gate/funding payload of the build queue row.
+                  coin:
+                    type:
+                    - object
+                    - 'null'
+                    description: The build's coin (symbol, name, …) when one exists.
+                  submitted_at:
+                    type:
+                    - string
+                    - 'null'
+                  clock_started_at:
+                    type:
+                    - string
+                    - 'null'
+                  deadline_at:
+                    type:
+                    - string
+                    - 'null'
+                  resolved_at:
+                    type:
+                    - string
+                    - 'null'
+                  elapsed_seconds:
+                    type:
+                    - integer
+                    - 'null'
+                    description: Seconds on the 24-hour clock so far (null before it starts).
+                  on_time:
+                    type:
+                    - boolean
+                    - 'null'
+                  our_url:
+                    type:
+                    - string
+                    - 'null'
+                    description: Site path of the shipped app; always set when stage is shipped.
+                  closed_reason:
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - withdrawn
+                    - no_build_url
+                    - null
+                    description: 'Set only when stage is closed: withdrawn by the requester, or closed with no build address on record.'
+                  closed_note:
+                    type:
+                    - string
+                    - 'null'
+                    description: Plain-words reason for a closed record.
+                  spec_text:
+                    type:
+                    - string
+                    - 'null'
+                    description: The BB-SPEC (scope) text.
+                  verdict_note:
+                    type:
+                    - string
+                    - 'null'
+                  messages:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        kind:
+                          type: string
+                          description: BB-REQUEST | BB-SPEC | BB-ACCEPT | BB-CHANGE | BB-VERDICT | BB-SHIPPED | BB-WITHDRAW | BB-CORRECTION
+                        from:
+                          type: string
+                          description: requester | system
+                        author:
+                          type:
+                          - string
+                          - 'null'
+                        body:
+                          type:
+                          - string
+                          - 'null'
+                        at:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: false
+                  yours:
+                    type: boolean
+                    description: True when the signed-in caller filed this build (accept/change/verdict/withdraw allowed without X-BB-Token).
+                additionalProperties: true
+                required:
+                - ticket
+                - app_name
+                - stage
+                - spec_status
+                - messages
+                description: One Build it Better request with its spec and message log.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '404':
+          description: Unknown Build it Better ticket.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+  /api/v1/build-it-better/requests/{ticket}/accept:
+    post:
+      tags:
+      - Build it Better
+      summary: Accept Spec
+      operationId: accept_spec_api_v1_build_it_better_requests__ticket__accept_post
+      parameters:
+      - name: ticket
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Ticket
+      - name: x-bb-token
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Bb-Token
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ticket:
+                    type: string
+                    description: ET-nnnnn
+                  app_name:
+                    type: string
+                  app_url:
+                    type:
+                    - string
+                    - 'null'
+                  is_idea:
+                    type: boolean
+                    description: True when the request is for an app that does not exist yet.
+                  improvements:
+                    type:
+                    - string
+                    - 'null'
+                  requester_kind:
+                    type: string
+                    description: agent | human
+                  stage:
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - requested
+                    - funded
+                    - building
+                    - shipped
+                    - closed
+                    - null
+                    description: Public stage of the build (null while the queue status maps to no stage).
+                  queue_status:
+                    type:
+                    - string
+                    - 'null'
+                  spec_status:
+                    type: string
+                    description: proposed | accepted | withdrawn
+                  ready_to_build:
+                    type: boolean
+                  verdict:
+                    type:
+                    - string
+                    - 'null'
+                    description: pass | fail | null
+                  funding:
+                    type:
+                    - object
+                    - 'null'
+                    description: Gate/funding payload of the build queue row.
+                  coin:
+                    type:
+                    - object
+                    - 'null'
+                    description: The build's coin (symbol, name, …) when one exists.
+                  submitted_at:
+                    type:
+                    - string
+                    - 'null'
+                  clock_started_at:
+                    type:
+                    - string
+                    - 'null'
+                  deadline_at:
+                    type:
+                    - string
+                    - 'null'
+                  resolved_at:
+                    type:
+                    - string
+                    - 'null'
+                  elapsed_seconds:
+                    type:
+                    - integer
+                    - 'null'
+                    description: Seconds on the 24-hour clock so far (null before it starts).
+                  on_time:
+                    type:
+                    - boolean
+                    - 'null'
+                  our_url:
+                    type:
+                    - string
+                    - 'null'
+                    description: Site path of the shipped app; always set when stage is shipped.
+                  closed_reason:
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - withdrawn
+                    - no_build_url
+                    - null
+                    description: 'Set only when stage is closed: withdrawn by the requester, or closed with no build address on record.'
+                  closed_note:
+                    type:
+                    - string
+                    - 'null'
+                    description: Plain-words reason for a closed record.
+                  spec_text:
+                    type:
+                    - string
+                    - 'null'
+                    description: The BB-SPEC (scope) text.
+                  verdict_note:
+                    type:
+                    - string
+                    - 'null'
+                  messages:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        kind:
+                          type: string
+                          description: BB-REQUEST | BB-SPEC | BB-ACCEPT | BB-CHANGE | BB-VERDICT | BB-SHIPPED | BB-WITHDRAW | BB-CORRECTION
+                        from:
+                          type: string
+                          description: requester | system
+                        author:
+                          type:
+                          - string
+                          - 'null'
+                        body:
+                          type:
+                          - string
+                          - 'null'
+                        at:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: false
+                  yours:
+                    type: boolean
+                    description: True when the signed-in caller filed this build (accept/change/verdict/withdraw allowed without X-BB-Token).
+                additionalProperties: true
+                required:
+                - ticket
+                - app_name
+                - stage
+                - spec_status
+                - messages
+                description: One Build it Better request with its spec and message log.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '403':
+          description: The X-BB-Token does not match this ticket and the caller is not the account that filed it.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: Unknown Build it Better ticket.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '409':
+          description: Nothing to accept — the spec is not in `proposed` state.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+  /api/v1/build-it-better/requests/{ticket}/change:
+    post:
+      tags:
+      - Build it Better
+      summary: Request Change
+      operationId: request_change_api_v1_build_it_better_requests__ticket__change_post
+      parameters:
+      - name: ticket
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Ticket
+      - name: x-bb-token
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Bb-Token
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BBChangeIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ticket:
+                    type: string
+                    description: ET-nnnnn
+                  app_name:
+                    type: string
+                  app_url:
+                    type:
+                    - string
+                    - 'null'
+                  is_idea:
+                    type: boolean
+                    description: True when the request is for an app that does not exist yet.
+                  improvements:
+                    type:
+                    - string
+                    - 'null'
+                  requester_kind:
+                    type: string
+                    description: agent | human
+                  stage:
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - requested
+                    - funded
+                    - building
+                    - shipped
+                    - closed
+                    - null
+                    description: Public stage of the build (null while the queue status maps to no stage).
+                  queue_status:
+                    type:
+                    - string
+                    - 'null'
+                  spec_status:
+                    type: string
+                    description: proposed | accepted | withdrawn
+                  ready_to_build:
+                    type: boolean
+                  verdict:
+                    type:
+                    - string
+                    - 'null'
+                    description: pass | fail | null
+                  funding:
+                    type:
+                    - object
+                    - 'null'
+                    description: Gate/funding payload of the build queue row.
+                  coin:
+                    type:
+                    - object
+                    - 'null'
+                    description: The build's coin (symbol, name, …) when one exists.
+                  submitted_at:
+                    type:
+                    - string
+                    - 'null'
+                  clock_started_at:
+                    type:
+                    - string
+                    - 'null'
+                  deadline_at:
+                    type:
+                    - string
+                    - 'null'
+                  resolved_at:
+                    type:
+                    - string
+                    - 'null'
+                  elapsed_seconds:
+                    type:
+                    - integer
+                    - 'null'
+                    description: Seconds on the 24-hour clock so far (null before it starts).
+                  on_time:
+                    type:
+                    - boolean
+                    - 'null'
+                  our_url:
+                    type:
+                    - string
+                    - 'null'
+                    description: Site path of the shipped app; always set when stage is shipped.
+                  closed_reason:
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - withdrawn
+                    - no_build_url
+                    - null
+                    description: 'Set only when stage is closed: withdrawn by the requester, or closed with no build address on record.'
+                  closed_note:
+                    type:
+                    - string
+                    - 'null'
+                    description: Plain-words reason for a closed record.
+                  spec_text:
+                    type:
+                    - string
+                    - 'null'
+                    description: The BB-SPEC (scope) text.
+                  verdict_note:
+                    type:
+                    - string
+                    - 'null'
+                  messages:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        kind:
+                          type: string
+                          description: BB-REQUEST | BB-SPEC | BB-ACCEPT | BB-CHANGE | BB-VERDICT | BB-SHIPPED | BB-WITHDRAW | BB-CORRECTION
+                        from:
+                          type: string
+                          description: requester | system
+                        author:
+                          type:
+                          - string
+                          - 'null'
+                        body:
+                          type:
+                          - string
+                          - 'null'
+                        at:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: false
+                  yours:
+                    type: boolean
+                    description: True when the signed-in caller filed this build (accept/change/verdict/withdraw allowed without X-BB-Token).
+                additionalProperties: true
+                required:
+                - ticket
+                - app_name
+                - stage
+                - spec_status
+                - messages
+                description: One Build it Better request with its spec and message log.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '403':
+          description: The X-BB-Token does not match this ticket and the caller is not the account that filed it.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: Unknown Build it Better ticket.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '409':
+          description: The build is already building/shipped — scope is locked.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '429':
+          description: Build window used up.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+  /api/v1/build-it-better/requests/{ticket}/withdraw:
+    post:
+      tags:
+      - Build it Better
+      summary: Withdraw Request
+      description: 'The requester takes back their own request before anyone builds it
+
+        (expire76, ET-27657: a request filed by mistake had no way out). Allowed while
+
+        the stage is requested or funded; building and shipped are locked. The ticket
+
+        is marked declined (off the queue and the clock) and the log keeps the record.'
+      operationId: withdraw_request_api_v1_build_it_better_requests__ticket__withdraw_post
+      parameters:
+      - name: ticket
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Ticket
+      - name: x-bb-token
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Bb-Token
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ticket:
+                    type: string
+                    description: ET-nnnnn
+                  app_name:
+                    type: string
+                  app_url:
+                    type:
+                    - string
+                    - 'null'
+                  is_idea:
+                    type: boolean
+                    description: True when the request is for an app that does not exist yet.
+                  improvements:
+                    type:
+                    - string
+                    - 'null'
+                  requester_kind:
+                    type: string
+                    description: agent | human
+                  stage:
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - requested
+                    - funded
+                    - building
+                    - shipped
+                    - closed
+                    - null
+                    description: Public stage of the build (null while the queue status maps to no stage).
+                  queue_status:
+                    type:
+                    - string
+                    - 'null'
+                  spec_status:
+                    type: string
+                    description: proposed | accepted | withdrawn
+                  ready_to_build:
+                    type: boolean
+                  verdict:
+                    type:
+                    - string
+                    - 'null'
+                    description: pass | fail | null
+                  funding:
+                    type:
+                    - object
+                    - 'null'
+                    description: Gate/funding payload of the build queue row.
+                  coin:
+                    type:
+                    - object
+                    - 'null'
+                    description: The build's coin (symbol, name, …) when one exists.
+                  submitted_at:
+                    type:
+                    - string
+                    - 'null'
+                  clock_started_at:
+                    type:
+                    - string
+                    - 'null'
+                  deadline_at:
+                    type:
+                    - string
+                    - 'null'
+                  resolved_at:
+                    type:
+                    - string
+                    - 'null'
+                  elapsed_seconds:
+                    type:
+                    - integer
+                    - 'null'
+                    description: Seconds on the 24-hour clock so far (null before it starts).
+                  on_time:
+                    type:
+                    - boolean
+                    - 'null'
+                  our_url:
+                    type:
+                    - string
+                    - 'null'
+                    description: Site path of the shipped app; always set when stage is shipped.
+                  closed_reason:
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - withdrawn
+                    - no_build_url
+                    - null
+                    description: 'Set only when stage is closed: withdrawn by the requester, or closed with no build address on record.'
+                  closed_note:
+                    type:
+                    - string
+                    - 'null'
+                    description: Plain-words reason for a closed record.
+                  spec_text:
+                    type:
+                    - string
+                    - 'null'
+                    description: The BB-SPEC (scope) text.
+                  verdict_note:
+                    type:
+                    - string
+                    - 'null'
+                  messages:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        kind:
+                          type: string
+                          description: BB-REQUEST | BB-SPEC | BB-ACCEPT | BB-CHANGE | BB-VERDICT | BB-SHIPPED | BB-WITHDRAW | BB-CORRECTION
+                        from:
+                          type: string
+                          description: requester | system
+                        author:
+                          type:
+                          - string
+                          - 'null'
+                        body:
+                          type:
+                          - string
+                          - 'null'
+                        at:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: false
+                  yours:
+                    type: boolean
+                    description: True when the signed-in caller filed this build (accept/change/verdict/withdraw allowed without X-BB-Token).
+                additionalProperties: true
+                required:
+                - ticket
+                - app_name
+                - stage
+                - spec_status
+                - messages
+                description: One Build it Better request with its spec and message log.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '403':
+          description: The X-BB-Token does not match this ticket and the caller is not the account that filed it.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: Unknown Build it Better ticket.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '409':
+          description: The build is already building or shipped — it can no longer be withdrawn (allowed while requested or funded).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+  /api/v1/build-it-better/requests/{ticket}/verdict:
+    post:
+      tags:
+      - Build it Better
+      summary: Post Verdict
+      operationId: post_verdict_api_v1_build_it_better_requests__ticket__verdict_post
+      parameters:
+      - name: ticket
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Ticket
+      - name: x-bb-token
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Bb-Token
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BBVerdictIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ticket:
+                    type: string
+                    description: ET-nnnnn
+                  app_name:
+                    type: string
+                  app_url:
+                    type:
+                    - string
+                    - 'null'
+                  is_idea:
+                    type: boolean
+                    description: True when the request is for an app that does not exist yet.
+                  improvements:
+                    type:
+                    - string
+                    - 'null'
+                  requester_kind:
+                    type: string
+                    description: agent | human
+                  stage:
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - requested
+                    - funded
+                    - building
+                    - shipped
+                    - closed
+                    - null
+                    description: Public stage of the build (null while the queue status maps to no stage).
+                  queue_status:
+                    type:
+                    - string
+                    - 'null'
+                  spec_status:
+                    type: string
+                    description: proposed | accepted | withdrawn
+                  ready_to_build:
+                    type: boolean
+                  verdict:
+                    type:
+                    - string
+                    - 'null'
+                    description: pass | fail | null
+                  funding:
+                    type:
+                    - object
+                    - 'null'
+                    description: Gate/funding payload of the build queue row.
+                  coin:
+                    type:
+                    - object
+                    - 'null'
+                    description: The build's coin (symbol, name, …) when one exists.
+                  submitted_at:
+                    type:
+                    - string
+                    - 'null'
+                  clock_started_at:
+                    type:
+                    - string
+                    - 'null'
+                  deadline_at:
+                    type:
+                    - string
+                    - 'null'
+                  resolved_at:
+                    type:
+                    - string
+                    - 'null'
+                  elapsed_seconds:
+                    type:
+                    - integer
+                    - 'null'
+                    description: Seconds on the 24-hour clock so far (null before it starts).
+                  on_time:
+                    type:
+                    - boolean
+                    - 'null'
+                  our_url:
+                    type:
+                    - string
+                    - 'null'
+                    description: Site path of the shipped app; always set when stage is shipped.
+                  closed_reason:
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - withdrawn
+                    - no_build_url
+                    - null
+                    description: 'Set only when stage is closed: withdrawn by the requester, or closed with no build address on record.'
+                  closed_note:
+                    type:
+                    - string
+                    - 'null'
+                    description: Plain-words reason for a closed record.
+                  spec_text:
+                    type:
+                    - string
+                    - 'null'
+                    description: The BB-SPEC (scope) text.
+                  verdict_note:
+                    type:
+                    - string
+                    - 'null'
+                  messages:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        kind:
+                          type: string
+                          description: BB-REQUEST | BB-SPEC | BB-ACCEPT | BB-CHANGE | BB-VERDICT | BB-SHIPPED | BB-WITHDRAW | BB-CORRECTION
+                        from:
+                          type: string
+                          description: requester | system
+                        author:
+                          type:
+                          - string
+                          - 'null'
+                        body:
+                          type:
+                          - string
+                          - 'null'
+                        at:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: false
+                  yours:
+                    type: boolean
+                    description: True when the signed-in caller filed this build (accept/change/verdict/withdraw allowed without X-BB-Token).
+                  verdict_repeated:
+                    type: boolean
+                    description: Present (true) when the same verdict was already recorded; nothing changed.
+                additionalProperties: true
+                required:
+                - ticket
+                - stage
+                - verdict
+                description: The request after the verdict.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '403':
+          description: The X-BB-Token does not match this ticket and the caller is not the account that filed it.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: Unknown Build it Better ticket.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '409':
+          description: The build has not shipped yet — nothing to judge.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+  /api/v1/build-it-better/requests/{ticket}/tokenize:
+    get:
+      tags:
+      - Build it Better
+      summary: Tokenize Offer
+      description: 'The offer: whether this build can be tokenized now, the chains it can launch
+
+        on today (with each chain''s supply rule and fee), the reserved ticker/name as
+
+        defaults, and the token''s state once launched. Public read.'
+      operationId: tokenize_offer_api_v1_build_it_better_requests__ticket__tokenize_get
+      parameters:
+      - name: ticket
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Ticket
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ticket:
+                    type: string
+                  app_name:
+                    type: string
+                  our_url:
+                    type:
+                    - string
+                    - 'null'
+                  stage:
+                    type: string
+                  eligible:
+                    type: boolean
+                    description: True once the build has shipped and a launch chain is available.
+                  reason:
+                    type:
+                    - string
+                    - 'null'
+                    description: Why it is not eligible yet; null when eligible.
+                  yours:
+                    type: boolean
+                    description: True when the caller is the build's requester.
+                  coin:
+                    type:
+                    - object
+                    - 'null'
+                    additionalProperties: true
+                    properties:
+                      symbol:
+                        type:
+                        - string
+                        - 'null'
+                      name:
+                        type:
+                        - string
+                        - 'null'
+                      status:
+                        type: string
+                      chain_id:
+                        type:
+                        - integer
+                        - 'null'
+                      chain_name:
+                        type:
+                        - string
+                        - 'null'
+                      token_address:
+                        type:
+                        - string
+                        - 'null'
+                      tx_hash:
+                        type:
+                        - string
+                        - 'null'
+                      launched_at:
+                        type:
+                        - string
+                        - 'null'
+                    description: The build's token once chosen; null before a choice.
+                  defaults:
+                    type: object
+                    properties:
+                      symbol:
+                        type: string
+                      name:
+                        type: string
+                      max_supply: {}
+                      chain:
+                        type:
+                        - string
+                        - 'null'
+                    additionalProperties: false
+                  chains:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                          description: What POST …/tokenize takes as `chain`.
+                        chain_id:
+                          type: integer
+                        name:
+                          type: string
+                        kind:
+                          type: string
+                          enum:
+                          - evm
+                          - sui
+                        currency:
+                          type: string
+                          description: Gas asset you pay.
+                        supply_rule:
+                          type: string
+                          enum:
+                          - fixed
+                          - chosen
+                        fixed_supply:
+                          type:
+                          - integer
+                          - 'null'
+                        min_supply:
+                          type:
+                          - integer
+                          - 'null'
+                        max_supply:
+                          type:
+                          - integer
+                          - 'null'
+                        symbol_rule:
+                          type: string
+                        creation_fee:
+                          type: string
+                        explorer:
+                          type: string
+                        explorer_public:
+                          type: boolean
+                        rpc:
+                          type: string
+                        factory_address:
+                          type: string
+                        signing:
+                          type: string
+                        creator_economics:
+                          type: object
+                          properties:
+                            curve_trading_fee_pct:
+                              type:
+                              - number
+                              - 'null'
+                              description: Trading fee on the bonding curve, percent; null = none.
+                            creator_share_of_curve_fee_pct:
+                              type:
+                              - number
+                              - 'null'
+                              description: The creator's share of that fee, percent.
+                            after_graduation:
+                              type:
+                              - string
+                              - 'null'
+                              description: Where the token trades once the curve graduates.
+                            creator_share_of_pool_fees_pct:
+                              type:
+                              - number
+                              - 'null'
+                              description: The creator's share of the pool's trading fees after graduation, percent; null = none.
+                            summary:
+                              type: string
+                          additionalProperties: false
+                          required:
+                          - summary
+                          description: The creator's share of trading fees on this chain (ET-30819 / ET-30935 item 5).
+                      additionalProperties: true
+                      required:
+                      - key
+                      - chain_id
+                      - name
+                      - kind
+                      - supply_rule
+                      - creator_economics
+                  buyback:
+                    type: object
+                    properties:
+                      live:
+                        type: boolean
+                        description: 'false: no revenue or referral-fee buyback runs today.'
+                      status:
+                        type: string
+                        enum:
+                        - proposed
+                        - planned
+                        - live
+                        - declined
+                      feature_request_id:
+                        type:
+                        - integer
+                        - 'null'
+                      note:
+                        type: string
+                    additionalProperties: false
+                    required:
+                    - live
+                    - status
+                    - note
+                  page_url:
+                    type: string
+                  terms:
+                    type: string
+                additionalProperties: true
+                required:
+                - ticket
+                - app_name
+                - stage
+                - eligible
+                - yours
+                - coin
+                - defaults
+                - chains
+                - buyback
+                - terms
+                description: 'The tokenize offer: eligibility, the chains with each one''s supply rule, fee and creator economics, the reserved ticker as default, and the token''s state once launched.'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '404':
+          description: No build with that ticket.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+    post:
+      tags:
+      - Build it Better
+      summary: Tokenize Choose
+      description: 'Record the requester''s symbol / name / max supply / chain on the build''s coin
+
+        and hand back the launch: an UNSIGNED factory transaction for their own EVM
+
+        wallet, or the Sui coin package to publish themselves. Nothing is minted here.'
+      operationId: tokenize_choose_api_v1_build_it_better_requests__ticket__tokenize_post
+      parameters:
+      - name: ticket
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Ticket
+      - name: x-bb-token
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Bb-Token
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BBTokenizeIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ticket:
+                    type: string
+                  app_name:
+                    type: string
+                  our_url:
+                    type:
+                    - string
+                    - 'null'
+                  stage:
+                    type: string
+                  eligible:
+                    type: boolean
+                    description: True once the build has shipped and a launch chain is available.
+                  reason:
+                    type:
+                    - string
+                    - 'null'
+                    description: Why it is not eligible yet; null when eligible.
+                  yours:
+                    type: boolean
+                    description: True when the caller is the build's requester.
+                  coin:
+                    type:
+                    - object
+                    - 'null'
+                    additionalProperties: true
+                    properties:
+                      symbol:
+                        type:
+                        - string
+                        - 'null'
+                      name:
+                        type:
+                        - string
+                        - 'null'
+                      status:
+                        type: string
+                      chain_id:
+                        type:
+                        - integer
+                        - 'null'
+                      chain_name:
+                        type:
+                        - string
+                        - 'null'
+                      token_address:
+                        type:
+                        - string
+                        - 'null'
+                      tx_hash:
+                        type:
+                        - string
+                        - 'null'
+                      launched_at:
+                        type:
+                        - string
+                        - 'null'
+                    description: The build's token once chosen; null before a choice.
+                  defaults:
+                    type: object
+                    properties:
+                      symbol:
+                        type: string
+                      name:
+                        type: string
+                      max_supply: {}
+                      chain:
+                        type:
+                        - string
+                        - 'null'
+                    additionalProperties: false
+                  chains:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                          description: What POST …/tokenize takes as `chain`.
+                        chain_id:
+                          type: integer
+                        name:
+                          type: string
+                        kind:
+                          type: string
+                          enum:
+                          - evm
+                          - sui
+                        currency:
+                          type: string
+                          description: Gas asset you pay.
+                        supply_rule:
+                          type: string
+                          enum:
+                          - fixed
+                          - chosen
+                        fixed_supply:
+                          type:
+                          - integer
+                          - 'null'
+                        min_supply:
+                          type:
+                          - integer
+                          - 'null'
+                        max_supply:
+                          type:
+                          - integer
+                          - 'null'
+                        symbol_rule:
+                          type: string
+                        creation_fee:
+                          type: string
+                        explorer:
+                          type: string
+                        explorer_public:
+                          type: boolean
+                        rpc:
+                          type: string
+                        factory_address:
+                          type: string
+                        signing:
+                          type: string
+                        creator_economics:
+                          type: object
+                          properties:
+                            curve_trading_fee_pct:
+                              type:
+                              - number
+                              - 'null'
+                              description: Trading fee on the bonding curve, percent; null = none.
+                            creator_share_of_curve_fee_pct:
+                              type:
+                              - number
+                              - 'null'
+                              description: The creator's share of that fee, percent.
+                            after_graduation:
+                              type:
+                              - string
+                              - 'null'
+                              description: Where the token trades once the curve graduates.
+                            creator_share_of_pool_fees_pct:
+                              type:
+                              - number
+                              - 'null'
+                              description: The creator's share of the pool's trading fees after graduation, percent; null = none.
+                            summary:
+                              type: string
+                          additionalProperties: false
+                          required:
+                          - summary
+                          description: The creator's share of trading fees on this chain (ET-30819 / ET-30935 item 5).
+                      additionalProperties: true
+                      required:
+                      - key
+                      - chain_id
+                      - name
+                      - kind
+                      - supply_rule
+                      - creator_economics
+                  buyback:
+                    type: object
+                    properties:
+                      live:
+                        type: boolean
+                        description: 'false: no revenue or referral-fee buyback runs today.'
+                      status:
+                        type: string
+                        enum:
+                        - proposed
+                        - planned
+                        - live
+                        - declined
+                      feature_request_id:
+                        type:
+                        - integer
+                        - 'null'
+                      note:
+                        type: string
+                    additionalProperties: false
+                    required:
+                    - live
+                    - status
+                    - note
+                  page_url:
+                    type: string
+                  terms:
+                    type: string
+                  choice:
+                    type: object
+                    properties:
+                      symbol:
+                        type: string
+                      name:
+                        type: string
+                      max_supply: {}
+                      chain:
+                        type: string
+                      chain_name:
+                        type: string
+                    additionalProperties: false
+                    required:
+                    - symbol
+                    - name
+                    - chain
+                  launch:
+                    type: object
+                    additionalProperties: true
+                    properties:
+                      kind:
+                        type: string
+                        enum:
+                        - evm
+                        - sui
+                      unsigned_transaction:
+                        type:
+                        - object
+                        - 'null'
+                      warnings:
+                        type: array
+                        items:
+                          type: string
+                      next:
+                        type: string
+                    description: 'EVM: the UNSIGNED factory transaction for your own wallet. Sui: the coin package and launchpad ids to publish yourself. Nothing is minted here.'
+                additionalProperties: true
+                required:
+                - ticket
+                - app_name
+                - stage
+                - eligible
+                - yours
+                - coin
+                - defaults
+                - chains
+                - buyback
+                - terms
+                - choice
+                - launch
+                description: Records the requester's symbol / name / max supply / chain and hands back the launch to sign with their own wallet.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '403':
+          description: The build's X-BB-Token header or the requester's session is required.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: No build with that ticket.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '409':
+          description: The build has to ship before it can be tokenized (`NOT_SHIPPED`).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+  /api/v1/build-it-better/requests/{ticket}/tokenize/confirm:
+    post:
+      tags:
+      - Build it Better
+      summary: Tokenize Confirm
+      description: 'Verify the launch on-chain (our factory''s LaunchCreated for this build''s
+
+        symbol, or the indexed Sui curve) and mark the build''s token LIVE. A hash
+
+        that launched something else is refused; an unmined one answers 409.'
+      operationId: tokenize_confirm_api_v1_build_it_better_requests__ticket__tokenize_confirm_post
+      parameters:
+      - name: ticket
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Ticket
+      - name: x-bb-token
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Bb-Token
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BBTokenizeConfirmIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ticket:
+                    type: string
+                  app_name:
+                    type: string
+                  our_url:
+                    type:
+                    - string
+                    - 'null'
+                  stage:
+                    type: string
+                  eligible:
+                    type: boolean
+                    description: True once the build has shipped and a launch chain is available.
+                  reason:
+                    type:
+                    - string
+                    - 'null'
+                    description: Why it is not eligible yet; null when eligible.
+                  yours:
+                    type: boolean
+                    description: True when the caller is the build's requester.
+                  coin:
+                    type:
+                    - object
+                    - 'null'
+                    additionalProperties: true
+                    properties:
+                      symbol:
+                        type:
+                        - string
+                        - 'null'
+                      name:
+                        type:
+                        - string
+                        - 'null'
+                      status:
+                        type: string
+                      chain_id:
+                        type:
+                        - integer
+                        - 'null'
+                      chain_name:
+                        type:
+                        - string
+                        - 'null'
+                      token_address:
+                        type:
+                        - string
+                        - 'null'
+                      tx_hash:
+                        type:
+                        - string
+                        - 'null'
+                      launched_at:
+                        type:
+                        - string
+                        - 'null'
+                    description: The build's token once chosen; null before a choice.
+                  defaults:
+                    type: object
+                    properties:
+                      symbol:
+                        type: string
+                      name:
+                        type: string
+                      max_supply: {}
+                      chain:
+                        type:
+                        - string
+                        - 'null'
+                    additionalProperties: false
+                  chains:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                          description: What POST …/tokenize takes as `chain`.
+                        chain_id:
+                          type: integer
+                        name:
+                          type: string
+                        kind:
+                          type: string
+                          enum:
+                          - evm
+                          - sui
+                        currency:
+                          type: string
+                          description: Gas asset you pay.
+                        supply_rule:
+                          type: string
+                          enum:
+                          - fixed
+                          - chosen
+                        fixed_supply:
+                          type:
+                          - integer
+                          - 'null'
+                        min_supply:
+                          type:
+                          - integer
+                          - 'null'
+                        max_supply:
+                          type:
+                          - integer
+                          - 'null'
+                        symbol_rule:
+                          type: string
+                        creation_fee:
+                          type: string
+                        explorer:
+                          type: string
+                        explorer_public:
+                          type: boolean
+                        rpc:
+                          type: string
+                        factory_address:
+                          type: string
+                        signing:
+                          type: string
+                        creator_economics:
+                          type: object
+                          properties:
+                            curve_trading_fee_pct:
+                              type:
+                              - number
+                              - 'null'
+                              description: Trading fee on the bonding curve, percent; null = none.
+                            creator_share_of_curve_fee_pct:
+                              type:
+                              - number
+                              - 'null'
+                              description: The creator's share of that fee, percent.
+                            after_graduation:
+                              type:
+                              - string
+                              - 'null'
+                              description: Where the token trades once the curve graduates.
+                            creator_share_of_pool_fees_pct:
+                              type:
+                              - number
+                              - 'null'
+                              description: The creator's share of the pool's trading fees after graduation, percent; null = none.
+                            summary:
+                              type: string
+                          additionalProperties: false
+                          required:
+                          - summary
+                          description: The creator's share of trading fees on this chain (ET-30819 / ET-30935 item 5).
+                      additionalProperties: true
+                      required:
+                      - key
+                      - chain_id
+                      - name
+                      - kind
+                      - supply_rule
+                      - creator_economics
+                  buyback:
+                    type: object
+                    properties:
+                      live:
+                        type: boolean
+                        description: 'false: no revenue or referral-fee buyback runs today.'
+                      status:
+                        type: string
+                        enum:
+                        - proposed
+                        - planned
+                        - live
+                        - declined
+                      feature_request_id:
+                        type:
+                        - integer
+                        - 'null'
+                      note:
+                        type: string
+                    additionalProperties: false
+                    required:
+                    - live
+                    - status
+                    - note
+                  page_url:
+                    type: string
+                  terms:
+                    type: string
+                additionalProperties: true
+                required:
+                - ticket
+                - app_name
+                - stage
+                - eligible
+                - yours
+                - coin
+                - defaults
+                - chains
+                - buyback
+                - terms
+                description: 'The tokenize offer: eligibility, the chains with each one''s supply rule, fee and creator economics, the reserved ticker as default, and the token''s state once launched.'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '403':
+          description: The build's X-BB-Token header or the requester's session is required.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: No build with that ticket.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '409':
+          description: Choose the symbol, name and chain first (`NO_CHOICE`), or the launch is not mined yet.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+components:
+  schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    BBTokenizeConfirmIn:
+      properties:
+        tx_hash:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Tx Hash
+        curve_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Curve Id
+      type: object
+      title: BBTokenizeConfirmIn
+    BBRequestIn:
+      properties:
+        app_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: App Url
+        app_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: App Name
+        improvements:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Improvements
+        symbol:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Symbol
+        coin_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Coin Name
+        chain:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Chain
+        email:
+          anyOf:
+          - type: string
+            format: email
+          - type: 'null'
+          title: Email
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Name
+        agent:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Agent
+        design_urls:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Design Urls
+      type: object
+      title: BBRequestIn
+    BBStartupIn:
+      properties:
+        startup_name:
+          type: string
+          title: Startup Name
+        description:
+          type: string
+          title: Description
+        ticket:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Ticket
+        request_token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Request Token
+        app_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: App Name
+        app_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: App Url
+        has_website:
+          type: boolean
+          title: Has Website
+          default: false
+        website:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Website
+        desired_domain:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Desired Domain
+        socials:
+          anyOf:
+          - additionalProperties:
+              type: string
+            type: object
+          - type: 'null'
+          title: Socials
+        token_symbol:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Token Symbol
+        token_chain:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Token Chain
+        token_max_supply:
+          anyOf:
+          - {}
+          - type: 'null'
+          title: Token Max Supply
+        bid_et10:
+          anyOf:
+          - {}
+          - type: 'null'
+          title: Bid Et10
+        extra:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Extra
+        founder_name:
+          type: string
+          title: Founder Name
+        email:
+          type: string
+          format: email
+          title: Email
+        accept_terms:
+          type: boolean
+          title: Accept Terms
+          default: false
+      type: object
+      required:
+      - startup_name
+      - description
+      - founder_name
+      - email
+      title: BBStartupIn
+    BBChangeIn:
+      properties:
+        changes:
+          type: string
+          title: Changes
+      type: object
+      required:
+      - changes
+      title: BBChangeIn
+    BBStartupBidIn:
+      properties:
+        amount_et10:
+          title: Amount Et10
+      type: object
+      required:
+      - amount_et10
+      title: BBStartupBidIn
+    BBVerdictIn:
+      properties:
+        verdict:
+          type: string
+          title: Verdict
+        note:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Note
+      type: object
+      required:
+      - verdict
+      title: BBVerdictIn
+    BBTokenizeIn:
+      properties:
+        symbol:
+          type: string
+          title: Symbol
+        name:
+          type: string
+          title: Name
+        max_supply:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Max Supply
+        chain:
+          type: string
+          title: Chain
+      type: object
+      required:
+      - symbol
+      - name
+      - chain
+      title: BBTokenizeIn
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

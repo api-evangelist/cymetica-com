@@ -99,6 +99,46 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
       security: []
+  /api/v1/clones/fomo-radar/calibration:
+    get:
+      tags:
+      - clones
+      summary: Fomo Radar Calibration
+      description: 'The measured score -> outcome link: isotonic fit, Brier, precision, regime.
+
+
+        Everything here is measured on signals this radar actually emitted and
+
+        labeled AFTER their 72-hour window closed. Below the minimum sample count
+
+        there is no probability at all — ``sufficient`` is false and ``headline``
+
+        reads "insufficient history (n/N)".'
+      operationId: fomo_radar_calibration_api_v1_clones_fomo_radar_calibration_get
+      parameters:
+      - name: chain
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^(robinhood|solana)$
+          default: robinhood
+          title: Chain
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Fomo Radar Calibration Api V1 Clones Fomo Radar Calibration Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
   /api/v1/clones/fomo-radar/docs:
     get:
       tags:
@@ -255,7 +295,137 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  generated_at:
+                    type:
+                    - string
+                    - 'null'
+                  age_seconds:
+                    type:
+                    - number
+                    - 'null'
+                  stale:
+                    type: boolean
+                  source:
+                    type:
+                    - string
+                    - 'null'
+                  rank_baseline_at:
+                    type:
+                    - string
+                    - 'null'
+                  rank_history_hours:
+                    type: number
+                  message:
+                    type:
+                    - string
+                    - 'null'
+                  sort:
+                    type: string
+                  trend:
+                    type: string
+                  count:
+                    type: integer
+                  universe:
+                    type: integer
+                  assets_with_mentions:
+                    type:
+                    - integer
+                    - 'null'
+                  assets:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        symbol:
+                          type: string
+                        name:
+                          type: string
+                        image:
+                          type:
+                          - string
+                          - 'null'
+                        market_cap_rank:
+                          type:
+                          - integer
+                          - 'null'
+                        price_usd:
+                          type:
+                          - number
+                          - 'null'
+                        change_24h_pct:
+                          type:
+                          - number
+                          - 'null'
+                        pulse_score:
+                          type:
+                          - number
+                          - 'null'
+                          description: 0..100; null when no social component is computable.
+                        components:
+                          type: object
+                          properties: {}
+                          additionalProperties:
+                            type: number
+                          description: Component key (sentiment/buzz/momentum/price/turnover) → 0..1.
+                        missing_components:
+                          type: array
+                          items:
+                            type: string
+                        mentions_24h:
+                          type: integer
+                        mentions_prev_24h:
+                          type: integer
+                        mentions_7d:
+                          type: integer
+                        sentiment_avg_24h:
+                          type:
+                          - number
+                          - 'null'
+                        sentiment_avg_7d:
+                          type:
+                          - number
+                          - 'null'
+                        bullish_pct_24h:
+                          type:
+                          - number
+                          - 'null'
+                        social_dominance_pct:
+                          type:
+                          - number
+                          - 'null'
+                        impact_avg_24h:
+                          type:
+                          - number
+                          - 'null'
+                        pulse_rank:
+                          type: integer
+                        rank_change_24h:
+                          type:
+                          - integer
+                          - 'null'
+                          description: Positive = climbed.
+                        trend:
+                          type: string
+                          enum:
+                          - up
+                          - down
+                          - flat
+                      additionalProperties: true
+                      required:
+                      - symbol
+                      - pulse_score
+                      - pulse_rank
+                additionalProperties: true
+                required:
+                - ok
+                - count
+                - assets
+                description: Ranked Pulse table from the cached snapshot (`ok=false` + `message` while it rebuilds).
         '422':
           description: Validation Error
           content:
@@ -282,7 +452,177 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  generated_at:
+                    type:
+                    - string
+                    - 'null'
+                  age_seconds:
+                    type:
+                    - number
+                    - 'null'
+                  stale:
+                    type: boolean
+                  source:
+                    type:
+                    - string
+                    - 'null'
+                  rank_baseline_at:
+                    type:
+                    - string
+                    - 'null'
+                  rank_history_hours:
+                    type: number
+                  message:
+                    type:
+                    - string
+                    - 'null'
+                  symbol:
+                    type: string
+                  asset:
+                    anyOf:
+                    - type: object
+                      properties:
+                        symbol:
+                          type: string
+                        name:
+                          type: string
+                        image:
+                          type:
+                          - string
+                          - 'null'
+                        market_cap_rank:
+                          type:
+                          - integer
+                          - 'null'
+                        price_usd:
+                          type:
+                          - number
+                          - 'null'
+                        change_24h_pct:
+                          type:
+                          - number
+                          - 'null'
+                        pulse_score:
+                          type:
+                          - number
+                          - 'null'
+                          description: 0..100; null when no social component is computable.
+                        components:
+                          type: object
+                          properties: {}
+                          additionalProperties:
+                            type: number
+                          description: Component key (sentiment/buzz/momentum/price/turnover) → 0..1.
+                        missing_components:
+                          type: array
+                          items:
+                            type: string
+                        mentions_24h:
+                          type: integer
+                        mentions_prev_24h:
+                          type: integer
+                        mentions_7d:
+                          type: integer
+                        sentiment_avg_24h:
+                          type:
+                          - number
+                          - 'null'
+                        sentiment_avg_7d:
+                          type:
+                          - number
+                          - 'null'
+                        bullish_pct_24h:
+                          type:
+                          - number
+                          - 'null'
+                        social_dominance_pct:
+                          type:
+                          - number
+                          - 'null'
+                        impact_avg_24h:
+                          type:
+                          - number
+                          - 'null'
+                        pulse_rank:
+                          type: integer
+                        rank_change_24h:
+                          type:
+                          - integer
+                          - 'null'
+                          description: Positive = climbed.
+                        trend:
+                          type: string
+                          enum:
+                          - up
+                          - down
+                          - flat
+                      additionalProperties: true
+                      required:
+                      - symbol
+                      - pulse_score
+                      - pulse_rank
+                    - type: 'null'
+                  weights:
+                    type: object
+                    properties: {}
+                    additionalProperties:
+                      type: number
+                    description: Component weights.
+                  component_labels:
+                    type: object
+                    properties: {}
+                    additionalProperties:
+                      type: string
+                  exchange_url:
+                    type:
+                    - string
+                    - 'null'
+                  headline_count:
+                    type: integer
+                  headlines:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        title:
+                          type: string
+                        source:
+                          type:
+                          - string
+                          - 'null'
+                        url:
+                          type:
+                          - string
+                          - 'null'
+                        event_url:
+                          type:
+                          - string
+                          - 'null'
+                        published_at:
+                          type:
+                          - string
+                          - 'null'
+                        sentiment:
+                          type:
+                          - number
+                          - 'null'
+                        impact:
+                          type:
+                          - number
+                          - 'null'
+                      additionalProperties: true
+                additionalProperties: true
+                required:
+                - ok
+                - symbol
+                - asset
+                - headlines
+                description: One asset's score components and the recent headlines behind them; `asset` is null (with `message`) when it is outside the current universe.
         '422':
           description: Validation Error
           content:
@@ -302,7 +642,62 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  name:
+                    type: string
+                  range:
+                    type: array
+                    items:
+                      type: number
+                  universe:
+                    type: string
+                  refresh_seconds:
+                    type: number
+                  doc_url:
+                    type: string
+                  method:
+                    type: string
+                  social_requirement:
+                    type: string
+                  small_sample_shrinkage:
+                    type: string
+                  components:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                        label:
+                          type: string
+                        weight:
+                          type: number
+                        source:
+                          type: string
+                        formula:
+                          type: string
+                      additionalProperties: true
+                  mention_rule:
+                    type: string
+                  derived_fields:
+                    type: object
+                    properties: {}
+                    additionalProperties:
+                      type: string
+                  endpoints:
+                    type: object
+                    properties: {}
+                    additionalProperties:
+                      type: string
+                additionalProperties: true
+                required:
+                - name
+                - components
+                description: The Pulse Score formula, machine-readable.
       security: []
   /api/v1/clones/protocol-revenue/rankings:
     get:
@@ -494,7 +889,167 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  message:
+                    type:
+                    - string
+                    - 'null'
+                  source:
+                    type: string
+                  updated_at:
+                    type:
+                    - number
+                    - 'null'
+                  stale_seconds:
+                    type:
+                    - number
+                    - 'null'
+                  chains:
+                    type: array
+                    items:
+                      type: string
+                  stats:
+                    type: object
+                    properties:
+                      pools:
+                        type: integer
+                      total_tvl_usd:
+                        type: number
+                      best_stable_apy:
+                        type: number
+                      best_stable_symbol:
+                        type:
+                        - string
+                        - 'null'
+                      convex_matched:
+                        type: integer
+                      convex_better:
+                        type: integer
+                    additionalProperties: true
+                  count:
+                    type: integer
+                  pools:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        pool_id:
+                          type: string
+                        symbol:
+                          type: string
+                        assets:
+                          type: array
+                          items:
+                            type: string
+                        pool_meta:
+                          type:
+                          - string
+                          - 'null'
+                        chain:
+                          type: string
+                        chain_slug:
+                          type: string
+                        stable:
+                          type: boolean
+                        kind:
+                          type: string
+                          enum:
+                          - Stable
+                          - Crypto
+                        tvl_usd:
+                          type: number
+                        volume_1d_usd:
+                          type:
+                          - number
+                          - 'null'
+                        apy:
+                          type: number
+                          description: Percent
+                        apy_base:
+                          type: number
+                        apy_reward:
+                          type: number
+                        apy_mean_30d:
+                          type:
+                          - number
+                          - 'null'
+                        apy_change_7d:
+                          type:
+                          - number
+                          - 'null'
+                        convex_pool_id:
+                          type:
+                          - string
+                          - 'null'
+                        convex_apy:
+                          type:
+                          - number
+                          - 'null'
+                        convex_apy_base:
+                          type:
+                          - number
+                          - 'null'
+                        convex_apy_reward:
+                          type:
+                          - number
+                          - 'null'
+                        convex_tvl_usd:
+                          type:
+                          - number
+                          - 'null'
+                        boost_delta:
+                          type:
+                          - number
+                          - 'null'
+                          description: convex_apy − apy (percentage points).
+                        best_venue:
+                          type: string
+                          enum:
+                          - Convex
+                          - Curve
+                        il_risk:
+                          type: string
+                        exposure:
+                          type: string
+                        reward_tokens:
+                          type: array
+                          items:
+                            type: string
+                        underlying_tokens:
+                          type: array
+                          items:
+                            type: string
+                        links:
+                          type: object
+                          properties:
+                            curve:
+                              type: string
+                            convex:
+                              type:
+                              - string
+                              - 'null'
+                            llama:
+                              type: string
+                            swap:
+                              type: string
+                          additionalProperties: true
+                      additionalProperties: true
+                      required:
+                      - pool_id
+                      - symbol
+                      - chain
+                      - tvl_usd
+                      - apy
+                additionalProperties: true
+                required:
+                - ok
+                - count
+                - pools
+                description: Curve pools with their Convex counterpart (DefiLlama Yields). APYs in percent; `updated_at` is epoch seconds.
         '422':
           description: Validation Error
           content:
@@ -521,7 +1076,165 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  message:
+                    type:
+                    - string
+                    - 'null'
+                  pool_id:
+                    type: string
+                  pool:
+                    anyOf:
+                    - type: object
+                      properties:
+                        pool_id:
+                          type: string
+                        symbol:
+                          type: string
+                        assets:
+                          type: array
+                          items:
+                            type: string
+                        pool_meta:
+                          type:
+                          - string
+                          - 'null'
+                        chain:
+                          type: string
+                        chain_slug:
+                          type: string
+                        stable:
+                          type: boolean
+                        kind:
+                          type: string
+                          enum:
+                          - Stable
+                          - Crypto
+                        tvl_usd:
+                          type: number
+                        volume_1d_usd:
+                          type:
+                          - number
+                          - 'null'
+                        apy:
+                          type: number
+                          description: Percent
+                        apy_base:
+                          type: number
+                        apy_reward:
+                          type: number
+                        apy_mean_30d:
+                          type:
+                          - number
+                          - 'null'
+                        apy_change_7d:
+                          type:
+                          - number
+                          - 'null'
+                        convex_pool_id:
+                          type:
+                          - string
+                          - 'null'
+                        convex_apy:
+                          type:
+                          - number
+                          - 'null'
+                        convex_apy_base:
+                          type:
+                          - number
+                          - 'null'
+                        convex_apy_reward:
+                          type:
+                          - number
+                          - 'null'
+                        convex_tvl_usd:
+                          type:
+                          - number
+                          - 'null'
+                        boost_delta:
+                          type:
+                          - number
+                          - 'null'
+                          description: convex_apy − apy (percentage points).
+                        best_venue:
+                          type: string
+                          enum:
+                          - Convex
+                          - Curve
+                        il_risk:
+                          type: string
+                        exposure:
+                          type: string
+                        reward_tokens:
+                          type: array
+                          items:
+                            type: string
+                        underlying_tokens:
+                          type: array
+                          items:
+                            type: string
+                        links:
+                          type: object
+                          properties:
+                            curve:
+                              type: string
+                            convex:
+                              type:
+                              - string
+                              - 'null'
+                            llama:
+                              type: string
+                            swap:
+                              type: string
+                          additionalProperties: true
+                      additionalProperties: true
+                      required:
+                      - pool_id
+                      - symbol
+                      - chain
+                      - tvl_usd
+                      - apy
+                    - type: 'null'
+                  updated_at:
+                    type:
+                    - number
+                    - 'null'
+                  points:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        timestamp:
+                          type:
+                          - string
+                          - 'null'
+                        tvl_usd:
+                          type:
+                          - number
+                          - 'null'
+                        apy:
+                          type:
+                          - number
+                          - 'null'
+                        apy_base:
+                          type:
+                          - number
+                          - 'null'
+                        apy_reward:
+                          type:
+                          - number
+                          - 'null'
+                      additionalProperties: true
+                additionalProperties: true
+                required:
+                - ok
+                - pool_id
+                - points
+                description: 30-day daily APY/TVL history, oldest first.
         '422':
           description: Validation Error
           content:
@@ -541,7 +1254,68 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  page:
+                    type: string
+                  summary:
+                    type: string
+                  data_source:
+                    type: object
+                    properties:
+                      provider:
+                        type: string
+                      endpoints:
+                        type: array
+                        items:
+                          type: string
+                      projects:
+                        type: array
+                        items:
+                          type: string
+                      cache_seconds:
+                        type: integer
+                      note:
+                        type: string
+                    additionalProperties: true
+                  endpoints:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        method:
+                          type: string
+                        path:
+                          type: string
+                        description:
+                          type: string
+                        query:
+                          type: object
+                          properties: {}
+                          additionalProperties:
+                            type: string
+                      additionalProperties: true
+                  actions:
+                    type: object
+                    properties: {}
+                    additionalProperties:
+                      type: string
+                  ok:
+                    type: boolean
+                  pools_cached:
+                    type: integer
+                  updated_at:
+                    type:
+                    - number
+                    - 'null'
+                additionalProperties: true
+                required:
+                - name
+                - endpoints
+                description: Machine-readable description of the Stable Pools API.
       security: []
   /api/v1/clones/allswap/index:
     get:
@@ -601,6 +1375,11 @@ components:
         type:
           type: string
           title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
       type: object
       required:
       - loc

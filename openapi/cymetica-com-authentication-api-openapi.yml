@@ -147,28 +147,62 @@ paths:
       - BearerJWT: []
 components:
   schemas:
-    UserLogin:
+    APIKeyBootstrapRequest:
       properties:
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Email
         username:
           anyOf:
           - type: string
           - type: 'null'
           title: Username
-        email:
-          anyOf:
-          - type: string
-            format: email
-          - type: 'null'
-          title: Email
         password:
           type: string
           maxLength: 72
           title: Password
+        key_name:
+          type: string
+          maxLength: 100
+          title: Key Name
+          default: api-key
       type: object
       required:
       - password
-      title: UserLogin
-      description: User login schema - accepts either email or username.
+      title: APIKeyBootstrapRequest
+      description: Request to login and generate an API key in one call.
+    APIKeyBootstrapResponse:
+      properties:
+        access_token:
+          type: string
+          title: Access Token
+        refresh_token:
+          type: string
+          title: Refresh Token
+        api_key:
+          type: string
+          title: Api Key
+        api_secret:
+          type: string
+          title: Api Secret
+        api_key_id:
+          type: string
+          title: Api Key Id
+        message:
+          type: string
+          title: Message
+          default: Store the api_key and api_secret securely — they will not be shown again.
+      type: object
+      required:
+      - access_token
+      - refresh_token
+      - api_key
+      - api_secret
+      - api_key_id
+      title: APIKeyBootstrapResponse
+      description: Response containing tokens AND a new API key.
     UserRegister:
       properties:
         email:
@@ -249,62 +283,6 @@ components:
       - privacy_policy_accepted
       title: UserRegister
       description: User registration schema.
-    APIKeyBootstrapRequest:
-      properties:
-        email:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Email
-        username:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Username
-        password:
-          type: string
-          maxLength: 72
-          title: Password
-        key_name:
-          type: string
-          maxLength: 100
-          title: Key Name
-          default: api-key
-      type: object
-      required:
-      - password
-      title: APIKeyBootstrapRequest
-      description: Request to login and generate an API key in one call.
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
     UserResponse:
       properties:
         id:
@@ -392,6 +370,10 @@ components:
             format: date-time
           - type: 'null'
           title: Last Login
+        simulation_mode:
+          type: boolean
+          title: Simulation Mode
+          default: false
       type: object
       required:
       - id
@@ -409,36 +391,37 @@ components:
       - last_login
       title: UserResponse
       description: User response schema.
-    APIKeyBootstrapResponse:
+    UserLogin:
       properties:
-        access_token:
+        username:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Username
+        email:
+          anyOf:
+          - type: string
+            format: email
+          - type: 'null'
+          title: Email
+        password:
           type: string
-          title: Access Token
-        refresh_token:
-          type: string
-          title: Refresh Token
-        api_key:
-          type: string
-          title: Api Key
-        api_secret:
-          type: string
-          title: Api Secret
-        api_key_id:
-          type: string
-          title: Api Key Id
-        message:
-          type: string
-          title: Message
-          default: Store the api_key and api_secret securely — they will not be shown again.
+          maxLength: 72
+          title: Password
       type: object
       required:
-      - access_token
-      - refresh_token
-      - api_key
-      - api_secret
-      - api_key_id
-      title: APIKeyBootstrapResponse
-      description: Response containing tokens AND a new API key.
+      - password
+      title: UserLogin
+      description: User login schema - accepts either email or username.
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
     TokenResponse:
       properties:
         access_token:
@@ -460,6 +443,32 @@ components:
       - user
       title: TokenResponse
       description: Token response schema.
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

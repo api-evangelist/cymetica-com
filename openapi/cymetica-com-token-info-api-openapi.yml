@@ -1,0 +1,939 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Token Info API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: Token Info
+paths:
+  /api/v1/token-info:
+    get:
+      tags:
+      - Token Info
+      summary: Token Directory
+      description: Directory of tokens. ``total`` is the full match count, not the page size.
+      operationId: token_directory_api_v1_token_info_get
+      parameters:
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 64
+          description: Search by symbol or name
+          default: ''
+          title: Q
+        description: Search by symbol or name
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 50
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 1000000
+          minimum: 0
+          default: 0
+          title: Offset
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                    description: Full match count, not the page size.
+                  returned:
+                    type: integer
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+                  q:
+                    type: string
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        symbol:
+                          type: string
+                        name:
+                          type: string
+                        coin_id:
+                          type:
+                          - string
+                          - 'null'
+                        rank:
+                          type:
+                          - integer
+                          - 'null'
+                        stored_price_usd:
+                          type:
+                          - number
+                          - 'null'
+                          description: Catalog's last stored price (not a live quote), dated by stored_at.
+                        stored_market_cap_usd:
+                          type:
+                          - number
+                          - 'null'
+                        stored_volume_usd:
+                          type:
+                          - number
+                          - 'null'
+                        stored_at:
+                          type:
+                          - string
+                          - 'null'
+                        website:
+                          type:
+                          - string
+                          - 'null'
+                        image_url:
+                          type:
+                          - string
+                          - 'null'
+                        reward_kind:
+                          type: string
+                        reward_kind_label:
+                          type: string
+                        url:
+                          type: string
+                          description: Site path of the token page, e.g. /token-info/BTC.
+                      additionalProperties: false
+                      required:
+                      - symbol
+                      - name
+                      - reward_kind
+                      - url
+                  as_of:
+                    type: string
+                  sources:
+                    type: array
+                    items:
+                      type: string
+                  note:
+                    type: string
+                additionalProperties: false
+                required:
+                - total
+                - returned
+                - limit
+                - offset
+                - items
+                - as_of
+                description: Token directory page; EventTrader tokens first, then by market-cap rank.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '503':
+          description: The token catalog could not be read just now.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+  /api/v1/token-info/{symbol}:
+    get:
+      tags:
+      - Token Info
+      summary: Token Detail
+      description: Everything the token page shows, in one document.
+      operationId: token_detail_api_v1_token_info__symbol__get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: object
+                    properties:
+                      symbol:
+                        type: string
+                      name:
+                        type: string
+                      coin_id:
+                        type:
+                        - string
+                        - 'null'
+                      rank:
+                        type:
+                        - integer
+                        - 'null'
+                      image_url:
+                        type:
+                        - string
+                        - 'null'
+                      url:
+                        type: string
+                    additionalProperties: false
+                  website:
+                    type:
+                    - string
+                    - 'null'
+                  stats:
+                    type: object
+                    properties:
+                      available:
+                        type: boolean
+                      points:
+                        type: integer
+                      first_date:
+                        type:
+                        - string
+                        - 'null'
+                      last_date:
+                        type:
+                        - string
+                        - 'null'
+                      period_label:
+                        type:
+                        - string
+                        - 'null'
+                      stored_high:
+                        anyOf:
+                        - type: object
+                          properties:
+                            price_usd:
+                              type: number
+                            date:
+                              type: string
+                          additionalProperties: false
+                        - type: 'null'
+                      stored_low:
+                        anyOf:
+                        - type: object
+                          properties:
+                            price_usd:
+                              type: number
+                            date:
+                              type: string
+                          additionalProperties: false
+                        - type: 'null'
+                      high_52w:
+                        anyOf:
+                        - type: object
+                          properties:
+                            price_usd:
+                              type: number
+                            date:
+                              type: string
+                          additionalProperties: false
+                        - type: 'null'
+                      low_52w:
+                        anyOf:
+                        - type: object
+                          properties:
+                            price_usd:
+                              type: number
+                            date:
+                              type: string
+                          additionalProperties: false
+                        - type: 'null'
+                      changes:
+                        type: object
+                        properties: {}
+                        additionalProperties:
+                          anyOf:
+                          - type: object
+                            properties:
+                              pct:
+                                type: number
+                              from_date:
+                                type: string
+                              from_price_usd:
+                                type: number
+                              to_date:
+                                type: string
+                              to_price_usd:
+                                type: number
+                            additionalProperties: false
+                          - type: 'null'
+                        description: Keyed by window name; each value is a % change block or null.
+                      stale:
+                        type:
+                        - boolean
+                        - 'null'
+                      reason:
+                        type:
+                        - string
+                        - 'null'
+                    additionalProperties: false
+                    required:
+                    - available
+                    - points
+                    description: High/low/change figures from stored daily closes.
+                  market:
+                    type: object
+                    properties:
+                      market_cap_usd:
+                        type:
+                        - number
+                        - 'null'
+                      volume_usd:
+                        type:
+                        - number
+                        - 'null'
+                      as_of:
+                        type:
+                        - string
+                        - 'null'
+                      source:
+                        type:
+                        - string
+                        - 'null'
+                    additionalProperties: false
+                  rewards:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: 'Curated reward facts for this token (platform tokens: holder-payout facts).'
+                  ai:
+                    type: object
+                    properties:
+                      website:
+                        type:
+                        - string
+                        - 'null'
+                      assessment:
+                        anyOf:
+                        - type: object
+                          properties:
+                            total_score:
+                              type: integer
+                            max_score:
+                              type: integer
+                            classification:
+                              type: string
+                            classification_label:
+                              type: string
+                            is_ai_native:
+                              type: boolean
+                            classification_description:
+                              type: string
+                            partial:
+                              type: boolean
+                            dimensions:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  id: {}
+                                  dimension: {}
+                                  score: {}
+                                  max_score: {}
+                                additionalProperties: false
+                            assessed_at:
+                              type:
+                              - string
+                              - 'null'
+                            assessed_website:
+                              type:
+                              - string
+                              - 'null'
+                          additionalProperties: true
+                        - type: 'null'
+                      method:
+                        type: string
+                      status:
+                        type: string
+                        enum:
+                        - no_website
+                        - unavailable
+                        - not_assessed
+                        - assessed
+                      text:
+                        type: string
+                      run_url:
+                        type: string
+                    additionalProperties: false
+                    required:
+                    - status
+                    - text
+                    - run_url
+                    description: Stored AI Due Diligence result for the project's website.
+                  sources:
+                    type: array
+                    items:
+                      type: string
+                  price:
+                    type: object
+                    properties:
+                      usd:
+                        type:
+                        - number
+                        - 'null'
+                      kind:
+                        type:
+                        - string
+                        - 'null'
+                        enum:
+                        - live
+                        - stored
+                        - null
+                        description: live = EventTrader price feed now; stored = last stored daily/catalog price; null = no price.
+                      as_of:
+                        type:
+                        - string
+                        - 'null'
+                      source:
+                        type:
+                        - string
+                        - 'null'
+                      live_available:
+                        type: boolean
+                      ws_path:
+                        type:
+                        - string
+                        - 'null'
+                        description: WebSocket path that pushes live price changes, when the feed covers the token.
+                    additionalProperties: false
+                    required:
+                    - usd
+                    - kind
+                    - live_available
+                  calculator:
+                    type: object
+                    properties:
+                      price_usd:
+                        type:
+                        - number
+                        - 'null'
+                      price_kind:
+                        type:
+                        - string
+                        - 'null'
+                      formula:
+                        type: string
+                      rate_source:
+                        type: string
+                      limits:
+                        type: object
+                        properties:
+                          max_monthly_income_usd:
+                            type: number
+                          max_yearly_rate_pct:
+                            type: number
+                        additionalProperties: false
+                      disclaimer:
+                        type: string
+                    additionalProperties: false
+                  does_not:
+                    type: array
+                    items:
+                      type: string
+                  history_url:
+                    type: string
+                  as_of:
+                    type: string
+                additionalProperties: false
+                required:
+                - token
+                - stats
+                - market
+                - rewards
+                - ai
+                - price
+                - calculator
+                - as_of
+                description: Everything the token page shows, in one document.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '404':
+          description: No token with that symbol in the catalog (`TOKEN_NOT_FOUND`).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: The token catalog could not be read just now.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+  /api/v1/token-info/{symbol}/history:
+    get:
+      tags:
+      - Token Info
+      summary: Token History
+      description: Stored daily closes, oldest first. Empty when we hold no daily rows.
+      operationId: token_history_api_v1_token_info__symbol__history_get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  symbol:
+                    type: string
+                  points:
+                    type: integer
+                  first_date:
+                    type:
+                    - string
+                    - 'null'
+                  last_date:
+                    type:
+                    - string
+                    - 'null'
+                  series:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        t:
+                          type: string
+                          description: ISO date
+                        v:
+                          type: number
+                          description: Daily close, USD
+                      additionalProperties: false
+                      required:
+                      - t
+                      - v
+                  as_of:
+                    type: string
+                  sources:
+                    type: array
+                    items:
+                      type: string
+                additionalProperties: false
+                required:
+                - symbol
+                - points
+                - series
+                - as_of
+                description: Stored daily closes, oldest first; empty `series` when none are held.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '404':
+          description: No token with that symbol in the catalog (`TOKEN_NOT_FOUND`).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: The catalog or stored history could not be read just now.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+  /api/v1/token-info/{symbol}/calculator:
+    get:
+      tags:
+      - Token Info
+      summary: Token Calculator
+      description: Tokens needed = monthly income x 12 / (price x yearly rate). The rate is the caller's.
+      operationId: token_calculator_api_v1_token_info__symbol__calculator_get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      - name: monthly_income_usd
+        in: query
+        required: true
+        schema:
+          type: number
+          description: Desired monthly income in USD
+          title: Monthly Income Usd
+        description: Desired monthly income in USD
+      - name: yearly_rate_pct
+        in: query
+        required: true
+        schema:
+          type: number
+          description: Yearly reward rate in percent, read by YOU from the project's own page
+          title: Yearly Rate Pct
+        description: Yearly reward rate in percent, read by YOU from the project's own page
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  tokens_needed:
+                    type: number
+                  cost_usd:
+                    type: number
+                  yearly_income_usd:
+                    type: number
+                  inputs:
+                    type: object
+                    properties:
+                      monthly_income_usd:
+                        type: number
+                      price_usd:
+                        type: number
+                      yearly_rate_pct:
+                        type: number
+                    additionalProperties: false
+                  formula:
+                    type: string
+                  steps:
+                    type: array
+                    items:
+                      type: string
+                  warnings:
+                    type: array
+                    items:
+                      type: string
+                  disclaimer:
+                    type: string
+                  symbol:
+                    type: string
+                  price:
+                    type: object
+                    properties:
+                      usd:
+                        type:
+                        - number
+                        - 'null'
+                      kind:
+                        type:
+                        - string
+                        - 'null'
+                        enum:
+                        - live
+                        - stored
+                        - null
+                        description: live = EventTrader price feed now; stored = last stored daily/catalog price; null = no price.
+                      as_of:
+                        type:
+                        - string
+                        - 'null'
+                      source:
+                        type:
+                        - string
+                        - 'null'
+                      live_available:
+                        type: boolean
+                      ws_path:
+                        type:
+                        - string
+                        - 'null'
+                        description: WebSocket path that pushes live price changes, when the feed covers the token.
+                    additionalProperties: false
+                    required:
+                    - usd
+                    - kind
+                    - live_available
+                  as_of:
+                    type: string
+                  sources:
+                    type: array
+                    items:
+                      type: string
+                additionalProperties: false
+                required:
+                - ok
+                - tokens_needed
+                - cost_usd
+                - yearly_income_usd
+                - symbol
+                - price
+                description: tokens needed = monthly income x 12 / (price x yearly rate). Invalid inputs answer 422.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '404':
+          description: No token with that symbol in the catalog (`TOKEN_NOT_FOUND`).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '503':
+          description: The token catalog could not be read just now.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+components:
+  schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

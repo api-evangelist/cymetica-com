@@ -56,7 +56,67 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  swaps:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type:
+                          - integer
+                          - string
+                        chain_id:
+                          type:
+                          - integer
+                          - 'null'
+                        sell_token:
+                          type: string
+                        buy_token:
+                          type: string
+                        sell_symbol:
+                          type:
+                          - string
+                          - 'null'
+                        buy_symbol:
+                          type:
+                          - string
+                          - 'null'
+                        sell_amount:
+                          type: string
+                        buy_amount:
+                          type:
+                          - string
+                          - 'null'
+                        platform_fee:
+                          type:
+                          - string
+                          - 'null'
+                        tx_hash:
+                          type:
+                          - string
+                          - 'null'
+                        tx_url:
+                          type:
+                          - string
+                          - 'null'
+                        status:
+                          type: string
+                        created_at:
+                          type: string
+                      additionalProperties: true
+                      required:
+                      - id
+                      - sell_token
+                      - buy_token
+                      - sell_amount
+                      - status
+                additionalProperties: false
+                required:
+                - swaps
+                description: The caller's swaps, newest first (`limit` up to 100).
         '422':
           description: Validation Error
           content:
@@ -89,6 +149,11 @@ components:
         type:
           type: string
           title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
       type: object
       required:
       - loc

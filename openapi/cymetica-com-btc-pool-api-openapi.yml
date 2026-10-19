@@ -1,0 +1,539 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Btc Pool API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: btc-pool
+paths:
+  /api/v1/btc-pool/state:
+    get:
+      tags:
+      - btc-pool
+      summary: Get State
+      operationId: get_state_api_v1_btc_pool_state_get
+      parameters:
+      - name: pool
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 16
+          default: btc-4h
+          title: Pool
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pool:
+                    type: string
+                  enabled:
+                    type: boolean
+                    description: false = pool not live; only pool/enabled/now are returned.
+                  now:
+                    type: string
+                  entry_round:
+                    type: object
+                    properties:
+                      pool:
+                        type: string
+                      round_epoch:
+                        type: integer
+                      status:
+                        type: string
+                      entry_opens_at:
+                        type:
+                        - string
+                        - 'null'
+                      locks_at:
+                        type:
+                        - string
+                        - 'null'
+                      entries_close_at:
+                        type:
+                        - string
+                        - 'null'
+                        description: Entries close BEFORE locks_at (anti-sniping); count down to this.
+                      entry_cutoff_seconds:
+                        type: integer
+                      cadence_seconds:
+                        type: integer
+                        description: Round length in seconds (authoritative; the pool slug may not match).
+                      settles_at:
+                        type:
+                        - string
+                        - 'null'
+                      p0:
+                        type:
+                        - string
+                        - 'null'
+                        description: Decimal string.
+                      p1:
+                        type:
+                        - string
+                        - 'null'
+                        description: Decimal string.
+                      winning_price:
+                        type:
+                        - string
+                        - 'null'
+                      winning_distance:
+                        type:
+                        - string
+                        - 'null'
+                      winners_count:
+                        type:
+                        - integer
+                        - 'null'
+                      void_reason:
+                        type:
+                        - string
+                        - 'null'
+                      entries:
+                        type: integer
+                      pool_usdc:
+                        type: string
+                        description: Decimal string, USDC.
+                      min_entry_usdc:
+                        type: string
+                      max_entry_usdc:
+                        type: string
+                      fee_pct:
+                        type: string
+                      subject_ref:
+                        type:
+                        - string
+                        - 'null'
+                      predictions:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                            price:
+                              type: string
+                            amount_usdc:
+                              type: string
+                            side:
+                              type:
+                              - string
+                              - 'null'
+                              enum:
+                              - up
+                              - down
+                              - null
+                          additionalProperties: false
+                        description: 'Entry round only: anonymized prediction tape (<=200).'
+                      index:
+                        anyOf:
+                        - type: object
+                          properties:
+                            price:
+                              type: string
+                            at:
+                              type:
+                              - string
+                              - 'null'
+                            unit:
+                              type: string
+                          additionalProperties: true
+                        - type: 'null'
+                        description: 'Entry/measuring rounds only: the live index (null when fail-closed).'
+                    additionalProperties: true
+                    required:
+                    - pool
+                    - round_epoch
+                    - status
+                  measuring_round:
+                    anyOf:
+                    - type: object
+                      properties:
+                        pool:
+                          type: string
+                        round_epoch:
+                          type: integer
+                        status:
+                          type: string
+                        entry_opens_at:
+                          type:
+                          - string
+                          - 'null'
+                        locks_at:
+                          type:
+                          - string
+                          - 'null'
+                        entries_close_at:
+                          type:
+                          - string
+                          - 'null'
+                          description: Entries close BEFORE locks_at (anti-sniping); count down to this.
+                        entry_cutoff_seconds:
+                          type: integer
+                        cadence_seconds:
+                          type: integer
+                          description: Round length in seconds (authoritative; the pool slug may not match).
+                        settles_at:
+                          type:
+                          - string
+                          - 'null'
+                        p0:
+                          type:
+                          - string
+                          - 'null'
+                          description: Decimal string.
+                        p1:
+                          type:
+                          - string
+                          - 'null'
+                          description: Decimal string.
+                        winning_price:
+                          type:
+                          - string
+                          - 'null'
+                        winning_distance:
+                          type:
+                          - string
+                          - 'null'
+                        winners_count:
+                          type:
+                          - integer
+                          - 'null'
+                        void_reason:
+                          type:
+                          - string
+                          - 'null'
+                        entries:
+                          type: integer
+                        pool_usdc:
+                          type: string
+                          description: Decimal string, USDC.
+                        min_entry_usdc:
+                          type: string
+                        max_entry_usdc:
+                          type: string
+                        fee_pct:
+                          type: string
+                        subject_ref:
+                          type:
+                          - string
+                          - 'null'
+                        predictions:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                              price:
+                                type: string
+                              amount_usdc:
+                                type: string
+                              side:
+                                type:
+                                - string
+                                - 'null'
+                                enum:
+                                - up
+                                - down
+                                - null
+                            additionalProperties: false
+                          description: 'Entry round only: anonymized prediction tape (<=200).'
+                        index:
+                          anyOf:
+                          - type: object
+                            properties:
+                              price:
+                                type: string
+                              at:
+                                type:
+                                - string
+                                - 'null'
+                              unit:
+                                type: string
+                            additionalProperties: true
+                          - type: 'null'
+                          description: 'Entry/measuring rounds only: the live index (null when fail-closed).'
+                      additionalProperties: true
+                      required:
+                      - pool
+                      - round_epoch
+                      - status
+                    - type: 'null'
+                  last_round:
+                    anyOf:
+                    - type: object
+                      properties:
+                        pool:
+                          type: string
+                        round_epoch:
+                          type: integer
+                        status:
+                          type: string
+                        entry_opens_at:
+                          type:
+                          - string
+                          - 'null'
+                        locks_at:
+                          type:
+                          - string
+                          - 'null'
+                        entries_close_at:
+                          type:
+                          - string
+                          - 'null'
+                          description: Entries close BEFORE locks_at (anti-sniping); count down to this.
+                        entry_cutoff_seconds:
+                          type: integer
+                        cadence_seconds:
+                          type: integer
+                          description: Round length in seconds (authoritative; the pool slug may not match).
+                        settles_at:
+                          type:
+                          - string
+                          - 'null'
+                        p0:
+                          type:
+                          - string
+                          - 'null'
+                          description: Decimal string.
+                        p1:
+                          type:
+                          - string
+                          - 'null'
+                          description: Decimal string.
+                        winning_price:
+                          type:
+                          - string
+                          - 'null'
+                        winning_distance:
+                          type:
+                          - string
+                          - 'null'
+                        winners_count:
+                          type:
+                          - integer
+                          - 'null'
+                        void_reason:
+                          type:
+                          - string
+                          - 'null'
+                        entries:
+                          type: integer
+                        pool_usdc:
+                          type: string
+                          description: Decimal string, USDC.
+                        min_entry_usdc:
+                          type: string
+                        max_entry_usdc:
+                          type: string
+                        fee_pct:
+                          type: string
+                        subject_ref:
+                          type:
+                          - string
+                          - 'null'
+                        predictions:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                              price:
+                                type: string
+                              amount_usdc:
+                                type: string
+                              side:
+                                type:
+                                - string
+                                - 'null'
+                                enum:
+                                - up
+                                - down
+                                - null
+                            additionalProperties: false
+                          description: 'Entry round only: anonymized prediction tape (<=200).'
+                        index:
+                          anyOf:
+                          - type: object
+                            properties:
+                              price:
+                                type: string
+                              at:
+                                type:
+                                - string
+                                - 'null'
+                              unit:
+                                type: string
+                            additionalProperties: true
+                          - type: 'null'
+                          description: 'Entry/measuring rounds only: the live index (null when fail-closed).'
+                      additionalProperties: true
+                      required:
+                      - pool
+                      - round_epoch
+                      - status
+                    - type: 'null'
+                  index:
+                    anyOf:
+                    - type: object
+                      properties:
+                        price:
+                          type: string
+                          description: Decimal string.
+                        at:
+                          type:
+                          - string
+                          - 'null'
+                        unit:
+                          type: string
+                          description: 'Launch pools: gwei.'
+                      additionalProperties: true
+                    - type: 'null'
+                    description: Live index; null when fail-closed (<2 price venues reachable).
+                  subject:
+                    anyOf:
+                    - type: object
+                      properties:
+                        card_id:
+                          type: string
+                        title:
+                          type: string
+                        summary:
+                          type: string
+                        image_url:
+                          type:
+                          - string
+                          - 'null'
+                        source_url:
+                          type:
+                          - string
+                          - 'null'
+                        index_base:
+                          type: string
+                        pw_index: {}
+                        pw_base: {}
+                        token_address:
+                          type: string
+                        symbol:
+                          type: string
+                        unit:
+                          type: string
+                        graduation_threshold_eth:
+                          type: string
+                        total_eth_raised:
+                          type: string
+                      additionalProperties: true
+                      description: 'Event pools: the bound event card (card_id...); launch pools: the bound launchpad token (token_address...).'
+                    - type: 'null'
+                additionalProperties: true
+                required:
+                - pool
+                - enabled
+                - now
+                description: Public state for one pool cadence (`?pool=`). Amounts/prices are decimal strings.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '400':
+          description: Unknown pool.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+components:
+  schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

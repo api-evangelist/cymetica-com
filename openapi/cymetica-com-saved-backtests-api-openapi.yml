@@ -1,0 +1,198 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Saved Backtests API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: saved-backtests
+paths:
+  /api/v1/backtests/leaderboard:
+    get:
+      tags:
+      - saved-backtests
+      summary: Get Backtest Leaderboard
+      description: 'Public leaderboard of saved backtests that meet the standard window / cost /
+
+        observation floors, ranked by Sharpe ratio (ET-21042 item 7).'
+      operationId: get_backtest_leaderboard_api_v1_backtests_leaderboard_get
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 10
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/src__api__routes__saved_backtests__LeaderboardResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+components:
+  schemas:
+    LeaderboardEntry:
+      properties:
+        rank:
+          type: integer
+          title: Rank
+        share_id:
+          type: string
+          title: Share Id
+        username:
+          type: string
+          title: Username
+        bot_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Bot Name
+        bot_symbol:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Bot Symbol
+        symbol:
+          type: string
+          title: Symbol
+        data_source:
+          type: string
+          title: Data Source
+        period_days:
+          type: integer
+          title: Period Days
+        total_return_pct:
+          type: number
+          title: Total Return Pct
+        win_rate:
+          type: number
+          title: Win Rate
+          default: 0.0
+        sharpe_ratio:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Sharpe Ratio
+        sortino_ratio:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Sortino Ratio
+        total_trades:
+          type: integer
+          title: Total Trades
+          default: 0
+        equipped_loadout:
+          anyOf:
+          - type: object
+          - type: 'null'
+          title: Equipped Loadout
+        created_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Created At
+        is_daily_winner:
+          type: boolean
+          title: Is Daily Winner
+          default: false
+      type: object
+      required:
+      - rank
+      - share_id
+      - username
+      - symbol
+      - data_source
+      - period_days
+      - total_return_pct
+      title: LeaderboardEntry
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    src__api__routes__saved_backtests__LeaderboardResponse:
+      properties:
+        entries:
+          items:
+            $ref: '#/components/schemas/LeaderboardEntry'
+          type: array
+          title: Entries
+        total:
+          type: integer
+          title: Total
+        ranking:
+          anyOf:
+          - type: object
+          - type: 'null'
+          title: Ranking
+      type: object
+      required:
+      - entries
+      - total
+      title: LeaderboardResponse
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

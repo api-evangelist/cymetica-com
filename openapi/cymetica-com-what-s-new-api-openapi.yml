@@ -1,0 +1,194 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public What's new API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: What's new
+paths:
+  /api/v1/whats-new:
+    get:
+      tags:
+      - What's new
+      summary: Whats New
+      description: Features shipped in the last `days` days (default 30, max 90), newest first; one page of `limit` items (default 12, up to 100) from `offset`. `total` is the window's full count; `has_more`/`next_offset` page through it and `complete` is true only when this one page is the whole window. Public, cached 5 min; empty on any failure.
+      operationId: whats_new_api_v1_whats_new_get
+      parameters:
+      - name: days
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 90
+          minimum: 1
+          default: 30
+          title: Days
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 12
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 5000
+          minimum: 0
+          default: 0
+          title: Offset
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: number
+                        title:
+                          type: string
+                        url:
+                          type: string
+                          description: Same-site page the feature landed on, else /feature/{id}.
+                        shipped_at:
+                          type:
+                          - string
+                          - 'null'
+                        summary:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: false
+                      required:
+                      - id
+                      - title
+                      - url
+                  days:
+                    type: number
+                  limit:
+                    type: integer
+                    description: Page size used.
+                  offset:
+                    type: integer
+                    description: Index of the first item of this page.
+                  total:
+                    type:
+                    - integer
+                    - 'null'
+                    description: Features in the whole window; null when it could not be counted.
+                  has_more:
+                    type: boolean
+                    description: More items remain after this page.
+                  next_offset:
+                    type:
+                    - integer
+                    - 'null'
+                    description: Pass as `offset` for the next page; null on the last page.
+                  complete:
+                    type: boolean
+                    description: This response is the entire window (first page, nothing more).
+                  pages:
+                    type: object
+                    description: 'Version per page, all time: {path: {version, latest_id}}. `version` counts every shipped changelog entry for that page; `latest_id` is the newest entry''s feature id. The menu shows it as a small vN pill beside the app''s name, bright until the page has been opened since `latest_id` shipped. Empty when unavailable.'
+                    additionalProperties:
+                      type: object
+                      properties:
+                        version:
+                          type: integer
+                        latest_id:
+                          type: integer
+                      additionalProperties: true
+                      required:
+                      - version
+                      - latest_id
+                additionalProperties: false
+                required:
+                - items
+                - days
+                - limit
+                - offset
+                - total
+                - has_more
+                - next_offset
+                - complete
+                - pages
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+components:
+  schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

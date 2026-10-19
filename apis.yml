@@ -1153,6 +1153,590 @@ apis:
     url: conformance/cymetica-com-conformance.yml
   - type: SDKs
     url: packages/cymetica-com-packages.yml
+- aid: cymetica-com:cymetica-com-agent-league-api
+  name: Cymetica Agent League API
+  description: The agent-league API from Cymetica — 11 operation(s) for agent-league.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - agent-league
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-agent-league-api-openapi.yml
+- aid: cymetica-com:cymetica-com-agent-returns-board-api
+  name: Cymetica Agent Returns Board API
+  description: The Agent Returns Board API from Cymetica — 12 operation(s) for agent returns board.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - Agent Returns Board
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-agent-returns-board-api-openapi.yml
+- aid: cymetica-com:cymetica-com-agent-tournaments-api
+  name: Cymetica Agent Tournaments API
+  description: The Agent Tournaments API from Cymetica — 28 operation(s) for agent tournaments.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - Agent Tournaments
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-agent-tournaments-api-openapi.yml
+- aid: cymetica-com:cymetica-com-agentbook-api
+  name: Cymetica Agent Book API
+  description: The AgentBook API from Cymetica — 4 operation(s) for agentbook.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - AgentBook
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-agentbook-api-openapi.yml
+- aid: cymetica-com:cymetica-com-ai-agent-species-api
+  name: Cymetica AI Agent Species API
+  description: The AI Agent Species API from Cymetica — 3 operation(s) for ai agent species.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - AI Agent Species
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-ai-agent-species-api-openapi.yml
+- aid: cymetica-com:cymetica-com-ai-apps-api
+  name: Cymetica AI Apps API
+  description: The ai-apps API from Cymetica — 1 operation(s) for ai-apps.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - ai-apps
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-ai-apps-api-openapi.yml
+- aid: cymetica-com:cymetica-com-ai-due-diligence-api
+  name: Cymetica AI Due Diligence API
+  description: The AI Due Diligence API from Cymetica — 5 operation(s) for ai due diligence.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - AI Due Diligence
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-ai-due-diligence-api-openapi.yml
+- aid: cymetica-com:cymetica-com-arena-api
+  name: Cymetica Arena API
+  description: The arena API from Cymetica — 11 operation(s) for arena.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - arena
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-arena-api-openapi.yml
+- aid: cymetica-com:cymetica-com-backtest-bots-api
+  name: Cymetica Backtest Bots API
+  description: The Backtest Bots API from Cymetica — 8 operation(s) for backtest bots.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - Backtest Bots
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-backtest-bots-api-openapi.yml
+- aid: cymetica-com:cymetica-com-backtest-clone-api
+  name: Cymetica Backtest Clone API
+  description: The backtest-clone API from Cymetica — 2 operation(s) for backtest-clone.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - backtest-clone
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-backtest-clone-api-openapi.yml
+- aid: cymetica-com:cymetica-com-btc-pool-api
+  name: Cymetica Btc Pool API
+  description: The btc-pool API from Cymetica — 1 operation(s) for btc-pool.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - btc-pool
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-btc-pool-api-openapi.yml
+- aid: cymetica-com:cymetica-com-build-a-company-api
+  name: Cymetica Build a Company API
+  description: The Build a Company API from Cymetica — 30 operation(s) for build a company.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - Build a Company
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-build-a-company-api-openapi.yml
+- aid: cymetica-com:cymetica-com-build-it-better-api
+  name: Cymetica Build it Better API
+  description: The Build it Better API from Cymetica — 17 operation(s) for build it better.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - Build it Better
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-build-it-better-api-openapi.yml
+- aid: cymetica-com:cymetica-com-build-stats-api
+  name: Cymetica Build Stats API
+  description: The build-stats API from Cymetica — 2 operation(s) for build-stats.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - build-stats
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-build-stats-api-openapi.yml
+- aid: cymetica-com:cymetica-com-card-track-api
+  name: Cymetica Card Track API
+  description: The card-track API from Cymetica — 2 operation(s) for card-track.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - card-track
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-card-track-api-openapi.yml
+- aid: cymetica-com:cymetica-com-ceo-ai-leaderboard-api
+  name: Cymetica CEO AI Leaderboard API
+  description: The CEO AI Leaderboard API from Cymetica — 5 operation(s) for ceo ai leaderboard.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - CEO AI Leaderboard
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-ceo-ai-leaderboard-api-openapi.yml
+- aid: cymetica-com:cymetica-com-chart-analyzer-api
+  name: Cymetica Chart Analyzer API
+  description: The Chart Analyzer API from Cymetica — 12 operation(s) for chart analyzer.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - Chart Analyzer
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-chart-analyzer-api-openapi.yml
+- aid: cymetica-com:cymetica-com-creatorlinks-api
+  name: Cymetica Creator Links API
+  description: The CreatorLinks API from Cymetica — 23 operation(s) for creatorlinks.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - CreatorLinks
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-creatorlinks-api-openapi.yml
+- aid: cymetica-com:cymetica-com-crypto-dashboards-api
+  name: Cymetica Crypto Dashboards API
+  description: The Crypto Dashboards API from Cymetica — 20 operation(s) for crypto dashboards.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - Crypto Dashboards
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-crypto-dashboards-api-openapi.yml
+- aid: cymetica-com:cymetica-com-decide-api
+  name: Cymetica Decide API
+  description: The decide API from Cymetica — 8 operation(s) for decide.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - decide
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-decide-api-openapi.yml
+- aid: cymetica-com:cymetica-com-degen-prompts-api
+  name: Cymetica Degen prompts API
+  description: The Degen prompts API from Cymetica — 1 operation(s) for degen prompts.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - Degen prompts
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-degen-prompts-api-openapi.yml
+- aid: cymetica-com:cymetica-com-dna-sequence-similarity-api
+  name: Cymetica DNA sequence similarity API
+  description: >-
+    The DNA sequence similarity API from Cymetica — 2 operation(s) for dna sequence similarity.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - DNA sequence similarity
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-dna-sequence-similarity-api-openapi.yml
+- aid: cymetica-com:cymetica-com-economic-calendar-api
+  name: Cymetica Economic Calendar API
+  description: The economic-calendar API from Cymetica — 1 operation(s) for economic-calendar.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - economic-calendar
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-economic-calendar-api-openapi.yml
+- aid: cymetica-com:cymetica-com-feature-agent-threads-api
+  name: Cymetica Feature agent threads API
+  description: The Feature agent threads API from Cymetica — 1 operation(s) for feature agent threads.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - Feature agent threads
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-feature-agent-threads-api-openapi.yml
+- aid: cymetica-com:cymetica-com-features-api
+  name: Cymetica Features API
+  description: The features API from Cymetica — 6 operation(s) for features.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - features
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-features-api-openapi.yml
+- aid: cymetica-com:cymetica-com-ftafund-api
+  name: Cymetica FTA Fund API
+  description: The FTAFund API from Cymetica — 3 operation(s) for ftafund.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - FTAFund
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-ftafund-api-openapi.yml
+- aid: cymetica-com:cymetica-com-gem-screener-api
+  name: Cymetica Gem Screener API
+  description: The Gem Screener API from Cymetica — 9 operation(s) for gem screener.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - Gem Screener
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-gem-screener-api-openapi.yml
+- aid: cymetica-com:cymetica-com-head-to-head-api
+  name: Cymetica Head To Head API
+  description: The head-to-head API from Cymetica — 3 operation(s) for head-to-head.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - head-to-head
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-head-to-head-api-openapi.yml
+- aid: cymetica-com:cymetica-com-headlines-api-api
+  name: Cymetica Headlines API
+  description: The Headlines API API from Cymetica — 4 operation(s) for headlines api.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - Headlines API
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-headlines-api-api-openapi.yml
+- aid: cymetica-com:cymetica-com-headlines-api
+  name: Cymetica Headlines API
+  description: The headlines API from Cymetica — 1 operation(s) for headlines.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - headlines
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-headlines-api-openapi.yml
+- aid: cymetica-com:cymetica-com-irc-newsfeed-api
+  name: Cymetica Irc Newsfeed API
+  description: The irc-newsfeed API from Cymetica — 1 operation(s) for irc-newsfeed.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - irc-newsfeed
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-irc-newsfeed-api-openapi.yml
+- aid: cymetica-com:cymetica-com-marketplace-api
+  name: Cymetica Marketplace API
+  description: The marketplace API from Cymetica — 1 operation(s) for marketplace.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - marketplace
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-marketplace-api-openapi.yml
+- aid: cymetica-com:cymetica-com-marr-api
+  name: Cymetica MARR API
+  description: The MARR API from Cymetica — 1 operation(s) for marr.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - MARR
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-marr-api-openapi.yml
+- aid: cymetica-com:cymetica-com-microfunds-api
+  name: Cymetica Microfunds API
+  description: The microfunds API from Cymetica — 1 operation(s) for microfunds.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - microfunds
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-microfunds-api-openapi.yml
+- aid: cymetica-com:cymetica-com-mobile-apps-api
+  name: Cymetica Mobile Apps API
+  description: The mobile-apps API from Cymetica — 6 operation(s) for mobile-apps.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - mobile-apps
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-mobile-apps-api-openapi.yml
+- aid: cymetica-com:cymetica-com-nexus-deep-api
+  name: Cymetica Nexus Deep API
+  description: The nexus-deep API from Cymetica — 2 operation(s) for nexus-deep.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - nexus-deep
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-nexus-deep-api-openapi.yml
+- aid: cymetica-com:cymetica-com-nexus-subscription-api
+  name: Cymetica Nexus Subscription API
+  description: The nexus-subscription API from Cymetica — 3 operation(s) for nexus-subscription.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - nexus-subscription
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-nexus-subscription-api-openapi.yml
+- aid: cymetica-com:cymetica-com-ontology-api
+  name: Cymetica Ontology API
+  description: The Ontology API from Cymetica — 2 operation(s) for ontology.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - Ontology
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-ontology-api-openapi.yml
+- aid: cymetica-com:cymetica-com-passive-income-api
+  name: Cymetica Passive Income API
+  description: The Passive Income API from Cymetica — 1 operation(s) for passive income.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - Passive Income
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-passive-income-api-openapi.yml
+- aid: cymetica-com:cymetica-com-perpetual-binary-agents-api
+  name: Cymetica Perpetual Binary Agents API
+  description: >-
+    The Perpetual Binary Agents API from Cymetica — 1 operation(s) for perpetual binary agents.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - Perpetual Binary Agents
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-perpetual-binary-agents-api-openapi.yml
+- aid: cymetica-com:cymetica-com-perpetual-binary-markets-api
+  name: Cymetica Perpetual Binary Markets API
+  description: >-
+    The Perpetual Binary Markets API from Cymetica — 1 operation(s) for perpetual binary markets.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - Perpetual Binary Markets
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-perpetual-binary-markets-api-openapi.yml
+- aid: cymetica-com:cymetica-com-personal-trading-station-api
+  name: Cymetica Personal Trading Station API
+  description: >-
+    The Personal Trading Station API from Cymetica — 4 operation(s) for personal trading station.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - Personal Trading Station
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-personal-trading-station-api-openapi.yml
+- aid: cymetica-com:cymetica-com-prediction-pools-api
+  name: Cymetica Prediction Pools API
+  description: The prediction-pools API from Cymetica — 1 operation(s) for prediction-pools.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - prediction-pools
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-prediction-pools-api-openapi.yml
+- aid: cymetica-com:cymetica-com-premium-chat-api
+  name: Cymetica Premium Chat API
+  description: The premium-chat API from Cymetica — 1 operation(s) for premium-chat.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - premium-chat
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-premium-chat-api-openapi.yml
+- aid: cymetica-com:cymetica-com-prices-api
+  name: Cymetica Prices API
+  description: The prices API from Cymetica — 2 operation(s) for prices.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - prices
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-prices-api-openapi.yml
+- aid: cymetica-com:cymetica-com-products-stream-api
+  name: Cymetica Products Stream API
+  description: The products-stream API from Cymetica — 1 operation(s) for products-stream.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - products-stream
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-products-stream-api-openapi.yml
+- aid: cymetica-com:cymetica-com-prop-desk-api
+  name: Cymetica Prop Desk API
+  description: The Prop Desk API from Cymetica — 3 operation(s) for prop desk.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - Prop Desk
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-prop-desk-api-openapi.yml
+- aid: cymetica-com:cymetica-com-rewards-api
+  name: Cymetica Rewards API
+  description: The rewards API from Cymetica — 1 operation(s) for rewards.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - rewards
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-rewards-api-openapi.yml
+- aid: cymetica-com:cymetica-com-saved-backtests-api
+  name: Cymetica Saved Backtests API
+  description: The saved-backtests API from Cymetica — 1 operation(s) for saved-backtests.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - saved-backtests
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-saved-backtests-api-openapi.yml
+- aid: cymetica-com:cymetica-com-skills-api
+  name: Cymetica Skills API
+  description: The skills API from Cymetica — 1 operation(s) for skills.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - skills
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-skills-api-openapi.yml
+- aid: cymetica-com:cymetica-com-supply-analyzer-api
+  name: Cymetica Supply Analyzer API
+  description: The Supply Analyzer API from Cymetica — 6 operation(s) for supply analyzer.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - Supply Analyzer
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-supply-analyzer-api-openapi.yml
+- aid: cymetica-com:cymetica-com-team-dump-radar-api
+  name: Cymetica Team Dump Radar API
+  description: The Team Dump Radar API from Cymetica — 4 operation(s) for team dump radar.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - Team Dump Radar
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-team-dump-radar-api-openapi.yml
+- aid: cymetica-com:cymetica-com-token-info-api
+  name: Cymetica Token Info API
+  description: The Token Info API from Cymetica — 4 operation(s) for token info.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - Token Info
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-token-info-api-openapi.yml
+- aid: cymetica-com:cymetica-com-trading-bot-olympics-api
+  name: Cymetica Trading Bot Olympics API
+  description: The Trading Bot Olympics API from Cymetica — 2 operation(s) for trading bot olympics.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - Trading Bot Olympics
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-trading-bot-olympics-api-openapi.yml
+- aid: cymetica-com:cymetica-com-trading-models-api
+  name: Cymetica Trading Models API
+  description: The trading-models API from Cymetica — 1 operation(s) for trading-models.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - trading-models
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-trading-models-api-openapi.yml
+- aid: cymetica-com:cymetica-com-vaults-api
+  name: Cymetica Vaults API
+  description: The vaults API from Cymetica — 1 operation(s) for vaults.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - vaults
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-vaults-api-openapi.yml
+- aid: cymetica-com:cymetica-com-weekly-signal-api
+  name: Cymetica Weekly Signal API
+  description: The Weekly Signal API from Cymetica — 2 operation(s) for weekly signal.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - Weekly Signal
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-weekly-signal-api-openapi.yml
+- aid: cymetica-com:cymetica-com-what-s-new-api
+  name: Cymetica What's new API
+  description: The What's new API from Cymetica — 1 operation(s) for what's new.
+  humanURL: https://cymetica.com/build
+  baseURL: https://cymetica.com/mcp/v1
+  tags:
+  - What's new
+  properties:
+  - type: OpenAPI
+    url: openapi/cymetica-com-what-s-new-api-openapi.yml
 maintainers:
 - FN: Kin Lane
   email: kin@apievangelist.com

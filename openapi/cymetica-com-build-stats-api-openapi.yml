@@ -1,0 +1,267 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Build Stats API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: build-stats
+paths:
+  /api/v1/build-stats:
+    get:
+      tags:
+      - build-stats
+      summary: Get Build Stats
+      description: Return Claude Code build metrics + git commit data.
+      operationId: get_build_stats_api_v1_build_stats_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totals:
+                    type: object
+                    properties:
+                      sessions:
+                        type: integer
+                      messages:
+                        type: integer
+                      tool_calls:
+                        type: integer
+                      commits:
+                        type: integer
+                      lines_added:
+                        type: integer
+                      lines_removed:
+                        type: integer
+                      bugs_fixed:
+                        type: integer
+                      features:
+                        type: integer
+                      optimizations:
+                        type: integer
+                    additionalProperties: true
+                    description: bugs_fixed/features/optimizations are present only when the classifier has them.
+                  daily_activity:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date:
+                          type: string
+                        messages:
+                          type: integer
+                        sessions:
+                          type: integer
+                        tool_calls:
+                          type: integer
+                      additionalProperties: false
+                  daily_model_tokens:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date:
+                          type: string
+                        tokens_by_model:
+                          type: object
+                          properties: {}
+                          additionalProperties:
+                            type: integer
+                      additionalProperties: false
+                  daily_commits:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date:
+                          type: string
+                        commits:
+                          type: integer
+                        lines_added:
+                          type: integer
+                        lines_removed:
+                          type: integer
+                      additionalProperties: true
+                  model_usage:
+                    type: object
+                    properties: {}
+                    additionalProperties:
+                      type: object
+                      properties:
+                        input:
+                          type: integer
+                        output:
+                          type: integer
+                        cache_read:
+                          type: integer
+                        cache_write:
+                          type: integer
+                      additionalProperties: true
+                    description: model → token counts
+                  hourly_distribution:
+                    type: object
+                    properties: {}
+                    additionalProperties:
+                      type: integer
+                    description: hour "0".."23" → session count
+                  longest_session:
+                    type: object
+                    properties:
+                      messages:
+                        type: integer
+                      duration_hours:
+                        type: number
+                    additionalProperties: false
+                  first_session:
+                    type: string
+                  activity_period:
+                    type: object
+                    properties:
+                      from:
+                        type:
+                        - string
+                        - 'null'
+                      to:
+                        type:
+                        - string
+                        - 'null'
+                      days:
+                        type: integer
+                    additionalProperties: false
+                    description: Period the session/message/tool-call totals cover.
+                  commit_period:
+                    type: object
+                    properties:
+                      from:
+                        type:
+                        - string
+                        - 'null'
+                      to:
+                        type:
+                        - string
+                        - 'null'
+                      days:
+                        type: integer
+                    additionalProperties: false
+                    description: Period the commit series covers.
+                  ai_native_proof:
+                    type: object
+                    properties:
+                      total_commits:
+                        type: integer
+                      ai_coauthored_commits:
+                        type: integer
+                      ai_authorship_pct:
+                        type: number
+                      first_commit_date:
+                        type: string
+                      first_ai_commit_date:
+                        type: string
+                      hours_to_first_ai_commit:
+                        type: number
+                      days_of_continuous_development:
+                        type: integer
+                      ai_models:
+                        type: object
+                        properties: {}
+                        additionalProperties: true
+                    additionalProperties: false
+                    description: Present only when the git summary is available.
+                  error:
+                    type: string
+                    description: Only when the stats file is missing (then `totals` is {}).
+                additionalProperties: false
+                required:
+                - totals
+                description: AI-native build metrics (Claude Code usage + git history).
+      security: []
+  /api/v1/build-stats/recent:
+    get:
+      tags:
+      - build-stats
+      summary: Get Recent Commits
+      description: 'Last 10 git commits for the ticker.
+
+
+        The request never runs git itself and never waits on it once a list exists:
+
+        it answers from the cache and, when the cache is older than the TTL, starts
+
+        ONE background refresh in a thread. git on this repo can take longer than
+
+        its 5 s budget while a deploy rewrites the checkout; that used to raise
+
+        TimeoutExpired straight out of the handler (500) after blocking the event
+
+        loop for up to 15 s, and every worker retried on the next request
+
+        (2026-10-02). Now a slow git costs one thread and the ticker shows the
+
+        previous list.'
+      operationId: get_recent_commits_api_v1_build_stats_recent_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  recent:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        sha:
+                          type: string
+                          description: 8-char short SHA
+                        summary:
+                          type: string
+                        timestamp:
+                          type: string
+                        author:
+                          type: string
+                        category:
+                          type: string
+                          description: deploy | code
+                        changed_files:
+                          type: integer
+                        additions:
+                          type: integer
+                        deletions:
+                          type: integer
+                      additionalProperties: false
+                additionalProperties: false
+                required:
+                - recent
+                description: Last 10 non-merge commits, newest first.
+      security: []
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

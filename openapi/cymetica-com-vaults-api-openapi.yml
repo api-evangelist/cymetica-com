@@ -1,0 +1,273 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Vaults API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: Vaults
+paths:
+  /api/v1/vaults/cym42/share-info:
+    get:
+      tags:
+      - Vaults
+      summary: Cym42 Share Info
+      description: Get CYM42 share price, NAV, and user position.
+      operationId: cym42_share_info_api_v1_vaults_cym42_share_info_get
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: Always CYM42.
+                  fund_name:
+                    type: string
+                  fund_description:
+                    type: string
+                  fund_performance_url:
+                    type: string
+                  contracts:
+                    type: object
+                    properties:
+                      ethereum:
+                        type: string
+                      bnb_chain:
+                        type: string
+                      solana:
+                        type: string
+                    additionalProperties: true
+                    description: CYM42 token contract per chain.
+                  share_price:
+                    type: number
+                    description: 'USD per CYM42 share (fund-linked: the fund''s published value).'
+                  total_shares:
+                    type: number
+                    description: Share registry total.
+                  total_shares_as_of:
+                    type:
+                    - string
+                    - 'null'
+                    description: When the registry row was last written, ISO 8601.
+                  nav:
+                    type: number
+                    description: Fund NAV in USD.
+                  nav_as_of:
+                    type:
+                    - string
+                    - 'null'
+                    description: When `nav` was computed or last stored, ISO 8601. Read it before treating `nav` as current.
+                  nav_basis:
+                    type: string
+                    description: 'How `nav` was derived: `live: total_shares x share_price`, or `stored: paper_vaults.current_value` when the live price was unavailable.'
+                  nav_share_count_reconciled:
+                    type: boolean
+                    description: true = the registry share count passed the conservation check on this read.
+                  nav_flag:
+                    anyOf:
+                    - type: object
+                      properties:
+                        code:
+                          type: string
+                        reason:
+                          type: string
+                          description: '`conservation_check_failing` or `check_unavailable`.'
+                        direction:
+                          type: string
+                          description: '`understates`, `overstates` or `unknown`: which way the registry share count moves the NAV.'
+                        message:
+                          type: string
+                      additionalProperties: true
+                    - type: 'null'
+                    description: null while the share-count conservation check passes; otherwise says the published NAV may be off and which way.
+                  share_count_check:
+                    type: object
+                    properties:
+                      ok:
+                        type:
+                        - boolean
+                        - 'null'
+                        description: true = registry equals outstanding shares; null = the check could not run.
+                      registry:
+                        type: string
+                        description: paper_vaults.total_shares as a decimal string.
+                      outstanding:
+                        type: string
+                        description: Investors + HOLD + CLEARING in flight, decimal string.
+                      diff:
+                        type: string
+                        description: outstanding minus registry, decimal string.
+                      checked_at:
+                        type: string
+                      definition:
+                        type: string
+                      error:
+                        type: string
+                        description: Exception class name, present only when the check could not run.
+                    additionalProperties: true
+                    description: The conservation check run on this read.
+                  user_shares:
+                    type: number
+                    description: Caller's CYM42 balance; 0 without a session.
+                  user_shares_exact:
+                    type: string
+                    description: Same balance as an exact decimal string (use it for redeem amounts).
+                  pending_redemption:
+                    anyOf:
+                    - type: object
+                      properties:
+                        requested_shares:
+                          type:
+                          - string
+                          - 'null'
+                        settle_on:
+                          type:
+                          - string
+                          - 'null'
+                          description: Settlement date or redemption window.
+                        requested_at:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: true
+                    - type: 'null'
+                    description: The caller's queued notice-period redemption, null when none.
+                  user_value_usdc:
+                    type: number
+                  available_usdc:
+                    type: number
+                    description: Caller's USDC ledger balance available to mint.
+                  mint_fee_pct:
+                    type: number
+                    description: Percent; 0 during the zero-fee promotion.
+                  redeem_fee_pct:
+                    type: number
+                    description: Percent; 0 during the zero-fee promotion.
+                  min_mint_usdc:
+                    type: number
+                  simulated_strategies:
+                    type: boolean
+                  fund_linked:
+                    type: boolean
+                  notice:
+                    type: string
+                additionalProperties: true
+                required:
+                - token
+                - share_price
+                - nav
+                - nav_as_of
+                - nav_basis
+                description: 'Field set when the vault exists. A missing vault answers 200 with only {"error": "Vault not found"}.'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '503':
+          description: CYM42 is busy right now; retry.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+components:
+  schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

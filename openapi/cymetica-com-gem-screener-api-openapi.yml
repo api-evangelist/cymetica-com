@@ -1,0 +1,4932 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Gem Screener API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: Gem Screener
+paths:
+  /api/v1/gem-screener:
+    get:
+      tags:
+      - Gem Screener
+      summary: Gem Screener Snapshot
+      description: 'The published snapshot: apps, chains, themes, sectors, degen shortlist, backtest summary.'
+      operationId: gem_screener_snapshot_api_v1_gem_screener_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  generated_at:
+                    type: integer
+                    description: Epoch seconds.
+                  generated_at_iso:
+                    type: string
+                  collection_floor_usd_30d:
+                    type: number
+                  windows: {}
+                  bench:
+                    type: object
+                    properties:
+                      label:
+                        type: string
+                      mult:
+                        type:
+                        - number
+                        - 'null'
+                      basis:
+                        type: string
+                      as_of:
+                        type:
+                        - integer
+                        - 'null'
+                        description: 'Epoch seconds: market cap read at this collection.'
+                      revenue_as_of:
+                        type:
+                        - integer
+                        - 'null'
+                        description: Epoch seconds of the last day in the benchmark's revenue series.
+                    additionalProperties: true
+                    description: The apps' yardstick (Hyperliquid's market cap / revenue run-rate).
+                  bench_chains:
+                    type: object
+                    properties:
+                      as_of:
+                        type:
+                        - integer
+                        - 'null'
+                        description: Epoch seconds of the activity data.
+                      basis:
+                        type: string
+                      measure:
+                        type: string
+                      adoption_version:
+                        type: string
+                      rule:
+                        type: string
+                      kind:
+                        type: string
+                      label:
+                        type: string
+                      mult:
+                        type:
+                        - number
+                        - 'null'
+                        description: 'The benchmark multiple: the median of the members'' multiples.'
+                      mult_of:
+                        type: string
+                        description: 'members: what `mult` is the median of.'
+                      median_mult:
+                        type:
+                        - number
+                        - 'null'
+                        description: Median multiple of every priced chain; it prices nothing.
+                      median_mult_of:
+                        type: string
+                        description: 'all_priced_chains: what `median_mult` is the median of.'
+                      member_mults:
+                        type: object
+                        properties:
+                          min:
+                            type:
+                            - number
+                            - 'null'
+                          q1:
+                            type:
+                            - number
+                            - 'null'
+                          median:
+                            type:
+                            - number
+                            - 'null'
+                          q3:
+                            type:
+                            - number
+                            - 'null'
+                          max:
+                            type:
+                            - number
+                            - 'null'
+                        additionalProperties: true
+                        description: Spread of the members' multiples.
+                      n_priced:
+                        type: integer
+                      n_members:
+                        type: integer
+                      members:
+                        type: array
+                        items:
+                          type: string
+                      candidates:
+                        type: array
+                        items:
+                          type: string
+                      not_eligible:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            reason:
+                              type: string
+                            threshold:
+                              type:
+                              - number
+                              - 'null'
+                          additionalProperties: true
+                      hold_rule:
+                        type: object
+                        properties: {}
+                        additionalProperties: true
+                      min_mcap:
+                        type: number
+                      min_days:
+                        type: integer
+                      max_lag_days:
+                        type: integer
+                      max_held_back:
+                        type: number
+                      source:
+                        type: string
+                      note:
+                        type: object
+                        properties: {}
+                        additionalProperties: true
+                    additionalProperties: true
+                    description: 'The chains'' yardstick: the median price tag of the large chains.'
+                  chart_meta:
+                    type:
+                    - object
+                    - 'null'
+                    additionalProperties: true
+                    properties:
+                      candle_source:
+                        type: string
+                        description: Candles the Screener's chart scores are computed on (DEX pool candles by contract address).
+                      study_candle_source:
+                        type: string
+                        description: Candles the Chart Analyzer's study and held-out test were measured on (exchange candles).
+                      validation_note:
+                        type: string
+                  degen:
+                    type: object
+                    properties:
+                      shortlist:
+                        type: array
+                        items:
+                          type: string
+                          description: App row key (apps[].key).
+                    additionalProperties: true
+                  picks_ledger:
+                    type:
+                    - object
+                    - 'null'
+                    properties:
+                      since:
+                        type:
+                        - integer
+                        - 'null'
+                        description: Epoch seconds of the first recorded ledger line.
+                      n_lines:
+                        type: integer
+                        description: Selections recorded so far (one line per refresh whose shortlist changed or is 20 h old).
+                      n_scored_lines:
+                        type: integer
+                        description: Lines with at least one pick that can be scored today.
+                      btc_now:
+                        type:
+                        - number
+                        - 'null'
+                        description: BTC price (USD) used as today's reference.
+                      ready:
+                        type: boolean
+                        description: 'True once ready_days have passed since `since`: the waiting period for the first evaluation. False does NOT mean nothing was recorded.'
+                      ready_days:
+                        type: integer
+                        description: Days of record before the first evaluation (28).
+                      ready_at:
+                        type:
+                        - integer
+                        - 'null'
+                        description: Epoch seconds when `ready` turns true (since + ready_days).
+                      note:
+                        type: string
+                        description: One sentence explaining n, n_picks and ready.
+                      cohorts:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            ts:
+                              type: integer
+                              description: Epoch seconds the selection was recorded.
+                            n_picks:
+                              type: integer
+                              description: Picks recorded on that line, with their prices.
+                            n:
+                              type: integer
+                              description: Picks that can be scored against BTC today (n <= n_picks).
+                            unscored_reason:
+                              type: string
+                              description: 'Present when n < n_picks: no_btc_reference (no BTC price for that line, recorded or backfilled), no_btc_now, no_entry_price.'
+                            btc_source:
+                              type:
+                              - string
+                              - 'null'
+                              description: recorded (BTC price written with the line) or backfilled (DeFiLlama historical price at ts); null when neither.
+                            median_vs_btc:
+                              type:
+                              - number
+                              - 'null'
+                              description: Median of (p_now/p_then)/(btc_now/btc_then) - 1 over the scored picks; a pick with no price today counts as -1.
+                            best:
+                              type:
+                              - number
+                              - 'null'
+                            worst:
+                              type:
+                              - number
+                              - 'null'
+                            gates_version:
+                              type:
+                              - string
+                              - 'null'
+                              description: Hash of the selection rules that produced the line.
+                          additionalProperties: true
+                    additionalProperties: true
+                    description: 'Forward test of the Degen shortlist: every refresh appends the picks with their prices to an append-only ledger; the last 12 selections are scored against BTC from today''s prices.'
+                  backtest_summary: {}
+                  risk_rules:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                  apps:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        dilution:
+                          anyOf:
+                          - type: object
+                            properties:
+                              week_pct:
+                                type:
+                                - number
+                                - 'null'
+                                description: New tokens as a percent of market cap per week, gross (no revenue subtracted); null = unknown.
+                              level:
+                                type: string
+                                description: 'ok | caution | red | unknown, against the benchmark app (red also above 1 % a week: gate 7).'
+                              basis:
+                                type:
+                                - string
+                                - 'null'
+                                description: 'emissions | unlocks: the larger of the last 30 days'' emissions and the next 30 days'' unlocks, at today''s price.'
+                              usd30:
+                                type:
+                                - number
+                                - 'null'
+                              emissions_usd30:
+                                type:
+                                - number
+                                - 'null'
+                              unlocks_usd30:
+                                type:
+                                - number
+                                - 'null'
+                              over_bench_pts:
+                                type:
+                                - number
+                                - 'null'
+                                description: Points a week over the benchmark app.
+                            additionalProperties: true
+                            description: Apps only. The one dilution figure the picks gate uses.
+                          - type: 'null'
+                        supply:
+                          anyOf:
+                          - type: object
+                            properties:
+                              mcap:
+                                type:
+                                - number
+                                - 'null'
+                              fdv:
+                                type:
+                                - number
+                                - 'null'
+                              out_pct:
+                                type:
+                                - number
+                                - 'null'
+                                description: Share of tokens out, percent.
+                              circ:
+                                type:
+                                - number
+                                - 'null'
+                                description: Circulating supply the page uses.
+                              circ_source:
+                                type:
+                                - string
+                                - 'null'
+                                description: coingecko | market_cap/price.
+                              unlocked_defillama:
+                                type:
+                                - number
+                                - 'null'
+                              sources_ratio:
+                                type:
+                                - number
+                                - 'null'
+                              sources_disagree:
+                                type: boolean
+                                description: The two supply sources differ by more than 2x.
+                            additionalProperties: true
+                            description: 'Apps only: market cap, FDV and the supply behind Upside and Dilution.'
+                          - type: 'null'
+                        next_unlock:
+                          anyOf:
+                          - type: object
+                            properties:
+                              kind:
+                                type: string
+                                description: 'event | stream | none | unknown (coin record only: no schedule on file).'
+                              note:
+                                type:
+                                - string
+                                - 'null'
+                              as_of:
+                                type:
+                                - number
+                                - 'null'
+                              stale:
+                                type: boolean
+                              total90_tokens:
+                                type:
+                                - number
+                                - 'null'
+                              total90_pct:
+                                type:
+                                - number
+                                - 'null'
+                              total90_usd:
+                                type:
+                                - number
+                                - 'null'
+                              insider90_share:
+                                type:
+                                - number
+                                - 'null'
+                              ts:
+                                type:
+                                - number
+                                - 'null'
+                              days:
+                                type:
+                                - number
+                                - 'null'
+                              tokens:
+                                type:
+                                - number
+                                - 'null'
+                              pct_of_circ:
+                                type:
+                                - number
+                                - 'null'
+                              usd:
+                                type:
+                                - number
+                                - 'null'
+                              category:
+                                type:
+                                - string
+                                - 'null'
+                              insider_share:
+                                type:
+                                - number
+                                - 'null'
+                              window_days:
+                                type: integer
+                              tokens_week:
+                                type:
+                                - number
+                                - 'null'
+                              week_pct:
+                                type:
+                                - number
+                                - 'null'
+                              usd_week:
+                                type:
+                                - number
+                                - 'null'
+                            additionalProperties: true
+                            description: 'Apps only. kind event: the nearest unlock (ts, days, tokens, pct_of_circ, usd, category, insider_share); stream: a weekly rate (window_days, tokens_week, week_pct, usd_week); none: the schedule shows nothing in 90 days. In the snapshot null = no schedule on file (the row''s unlock_status says unknown); the coin record says kind unknown.'
+                          - type: 'null'
+                      additionalProperties: true
+                      description: One app row (many more fields; only these blocks are typed here). Chain rows carry no dilution, supply or next_unlock.
+                  chains:
+                    type: array
+                    items:
+                      type: object
+                      properties: {}
+                      additionalProperties: true
+                  sectors:
+                    type: object
+                    properties:
+                      apps: {}
+                      chains: {}
+                    additionalProperties: true
+                  themes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                        name:
+                          type: string
+                        blurb:
+                          type: string
+                        kind:
+                          type: string
+                          description: apps | chains.
+                        status:
+                          type: string
+                          description: 'ok, or few_members (too few priced coins: the measured fields are then absent or null).'
+                        basket_source:
+                          type: string
+                        basket_age_days:
+                          type:
+                          - number
+                          - 'null'
+                        dropped:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                              sym:
+                                type: string
+                              reason:
+                                type: string
+                                description: Drop-reason code.
+                            additionalProperties: true
+                          description: Coins left out of the basket, each with its reason code.
+                        n:
+                          type: integer
+                          description: Members in the basket.
+                        members:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                description: CoinGecko id.
+                              sym:
+                                type: string
+                              name:
+                                type: string
+                              w:
+                                type:
+                                - number
+                                - 'null'
+                                description: Weight in the theme's basket (shares sum to 1).
+                              mcap:
+                                type:
+                                - number
+                                - 'null'
+                                description: Market cap, USD.
+                              rs1m:
+                                type:
+                                - number
+                                - 'null'
+                                description: 1-month return against BTC (0.1 = 10 % ahead).
+                              rs3m:
+                                type:
+                                - number
+                                - 'null'
+                                description: 3-month return against BTC.
+                              chg3m:
+                                type:
+                                - number
+                                - 'null'
+                              beta:
+                                type:
+                                - number
+                                - 'null'
+                              chg7d:
+                                type:
+                                - number
+                                - 'null'
+                              chg30d:
+                                type:
+                                - number
+                                - 'null'
+                              vol24h:
+                                type:
+                                - number
+                                - 'null'
+                              ath_chg_pct:
+                                type:
+                                - number
+                                - 'null'
+                              flag:
+                                type:
+                                - string
+                                - 'null'
+                                description: broken | not_moved | null.
+                              links:
+                                type: object
+                                properties:
+                                  coingecko:
+                                    type:
+                                    - string
+                                    - 'null'
+                                  dextools:
+                                    type:
+                                    - string
+                                    - 'null'
+                                  dextools_reason:
+                                    type:
+                                    - string
+                                    - 'null'
+                                  pair:
+                                    type:
+                                    - string
+                                    - 'null'
+                                additionalProperties: true
+                            additionalProperties: true
+                            required:
+                            - id
+                            - sym
+                        stage:
+                          type:
+                          - string
+                          - 'null'
+                          enum:
+                          - emerging
+                          - hot
+                          - fading
+                          - falling
+                          - null
+                          description: 'Sector stage from the two returns against the median sector: hot = ahead of the median over 3 months AND 1 month; fading = ahead over 3 months only; emerging = ahead over 1 month only; falling = neither. null when the theme is not measured.'
+                        stage_prev:
+                          type:
+                          - string
+                          - 'null'
+                          enum:
+                          - emerging
+                          - hot
+                          - fading
+                          - falling
+                          - null
+                          description: The stage 4 weeks earlier (sector_stages.back_weeks).
+                        hot:
+                          type: boolean
+                          description: Exactly stage == hot (ahead of the median sector over 3 months and over 1 month). The older meaning, beats BTC this month and the median alt, is rs1m > 0 and beat_median_alt_1m.
+                        rs1m:
+                          type:
+                          - number
+                          - 'null'
+                          description: Basket 1-month return against BTC.
+                        rs3m:
+                          type:
+                          - number
+                          - 'null'
+                          description: Basket 3-month return against BTC.
+                        theme_4w:
+                          type:
+                          - number
+                          - 'null'
+                          description: Basket 1-month return (4 weeks), a fraction.
+                        theme_13w:
+                          type:
+                          - number
+                          - 'null'
+                          description: Basket 3-month return (13 weeks), a fraction.
+                        btc_4w:
+                          type:
+                          - number
+                          - 'null'
+                        btc_13w:
+                          type:
+                          - number
+                          - 'null'
+                        theme_4w_prev:
+                          type:
+                          - number
+                          - 'null'
+                        theme_13w_prev:
+                          type:
+                          - number
+                          - 'null'
+                        vs_median_1m:
+                          type:
+                          - number
+                          - 'null'
+                          description: (1 + theme_4w) / (1 + median 1-month theme return) - 1.
+                        vs_median_3m:
+                          type:
+                          - number
+                          - 'null'
+                          description: (1 + theme_13w) / (1 + median 3-month theme return) - 1.
+                        vs_median_1m_prev:
+                          type:
+                          - number
+                          - 'null'
+                        vs_median_3m_prev:
+                          type:
+                          - number
+                          - 'null'
+                        alpha_1m:
+                          type:
+                          - number
+                          - 'null'
+                          description: Performance vs BTC beyond what beta explains, 1 month.
+                        alpha_3m:
+                          type:
+                          - number
+                          - 'null'
+                          description: Same, 3 months.
+                        beat_median_alt_1m:
+                          type: boolean
+                          description: The basket's 1-month return beat the median top-50 alt's.
+                        rs_members_1m:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                              w:
+                                type: number
+                                description: Weight in the return window's basket.
+                            additionalProperties: true
+                          description: The coins and weights the 1-month return was computed on.
+                        rs_members_3m:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                              w:
+                                type: number
+                                description: Weight in the return window's basket.
+                            additionalProperties: true
+                          description: The coins and weights the 3-month return was computed on.
+                        breadth:
+                          type:
+                          - number
+                          - 'null'
+                          description: Percent of the 3-month return basket's members that beat BTC over 3 months.
+                        beta:
+                          type:
+                          - number
+                          - 'null'
+                        beta_se:
+                          type:
+                          - number
+                          - 'null'
+                        rho:
+                          type:
+                          - number
+                          - 'null'
+                        n_weeks:
+                          type: integer
+                        beta_up:
+                          type:
+                          - number
+                          - 'null'
+                        gamma:
+                          type:
+                          - number
+                          - 'null'
+                        alt_sens:
+                          type:
+                          - number
+                          - 'null'
+                        alt_sens_se:
+                          type:
+                          - number
+                          - 'null'
+                        alt_sens_n:
+                          type: integer
+                        te_week:
+                          type:
+                          - number
+                          - 'null'
+                        resid_week:
+                          type:
+                          - number
+                          - 'null'
+                        dd_1y:
+                          type:
+                          - number
+                          - 'null'
+                        tier:
+                          type:
+                          - integer
+                          - 'null'
+                        tier_beta:
+                          type:
+                          - integer
+                          - 'null'
+                        z1:
+                          type:
+                          - number
+                          - 'null'
+                        z3:
+                          type:
+                          - number
+                          - 'null'
+                        za1:
+                          type:
+                          - number
+                          - 'null'
+                        za3:
+                          type:
+                          - number
+                          - 'null'
+                        measure:
+                          type: string
+                        mcap:
+                          type:
+                          - number
+                          - 'null'
+                        index:
+                          type: array
+                          items:
+                            type: number
+                          description: Weekly basket index, 100 at start.
+                        top3:
+                          type: array
+                          items:
+                            type: string
+                        beta_members:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                              w:
+                                type: number
+                              mcap:
+                                type:
+                                - number
+                                - 'null'
+                            additionalProperties: true
+                        beta_basket_overlap:
+                          type: integer
+                        tags:
+                          type: array
+                          items:
+                            type: string
+                          description: leads | waiting | turning | falling | own_story | fund_up.
+                        tags_beta:
+                          type: array
+                          items:
+                            type: string
+                          description: Tags under the older beta rule.
+                        shared_with:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              key:
+                                type: string
+                              name:
+                                type: string
+                              n:
+                                type: integer
+                            additionalProperties: true
+                        fundament:
+                          type: object
+                          properties:
+                            kind:
+                              type: string
+                              description: revenue | activity | stables.
+                            level:
+                              type:
+                              - number
+                              - 'null'
+                            last30:
+                              type:
+                              - number
+                              - 'null'
+                            last30_end:
+                              type:
+                              - number
+                              - 'null'
+                            g3m:
+                              type:
+                              - number
+                              - 'null'
+                            g3m_reason:
+                              type:
+                              - string
+                              - 'null'
+                            g6m:
+                              type:
+                              - number
+                              - 'null'
+                            r2:
+                              type:
+                              - number
+                              - 'null'
+                            small:
+                              type: boolean
+                            as_of:
+                              type:
+                              - number
+                              - 'null'
+                            source:
+                              type: string
+                            series:
+                              type: array
+                              items:
+                                type: array
+                                items:
+                                  type:
+                                  - number
+                                  - 'null'
+                              description: '[unix seconds, value].'
+                            monthly:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  m:
+                                    type: string
+                                  v:
+                                    type:
+                                    - number
+                                    - 'null'
+                                  days:
+                                    type: integer
+                                  partial:
+                                    type: boolean
+                                additionalProperties: true
+                          additionalProperties: true
+                          description: What the theme's apps earn (revenue) or its chains' users paid (activity); other keys vary with kind.
+                        attention:
+                          type: object
+                          properties:
+                            status:
+                              type: string
+                              description: ok | not_enough_data | not_available.
+                            reason:
+                              type:
+                              - string
+                              - 'null'
+                            people:
+                              type:
+                              - number
+                              - 'null'
+                            messages:
+                              type:
+                              - number
+                              - 'null'
+                            total_people:
+                              type:
+                              - number
+                              - 'null'
+                            share_pct:
+                              type:
+                              - number
+                              - 'null'
+                            change_pp:
+                              type:
+                              - number
+                              - 'null'
+                            prev_people:
+                              type:
+                              - number
+                              - 'null'
+                            prev_total_people:
+                              type:
+                              - number
+                              - 'null'
+                            prev_share_pct:
+                              type:
+                              - number
+                              - 'null'
+                            top_coins:
+                              type: array
+                              items:
+                                type: object
+                                properties: {}
+                                additionalProperties: true
+                            first_day:
+                              type:
+                              - string
+                              - 'null'
+                            last_day:
+                              type:
+                              - string
+                              - 'null'
+                            as_of:
+                              type:
+                              - number
+                              - 'null'
+                            source:
+                              type: string
+                          additionalProperties: true
+                          description: 'Belief Networks: share of people talking about the theme over 7 days.'
+                      additionalProperties: true
+                      required:
+                      - key
+                      - name
+                      - kind
+                      - status
+                      description: One sector. A theme that is not status ok carries only its identity and basket facts.
+                  altseason:
+                    type: object
+                    properties:
+                      index:
+                        type:
+                        - number
+                        - 'null'
+                      history:
+                        type: array
+                        items:
+                          type: array
+                          items:
+                            type:
+                            - number
+                            - 'null'
+                        description: '[epoch seconds, index, alts ranked].'
+                      n:
+                        type: integer
+                        description: Alts ranked (top 50).
+                      three_months_ago:
+                        type:
+                        - number
+                        - 'null'
+                      universe:
+                        type: array
+                        items:
+                          type: string
+                      alt50:
+                        type: array
+                        items:
+                          type: string
+                      universe_mcap:
+                        type: object
+                        properties: {}
+                        additionalProperties:
+                          type:
+                          - number
+                          - 'null'
+                      currency_unit:
+                        type: object
+                        properties:
+                          rule:
+                            type: object
+                            properties: {}
+                            additionalProperties: true
+                          removed:
+                            type: array
+                            items:
+                              type: object
+                              properties: {}
+                              additionalProperties: true
+                        additionalProperties: true
+                      alt_4w_median:
+                        type:
+                        - number
+                        - 'null'
+                      btc_1m:
+                        type:
+                        - number
+                        - 'null'
+                      btc_3m:
+                        type:
+                        - number
+                        - 'null'
+                      btc_index:
+                        type: array
+                        items:
+                          type:
+                          - number
+                          - 'null'
+                        description: Weekly BTC index on theme_prices.stamps.
+                    additionalProperties: true
+                    description: 'The top-50-alts-versus-BTC index behind the themes. NOT the Altseason panel: the panel is `altseason_cycle` here and `altseason` on GET /api/v1/gem-screener/altseason.'
+                  altseason_cycle:
+                    type: object
+                    properties:
+                      version:
+                        type: string
+                      as_of:
+                        type:
+                        - integer
+                        - 'null'
+                        description: Epoch seconds of the newest week.
+                      generated:
+                        type:
+                        - integer
+                        - 'null'
+                        description: Epoch seconds.
+                      history_missing:
+                        type: boolean
+                      stale:
+                        type: boolean
+                      rules:
+                        type: object
+                        properties:
+                          T:
+                            type: number
+                          window:
+                            type: number
+                          min_window:
+                            type: number
+                          roll_min:
+                            type: number
+                          rot_floor_window:
+                            type: number
+                          rot_floor_gap:
+                            type: number
+                          rot_floor_min:
+                            type: number
+                          rot_span_min:
+                            type: number
+                          rot_rise_full:
+                            type: number
+                          rot_breadth_lo:
+                            type: number
+                          rot_breadth_hi:
+                            type: number
+                          rot_min_parts:
+                            type: number
+                          rot_weight:
+                            type: number
+                          euph_weight:
+                            type: number
+                          heat_max_age_days:
+                            type: number
+                          retail_window:
+                            type: number
+                          retail_warmup:
+                            type: number
+                          retail_span:
+                            type: number
+                          retail_min_rows:
+                            type: number
+                          coinbase_days:
+                            type: number
+                          coinbase_min_days:
+                            type: number
+                          meme_start_usd:
+                            type: number
+                          meme_max_age_days:
+                            type: number
+                          apps_max_age_days:
+                            type: number
+                          end_near_euphoria:
+                            type: number
+                          altseason_on_rotation:
+                            type: number
+                          alts_starting_rotation:
+                            type: number
+                          alts_starting_rise:
+                            type: number
+                          alts_starting_weeks:
+                            type: number
+                          btc_only_heat:
+                            type: number
+                          btc_only_rotation:
+                            type: number
+                          btc_only_breadth:
+                            type: number
+                          past_top_drop:
+                            type: number
+                          past_top_weeks:
+                            type: number
+                          past_top_min:
+                            type: number
+                          past_top_usd_drop:
+                            type: number
+                          trend_window:
+                            type: number
+                          trend_pivot:
+                            type: number
+                          trend_break:
+                            type: number
+                          trend_confirm:
+                            type: number
+                          trend_back_weeks:
+                            type: number
+                          breadth_hi:
+                            type: number
+                          breadth_lo:
+                            type: number
+                          btcd_move_pp:
+                            type: number
+                          heat_lo:
+                            type: number
+                          heat_hi:
+                            type: number
+                          retail_lo:
+                            type: number
+                          retail_hi:
+                            type: number
+                          retail_rush:
+                            type: number
+                          vol_lo:
+                            type: number
+                          vol_mid:
+                            type: number
+                          vol_hi:
+                            type: number
+                          gauge_lo:
+                            type: number
+                          gauge_hi:
+                            type: number
+                        additionalProperties: true
+                        description: 'The fixed parameters of the index and its phases (the rule set `version` names). T = 75 is the top zone. btc_only_breadth = 50: the phase btc_only also needs fewer than 50 % of the top 50 alts beating BTC over 13 weeks (the week''s breadth, else its 4-week mean, else not tested).'
+                      index:
+                        type:
+                        - number
+                        - 'null'
+                        description: 0-100.
+                      phase:
+                        type:
+                        - string
+                        - 'null'
+                        enum:
+                        - no_altseason
+                        - btc_only
+                        - alts_starting
+                        - altseason_on
+                        - end_near
+                        - past_top
+                        - null
+                      index_3m_ago:
+                        type:
+                        - number
+                        - 'null'
+                      rotation:
+                        type:
+                        - number
+                        - 'null'
+                      euphoria:
+                        type:
+                        - number
+                        - 'null'
+                      heat:
+                        type:
+                        - number
+                        - 'null'
+                      weeks:
+                        type: array
+                        items:
+                          type: integer
+                        description: Week start times, epoch seconds (left out with series=false).
+                      display_from:
+                        type:
+                        - integer
+                        - 'null'
+                      series:
+                        type: object
+                        properties:
+                          index:
+                            type: array
+                            items:
+                              type:
+                              - number
+                              - 'null'
+                            description: Weekly values aligned with `weeks`; null = no data that week.
+                          rotation:
+                            type: array
+                            items:
+                              type:
+                              - number
+                              - 'null'
+                            description: Weekly values aligned with `weeks`; null = no data that week.
+                          euphoria:
+                            type: array
+                            items:
+                              type:
+                              - number
+                              - 'null'
+                            description: Weekly values aligned with `weeks`; null = no data that week.
+                          retail:
+                            type: array
+                            items:
+                              type:
+                              - number
+                              - 'null'
+                            description: The retail-v4 tile (weekly).
+                          retail_euphoria:
+                            type: array
+                            items:
+                              type:
+                              - number
+                              - 'null'
+                            description: The older dollar-volume retail the cycle's euphoria uses while retail-v4's back-test verdict is fail.
+                          heat:
+                            type: array
+                            items:
+                              type:
+                              - number
+                              - 'null'
+                            description: Weekly values aligned with `weeks`; null = no data that week.
+                          btcd:
+                            type: array
+                            items:
+                              type:
+                              - number
+                              - 'null'
+                            description: Weekly values aligned with `weeks`; null = no data that week.
+                          othersd:
+                            type: array
+                            items:
+                              type:
+                              - number
+                              - 'null'
+                            description: Weekly values aligned with `weeks`; null = no data that week.
+                          breadth:
+                            type: array
+                            items:
+                              type:
+                              - number
+                              - 'null'
+                            description: Weekly values aligned with `weeks`; null = no data that week.
+                          others_usd:
+                            type: array
+                            items:
+                              type:
+                              - number
+                              - 'null'
+                            description: Weekly values aligned with `weeks`; null = no data that week.
+                          btc:
+                            type: array
+                            items:
+                              type:
+                              - number
+                              - 'null'
+                            description: Weekly values aligned with `weeks`; null = no data that week.
+                          mvrv:
+                            type: array
+                            items:
+                              type:
+                              - number
+                              - 'null'
+                            description: Weekly values aligned with `weeks`; null = no data that week.
+                          puell:
+                            type: array
+                            items:
+                              type:
+                              - number
+                              - 'null'
+                            description: Weekly values aligned with `weeks`; null = no data that week.
+                          mayer:
+                            type: array
+                            items:
+                              type:
+                              - number
+                              - 'null'
+                            description: Weekly values aligned with `weeks`; null = no data that week.
+                          pi:
+                            type: array
+                            items:
+                              type:
+                              - number
+                              - 'null'
+                            description: Weekly values aligned with `weeks`; null = no data that week.
+                          phase:
+                            type: array
+                            items:
+                              type:
+                              - string
+                              - 'null'
+                            description: Phase code per week.
+                          breakouts:
+                            type: array
+                            items:
+                              type: integer
+                            description: Indexes into `weeks`.
+                          retail_raw:
+                            type: object
+                            properties: {}
+                            additionalProperties:
+                              type: array
+                              items:
+                                type:
+                                - number
+                                - 'null'
+                            description: Retail rows by source (older retail).
+                          retail_v4_raw:
+                            type: object
+                            properties: {}
+                            additionalProperties:
+                              type: array
+                              items:
+                                type:
+                                - number
+                                - 'null'
+                            description: Retail-v4 rows by source.
+                        additionalProperties: true
+                        description: Weekly history, each key an array aligned with `weeks` (left out with series=false).
+                      components:
+                        type: object
+                        properties:
+                          othersd:
+                            type: object
+                            properties: {}
+                            additionalProperties: true
+                          btcd:
+                            type: object
+                            properties: {}
+                            additionalProperties: true
+                          breadth:
+                            type: object
+                            properties: {}
+                            additionalProperties: true
+                          btc_heat:
+                            type: object
+                            properties: {}
+                            additionalProperties: true
+                          volume:
+                            type: object
+                            properties: {}
+                            additionalProperties: true
+                          retail:
+                            type: object
+                            properties:
+                              version:
+                                type: string
+                              value:
+                                type:
+                                - number
+                                - 'null'
+                              verdict:
+                                type:
+                                - string
+                                - 'null'
+                              tempo:
+                                type:
+                                - number
+                                - 'null'
+                              tempo_word:
+                                type:
+                                - string
+                                - 'null'
+                              n_scored:
+                                type: integer
+                              n_rows:
+                                type: integer
+                              sure:
+                                type: object
+                                properties:
+                                  code:
+                                    type: string
+                                    description: sure (5+ scored rows, at most 30 points between the highest and lowest row) | fairly_sure (3+ rows, at most 50) | unsure.
+                                  rows:
+                                    type: integer
+                                  spread:
+                                    type:
+                                    - number
+                                    - 'null'
+                                  oldest_days:
+                                    type:
+                                    - number
+                                    - 'null'
+                                additionalProperties: true
+                                description: How sure the retail tile is of itself.
+                              euphoria_retail:
+                                type:
+                                - number
+                                - 'null'
+                                description: The retail_euphoria value the euphoria uses.
+                              label:
+                                type: string
+                                description: 'The tile''s name: ''Retail turnover'' (retail-v4).'
+                              euphoria_retail_label:
+                                type: string
+                                description: 'The name of euphoria_retail: ''Retail $ volume (used by the index)'', a different measure.'
+                              parts:
+                                type: object
+                                properties: {}
+                                additionalProperties: true
+                              facts:
+                                type: object
+                                properties: {}
+                                additionalProperties: true
+                              backtest:
+                                type: object
+                                properties: {}
+                                additionalProperties: true
+                            additionalProperties: true
+                        additionalProperties: true
+                        description: The tiles behind the index; each is an object with its own value, verdict and source.
+                      events:
+                        type: object
+                        properties: {}
+                        additionalProperties:
+                          type:
+                          - integer
+                          - 'null'
+                        description: Past top dates, epoch seconds.
+                      index_at_events:
+                        type: object
+                        properties: {}
+                        additionalProperties:
+                          type:
+                          - number
+                          - 'null'
+                      rotation_at_events:
+                        type: object
+                        properties: {}
+                        additionalProperties: true
+                      hint:
+                        type:
+                        - string
+                        - 'null'
+                      freshness:
+                        type: object
+                        properties: {}
+                        additionalProperties:
+                          type: object
+                          properties:
+                            day:
+                              type:
+                              - integer
+                              - 'null'
+                            age_days:
+                              type:
+                              - number
+                              - 'null'
+                            stale:
+                              type: boolean
+                          additionalProperties: true
+                      anomalies:
+                        type: array
+                        items:
+                          type: object
+                          properties: {}
+                          additionalProperties: true
+                      words:
+                        type: object
+                        properties: {}
+                        additionalProperties:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            label:
+                              type: string
+                            tone:
+                              type: string
+                              description: good | caution | bad | neutral.
+                          additionalProperties: true
+                        description: cycle, othersd, btcd, retail, retail_tempo, volume.
+                      vocabulary:
+                        type: object
+                        properties: {}
+                        additionalProperties:
+                          type: object
+                          properties: {}
+                          additionalProperties: true
+                        description: Code -> {label, tone}.
+                      sources:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            key:
+                              type: string
+                            name:
+                              type: string
+                            site:
+                              type: string
+                            feeds:
+                              type: string
+                            as_of:
+                              type:
+                              - integer
+                              - 'null'
+                            age_days:
+                              type:
+                              - number
+                              - 'null'
+                            stale:
+                              type: boolean
+                            stale_after_days:
+                              type: number
+                            status:
+                              type: string
+                              description: ok | stale | not_available.
+                          additionalProperties: true
+                      acceptance:
+                        type: object
+                        properties:
+                          T:
+                            type: number
+                          weeks_evaluated:
+                            type: integer
+                          checks:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                pass:
+                                  type: boolean
+                                detail:
+                                  type: object
+                                  properties: {}
+                                  additionalProperties: true
+                              additionalProperties: true
+                        additionalProperties: true
+                        description: Our own run of the back-test, pass or fail as it came out.
+                    additionalProperties: true
+                    description: 'The Altseason panel: index, phase, tiles, rules, weekly history and back-test.'
+                  sector_stages:
+                    type: object
+                    properties:
+                      version:
+                        type: string
+                      back_weeks:
+                        type: integer
+                        description: How many weeks back `stage_prev` looks (4).
+                      counts:
+                        type: object
+                        properties:
+                          emerging:
+                            type: integer
+                          hot:
+                            type: integer
+                          fading:
+                            type: integer
+                          falling:
+                            type: integer
+                        additionalProperties: true
+                        description: Measured themes per stage.
+                      median_1m:
+                        type:
+                        - number
+                        - 'null'
+                        description: Median 1-month return (theme_4w) of the measured themes.
+                      median_3m:
+                        type:
+                        - number
+                        - 'null'
+                        description: Median 3-month return (theme_13w) of the measured themes.
+                      median_1m_prev:
+                        type:
+                        - number
+                        - 'null'
+                      median_3m_prev:
+                        type:
+                        - number
+                        - 'null'
+                      priced:
+                        type: object
+                        properties:
+                          end:
+                            type: string
+                            description: 'live | weekly_close: what the 1M/3M returns end on.'
+                          ts:
+                            type:
+                            - integer
+                            - 'null'
+                            description: Epoch seconds the 1M/3M returns end on.
+                          min_weight:
+                            type: number
+                            description: '0.95: a return carries a live leg only when the coins with a live price hold at least this share of EVERY basket''s weight and BTC has one; otherwise every return ends on the last weekly close.'
+                          live_coins:
+                            type: integer
+                            description: Coins with a live price.
+                          coins_asked:
+                            type: integer
+                            description: Coins a live price was asked for.
+                          live_source:
+                            type: object
+                            properties:
+                              coingecko:
+                                type: integer
+                              defillama:
+                                type: integer
+                            additionalProperties: true
+                          lowest_basket:
+                            anyOf:
+                            - type: object
+                              properties:
+                                theme:
+                                  type: string
+                                window:
+                                  type: string
+                                share:
+                                  type: number
+                              additionalProperties: true
+                            - type: 'null'
+                            description: The basket with the smallest live-priced weight share, or null.
+                        additionalProperties: true
+                        description: How the 1M/3M returns were priced (same object in sector_stages.priced and theme_prices.priced).
+                    additionalProperties: true
+                    description: 'Sector stages: each theme''s 1M/3M return against the MEDIAN theme (themes[].vs_median_*), and the stage that follows from the two signs.'
+                  belief:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        description: ok | not_available.
+                      reason:
+                        type:
+                        - string
+                        - 'null'
+                      source:
+                        type: string
+                      built_at:
+                        type:
+                        - number
+                        - 'null'
+                      window_days:
+                        type: integer
+                      min_people:
+                        type: integer
+                      total_people:
+                        type:
+                        - number
+                        - 'null'
+                      total_messages:
+                        type:
+                        - number
+                        - 'null'
+                      prev_total_people:
+                        type:
+                        - number
+                        - 'null'
+                      first_day:
+                        type:
+                        - string
+                        - 'null'
+                      last_day:
+                        type:
+                        - string
+                        - 'null'
+                      method:
+                        type: string
+                      history:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            week:
+                              type: string
+                            total_people:
+                              type:
+                              - number
+                              - 'null'
+                            days_with_data:
+                              type: integer
+                            themes:
+                              type: object
+                              properties: {}
+                              additionalProperties:
+                                type: object
+                                properties:
+                                  people:
+                                    type:
+                                    - number
+                                    - 'null'
+                                  share_pct:
+                                    type:
+                                    - number
+                                    - 'null'
+                                additionalProperties: true
+                          additionalProperties: true
+                        description: Weekly share of people talking about each theme, by theme key.
+                    additionalProperties: true
+                    description: Belief Networks attention behind themes[].attention.
+                  theme_prices:
+                    type: object
+                    properties:
+                      stamps:
+                        type: array
+                        items:
+                          type: integer
+                        description: Weekly close times, epoch seconds, oldest first.
+                      live_ts:
+                        type:
+                        - number
+                        - 'null'
+                        description: Epoch seconds the live prices were read.
+                      coins:
+                        type: object
+                        properties: {}
+                        additionalProperties:
+                          type: array
+                          items:
+                            type:
+                            - number
+                            - 'null'
+                        description: CoinGecko id -> weekly closes on `stamps` (null = no price that week).
+                      live:
+                        type: object
+                        properties: {}
+                        additionalProperties:
+                          type: number
+                        description: 'CoinGecko id -> live price the 1M/3M returns USED: all of them, or an empty object when the returns end on the last weekly close.'
+                      priced:
+                        type: object
+                        properties:
+                          end:
+                            type: string
+                            description: 'live | weekly_close: what the 1M/3M returns end on.'
+                          ts:
+                            type:
+                            - integer
+                            - 'null'
+                            description: Epoch seconds the 1M/3M returns end on.
+                          min_weight:
+                            type: number
+                            description: '0.95: a return carries a live leg only when the coins with a live price hold at least this share of EVERY basket''s weight and BTC has one; otherwise every return ends on the last weekly close.'
+                          live_coins:
+                            type: integer
+                            description: Coins with a live price.
+                          coins_asked:
+                            type: integer
+                            description: Coins a live price was asked for.
+                          live_source:
+                            type: object
+                            properties:
+                              coingecko:
+                                type: integer
+                              defillama:
+                                type: integer
+                            additionalProperties: true
+                          lowest_basket:
+                            anyOf:
+                            - type: object
+                              properties:
+                                theme:
+                                  type: string
+                                window:
+                                  type: string
+                                share:
+                                  type: number
+                              additionalProperties: true
+                            - type: 'null'
+                            description: The basket with the smallest live-priced weight share, or null.
+                        additionalProperties: true
+                        description: How the 1M/3M returns were priced (same object in sector_stages.priced and theme_prices.priced).
+                    additionalProperties: true
+                    description: The prices every theme return can be recomputed from.
+                  coin_meta: {}
+                  theme_anomalies:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: CoinGecko id.
+                        k:
+                          type: integer
+                          description: Index into theme_prices.stamps.
+                        kind:
+                          type: string
+                          description: spike (one bad print, dropped) | break (redenomination, earlier history dropped).
+                        jump:
+                          type: number
+                          description: Log price jump at that week.
+                      additionalProperties: true
+                    description: Price points the engine cleaned before computing returns.
+                  unmapped:
+                    type: object
+                    properties:
+                      rev30d:
+                        type:
+                        - number
+                        - 'null'
+                        description: 30-day revenue (USD) of the categories no theme claims.
+                      share_pct:
+                        type:
+                        - number
+                        - 'null'
+                        description: That revenue as a percent of all apps' revenue.
+                      top:
+                        type: array
+                        items:
+                          type: string
+                        description: The largest of those categories.
+                    additionalProperties: true
+                    description: Revenue that belongs to no theme.
+                  themes_stale:
+                    type: boolean
+                  theme_join:
+                    type: object
+                    properties:
+                      version:
+                        type: string
+                        description: Hash of the rules that decide a row's theme.
+                      ladder:
+                        type: array
+                        items:
+                          type: string
+                        description: The steps that give an app its theme, in order.
+                      order:
+                        type: array
+                        items:
+                          type: string
+                        description: Theme keys in precedence order.
+                      residual:
+                        type: array
+                        items:
+                          type: string
+                      chain_layers:
+                        type: array
+                        items:
+                          type: string
+                      overrides:
+                        type: object
+                        properties: {}
+                        additionalProperties:
+                          type: string
+                        description: CoinGecko id -> theme key.
+                      nearest:
+                        type: object
+                        properties: {}
+                        additionalProperties:
+                          type: string
+                        description: DeFiLlama category -> theme key (nearest-theme fallback).
+                      counts:
+                        type: object
+                        properties:
+                          override:
+                            type: integer
+                          category:
+                            type: integer
+                          coingecko:
+                            type: integer
+                          nearest:
+                            type: integer
+                          none:
+                            type: integer
+                        additionalProperties: true
+                        description: Apps per join source.
+                      none_categories:
+                        type: object
+                        properties: {}
+                        additionalProperties:
+                          type: integer
+                        description: Categories of apps that joined no theme.
+                      changed:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            key:
+                              type: string
+                            name:
+                              type: string
+                            from:
+                              type:
+                              - string
+                              - 'null'
+                            to:
+                              type:
+                              - string
+                              - 'null'
+                            source:
+                              type:
+                              - string
+                              - 'null'
+                          additionalProperties: true
+                        description: Rows whose theme differs from the previous snapshot (first 100).
+                      n_changed:
+                        type: integer
+                    additionalProperties: true
+                    description: How apps and chains were attached to themes (rows[].theme).
+                  fetch_warnings:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code:
+                          type: string
+                          description: source_warning.
+                        source:
+                          type:
+                          - string
+                          - 'null'
+                          description: Host of the source that answered badly.
+                        http_status:
+                          type:
+                          - integer
+                          - 'null'
+                        affected:
+                          type: array
+                          items:
+                            type: string
+                          description: Snapshot fields left on a fallback by this failed call, when the call is known; absent otherwise.
+                      additionalProperties: true
+                  fetch_warning_count:
+                    type: integer
+                  dlevel_meta:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: 'Degen meter: apps per level, apps whose range is wider than two levels, apps per check, the rules used.'
+                  vocabulary:
+                    type: object
+                    properties:
+                      version:
+                        type: integer
+                      language:
+                        type: string
+                        description: 'en: every coded field is an English machine code.'
+                    additionalProperties: true
+                  excluded:
+                    type: object
+                    properties:
+                      apps:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            category:
+                              type:
+                              - string
+                              - 'null'
+                            revenue_30d:
+                              type:
+                              - number
+                              - 'null'
+                            reason:
+                              type: string
+                              description: no_token | doublecounted | untradeable
+                          additionalProperties: true
+                          description: Every app above the revenue floor left out of the table, largest revenue first, with its reason.
+                      reasons:
+                        type: object
+                        properties: {}
+                        additionalProperties: true
+                        description: reason code -> the sentence the page shows.
+                      doublecounted_admitted:
+                        type: array
+                        items:
+                          type: string
+                    additionalProperties: true
+                additionalProperties: true
+                required:
+                - generated_at
+                - apps
+                - chains
+                description: The last audited screener snapshot, passed through as published (apps, chains, themes, sectors, degen shortlist, backtest summary). Supports If-None-Match (304).
+        '503':
+          description: 'The first snapshot is still being collected (`status: warming`); retry after `Retry-After`.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+  /api/v1/gem-screener/altseason:
+    get:
+      tags:
+      - Gem Screener
+      summary: Gem Screener Altseason
+      description: 'The Altseason panel (ET-28378): the index and its word, OTHERS.D, BTC.D, retail
+
+        and volume with their words and tones, each source with its as-of day, the rules,
+
+        the weekly history and our own run of the back-test. ``series=false`` leaves the
+
+        weekly history out. Read-only; every code and value is English.'
+      operationId: gem_screener_altseason_api_v1_gem_screener_altseason_get
+      parameters:
+      - name: series
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: true
+          title: Series
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  snapshot_generated_at:
+                    type:
+                    - number
+                    - 'null'
+                    description: Epoch seconds of the published snapshot.
+                  status:
+                    type: string
+                    description: ok | stale | not_available (a snapshot made before the panel).
+                  reason:
+                    type: string
+                    description: 'Only with status not_available: why there is no block.'
+                  altseason:
+                    type: object
+                    properties:
+                      version:
+                        type: string
+                      as_of:
+                        type:
+                        - integer
+                        - 'null'
+                        description: Epoch seconds of the newest week.
+                      generated:
+                        type:
+                        - integer
+                        - 'null'
+                        description: Epoch seconds.
+                      history_missing:
+                        type: boolean
+                      stale:
+                        type: boolean
+                      rules:
+                        type: object
+                        properties:
+                          T:
+                            type: number
+                          window:
+                            type: number
+                          min_window:
+                            type: number
+                          roll_min:
+                            type: number
+                          rot_floor_window:
+                            type: number
+                          rot_floor_gap:
+                            type: number
+                          rot_floor_min:
+                            type: number
+                          rot_span_min:
+                            type: number
+                          rot_rise_full:
+                            type: number
+                          rot_breadth_lo:
+                            type: number
+                          rot_breadth_hi:
+                            type: number
+                          rot_min_parts:
+                            type: number
+                          rot_weight:
+                            type: number
+                          euph_weight:
+                            type: number
+                          heat_max_age_days:
+                            type: number
+                          retail_window:
+                            type: number
+                          retail_warmup:
+                            type: number
+                          retail_span:
+                            type: number
+                          retail_min_rows:
+                            type: number
+                          coinbase_days:
+                            type: number
+                          coinbase_min_days:
+                            type: number
+                          meme_start_usd:
+                            type: number
+                          meme_max_age_days:
+                            type: number
+                          apps_max_age_days:
+                            type: number
+                          end_near_euphoria:
+                            type: number
+                          altseason_on_rotation:
+                            type: number
+                          alts_starting_rotation:
+                            type: number
+                          alts_starting_rise:
+                            type: number
+                          alts_starting_weeks:
+                            type: number
+                          btc_only_heat:
+                            type: number
+                          btc_only_rotation:
+                            type: number
+                          btc_only_breadth:
+                            type: number
+                          past_top_drop:
+                            type: number
+                          past_top_weeks:
+                            type: number
+                          past_top_min:
+                            type: number
+                          past_top_usd_drop:
+                            type: number
+                          trend_window:
+                            type: number
+                          trend_pivot:
+                            type: number
+                          trend_break:
+                            type: number
+                          trend_confirm:
+                            type: number
+                          trend_back_weeks:
+                            type: number
+                          breadth_hi:
+                            type: number
+                          breadth_lo:
+                            type: number
+                          btcd_move_pp:
+                            type: number
+                          heat_lo:
+                            type: number
+                          heat_hi:
+                            type: number
+                          retail_lo:
+                            type: number
+                          retail_hi:
+                            type: number
+                          retail_rush:
+                            type: number
+                          vol_lo:
+                            type: number
+                          vol_mid:
+                            type: number
+                          vol_hi:
+                            type: number
+                          gauge_lo:
+                            type: number
+                          gauge_hi:
+                            type: number
+                        additionalProperties: true
+                        description: 'The fixed parameters of the index and its phases (the rule set `version` names). T = 75 is the top zone. btc_only_breadth = 50: the phase btc_only also needs fewer than 50 % of the top 50 alts beating BTC over 13 weeks (the week''s breadth, else its 4-week mean, else not tested).'
+                      index:
+                        type:
+                        - number
+                        - 'null'
+                        description: 0-100.
+                      phase:
+                        type:
+                        - string
+                        - 'null'
+                        enum:
+                        - no_altseason
+                        - btc_only
+                        - alts_starting
+                        - altseason_on
+                        - end_near
+                        - past_top
+                        - null
+                      index_3m_ago:
+                        type:
+                        - number
+                        - 'null'
+                      rotation:
+                        type:
+                        - number
+                        - 'null'
+                      euphoria:
+                        type:
+                        - number
+                        - 'null'
+                      heat:
+                        type:
+                        - number
+                        - 'null'
+                      weeks:
+                        type: array
+                        items:
+                          type: integer
+                        description: Week start times, epoch seconds (left out with series=false).
+                      display_from:
+                        type:
+                        - integer
+                        - 'null'
+                      series:
+                        type: object
+                        properties:
+                          index:
+                            type: array
+                            items:
+                              type:
+                              - number
+                              - 'null'
+                            description: Weekly values aligned with `weeks`; null = no data that week.
+                          rotation:
+                            type: array
+                            items:
+                              type:
+                              - number
+                              - 'null'
+                            description: Weekly values aligned with `weeks`; null = no data that week.
+                          euphoria:
+                            type: array
+                            items:
+                              type:
+                              - number
+                              - 'null'
+                            description: Weekly values aligned with `weeks`; null = no data that week.
+                          retail:
+                            type: array
+                            items:
+                              type:
+                              - number
+                              - 'null'
+                            description: The retail-v4 tile (weekly).
+                          retail_euphoria:
+                            type: array
+                            items:
+                              type:
+                              - number
+                              - 'null'
+                            description: The older dollar-volume retail the cycle's euphoria uses while retail-v4's back-test verdict is fail.
+                          heat:
+                            type: array
+                            items:
+                              type:
+                              - number
+                              - 'null'
+                            description: Weekly values aligned with `weeks`; null = no data that week.
+                          btcd:
+                            type: array
+                            items:
+                              type:
+                              - number
+                              - 'null'
+                            description: Weekly values aligned with `weeks`; null = no data that week.
+                          othersd:
+                            type: array
+                            items:
+                              type:
+                              - number
+                              - 'null'
+                            description: Weekly values aligned with `weeks`; null = no data that week.
+                          breadth:
+                            type: array
+                            items:
+                              type:
+                              - number
+                              - 'null'
+                            description: Weekly values aligned with `weeks`; null = no data that week.
+                          others_usd:
+                            type: array
+                            items:
+                              type:
+                              - number
+                              - 'null'
+                            description: Weekly values aligned with `weeks`; null = no data that week.
+                          btc:
+                            type: array
+                            items:
+                              type:
+                              - number
+                              - 'null'
+                            description: Weekly values aligned with `weeks`; null = no data that week.
+                          mvrv:
+                            type: array
+                            items:
+                              type:
+                              - number
+                              - 'null'
+                            description: Weekly values aligned with `weeks`; null = no data that week.
+                          puell:
+                            type: array
+                            items:
+                              type:
+                              - number
+                              - 'null'
+                            description: Weekly values aligned with `weeks`; null = no data that week.
+                          mayer:
+                            type: array
+                            items:
+                              type:
+                              - number
+                              - 'null'
+                            description: Weekly values aligned with `weeks`; null = no data that week.
+                          pi:
+                            type: array
+                            items:
+                              type:
+                              - number
+                              - 'null'
+                            description: Weekly values aligned with `weeks`; null = no data that week.
+                          phase:
+                            type: array
+                            items:
+                              type:
+                              - string
+                              - 'null'
+                            description: Phase code per week.
+                          breakouts:
+                            type: array
+                            items:
+                              type: integer
+                            description: Indexes into `weeks`.
+                          retail_raw:
+                            type: object
+                            properties: {}
+                            additionalProperties:
+                              type: array
+                              items:
+                                type:
+                                - number
+                                - 'null'
+                            description: Retail rows by source (older retail).
+                          retail_v4_raw:
+                            type: object
+                            properties: {}
+                            additionalProperties:
+                              type: array
+                              items:
+                                type:
+                                - number
+                                - 'null'
+                            description: Retail-v4 rows by source.
+                        additionalProperties: true
+                        description: Weekly history, each key an array aligned with `weeks` (left out with series=false).
+                      components:
+                        type: object
+                        properties:
+                          othersd:
+                            type: object
+                            properties: {}
+                            additionalProperties: true
+                          btcd:
+                            type: object
+                            properties: {}
+                            additionalProperties: true
+                          breadth:
+                            type: object
+                            properties: {}
+                            additionalProperties: true
+                          btc_heat:
+                            type: object
+                            properties: {}
+                            additionalProperties: true
+                          volume:
+                            type: object
+                            properties: {}
+                            additionalProperties: true
+                          retail:
+                            type: object
+                            properties:
+                              version:
+                                type: string
+                              value:
+                                type:
+                                - number
+                                - 'null'
+                              verdict:
+                                type:
+                                - string
+                                - 'null'
+                              tempo:
+                                type:
+                                - number
+                                - 'null'
+                              tempo_word:
+                                type:
+                                - string
+                                - 'null'
+                              n_scored:
+                                type: integer
+                              n_rows:
+                                type: integer
+                              sure:
+                                type: object
+                                properties:
+                                  code:
+                                    type: string
+                                    description: sure (5+ scored rows, at most 30 points between the highest and lowest row) | fairly_sure (3+ rows, at most 50) | unsure.
+                                  rows:
+                                    type: integer
+                                  spread:
+                                    type:
+                                    - number
+                                    - 'null'
+                                  oldest_days:
+                                    type:
+                                    - number
+                                    - 'null'
+                                additionalProperties: true
+                                description: How sure the retail tile is of itself.
+                              euphoria_retail:
+                                type:
+                                - number
+                                - 'null'
+                                description: The retail_euphoria value the euphoria uses.
+                              label:
+                                type: string
+                                description: 'The tile''s name: ''Retail turnover'' (retail-v4).'
+                              euphoria_retail_label:
+                                type: string
+                                description: 'The name of euphoria_retail: ''Retail $ volume (used by the index)'', a different measure.'
+                              parts:
+                                type: object
+                                properties: {}
+                                additionalProperties: true
+                              facts:
+                                type: object
+                                properties: {}
+                                additionalProperties: true
+                              backtest:
+                                type: object
+                                properties: {}
+                                additionalProperties: true
+                            additionalProperties: true
+                        additionalProperties: true
+                        description: The tiles behind the index; each is an object with its own value, verdict and source.
+                      events:
+                        type: object
+                        properties: {}
+                        additionalProperties:
+                          type:
+                          - integer
+                          - 'null'
+                        description: Past top dates, epoch seconds.
+                      index_at_events:
+                        type: object
+                        properties: {}
+                        additionalProperties:
+                          type:
+                          - number
+                          - 'null'
+                      rotation_at_events:
+                        type: object
+                        properties: {}
+                        additionalProperties: true
+                      hint:
+                        type:
+                        - string
+                        - 'null'
+                      freshness:
+                        type: object
+                        properties: {}
+                        additionalProperties:
+                          type: object
+                          properties:
+                            day:
+                              type:
+                              - integer
+                              - 'null'
+                            age_days:
+                              type:
+                              - number
+                              - 'null'
+                            stale:
+                              type: boolean
+                          additionalProperties: true
+                      anomalies:
+                        type: array
+                        items:
+                          type: object
+                          properties: {}
+                          additionalProperties: true
+                      words:
+                        type: object
+                        properties: {}
+                        additionalProperties:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            label:
+                              type: string
+                            tone:
+                              type: string
+                              description: good | caution | bad | neutral.
+                          additionalProperties: true
+                        description: cycle, othersd, btcd, retail, retail_tempo, volume.
+                      vocabulary:
+                        type: object
+                        properties: {}
+                        additionalProperties:
+                          type: object
+                          properties: {}
+                          additionalProperties: true
+                        description: Code -> {label, tone}.
+                      sources:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            key:
+                              type: string
+                            name:
+                              type: string
+                            site:
+                              type: string
+                            feeds:
+                              type: string
+                            as_of:
+                              type:
+                              - integer
+                              - 'null'
+                            age_days:
+                              type:
+                              - number
+                              - 'null'
+                            stale:
+                              type: boolean
+                            stale_after_days:
+                              type: number
+                            status:
+                              type: string
+                              description: ok | stale | not_available.
+                          additionalProperties: true
+                      acceptance:
+                        type: object
+                        properties:
+                          T:
+                            type: number
+                          weeks_evaluated:
+                            type: integer
+                          checks:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                pass:
+                                  type: boolean
+                                detail:
+                                  type: object
+                                  properties: {}
+                                  additionalProperties: true
+                              additionalProperties: true
+                        additionalProperties: true
+                        description: Our own run of the back-test, pass or fail as it came out.
+                    additionalProperties: true
+                    description: 'The Altseason panel (the same object the full snapshot carries as `altseason_cycle`): the index and its word, OTHERS.D, BTC.D, retail and volume with words, tones and sources (each with its as-of day), the rules, the weekly history (left out with series=false) and the back-test. Every code is English.'
+                additionalProperties: false
+                required:
+                - snapshot_generated_at
+                - status
+                description: The Altseason panel's block of the last audited snapshot. Supports If-None-Match (304).
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '503':
+          description: 'The first snapshot is still being collected (`status: warming`); retry after `Retry-After`.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+  /api/v1/gem-screener/status:
+    get:
+      tags:
+      - Gem Screener
+      summary: Gem Screener Status
+      operationId: gem_screener_status_api_v1_gem_screener_status_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  generated_at:
+                    type:
+                    - number
+                    - 'null'
+                    description: Epoch seconds of the published snapshot.
+                  age_seconds:
+                    type:
+                    - number
+                    - 'null'
+                  published_at:
+                    type:
+                    - number
+                    - 'null'
+                  refresh_every_seconds:
+                    type: integer
+                  next_refresh_due_at:
+                    type:
+                    - number
+                    - 'null'
+                  refreshing:
+                    type: boolean
+                  counts:
+                    anyOf:
+                    - type: object
+                      properties:
+                        apps:
+                          type: integer
+                        chains:
+                          type: integer
+                        themes:
+                          type: integer
+                        degen_picks:
+                          type: integer
+                      additionalProperties: true
+                    - type: 'null'
+                  audits:
+                    anyOf:
+                    - type: object
+                      properties: {}
+                      additionalProperties: true
+                      description: audit name → {exit, seconds}
+                    - type: 'null'
+                  last_attempt:
+                    anyOf:
+                    - type: object
+                      properties:
+                        ok:
+                          type: boolean
+                        stage:
+                          type: string
+                        finished_at:
+                          type: number
+                      additionalProperties: false
+                    - type: 'null'
+                  fetch_warning_count:
+                    type:
+                    - integer
+                    - 'null'
+                  does_not:
+                    type: array
+                    items:
+                      type: string
+                    description: What the screener does not do.
+                additionalProperties: false
+                required:
+                - refresh_every_seconds
+                - refreshing
+                - does_not
+                description: Snapshot freshness, audit results and next refresh.
+      security: []
+  /api/v1/gem-screener/funds:
+    get:
+      tags:
+      - Gem Screener
+      summary: Gem Screener Funds
+      description: 'The Cymetica-managed Gem Screener funds: one per sector + Top Picks.'
+      operationId: gem_screener_funds_api_v1_gem_screener_funds_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  as_of:
+                    type: string
+                  top_picks:
+                    anyOf:
+                    - type: object
+                      properties:
+                        symbol:
+                          type: string
+                        name:
+                          type: string
+                        url:
+                          type: string
+                          description: /fund-performance/<symbol>
+                        trade_url:
+                          type:
+                          - string
+                          - 'null'
+                        launched_at:
+                          type:
+                          - string
+                          - 'null'
+                        return_since_launch_pct:
+                          type:
+                          - number
+                          - 'null'
+                        index_price:
+                          type:
+                          - number
+                          - 'null'
+                        holdings:
+                          type: array
+                          items:
+                            type: string
+                        weighting:
+                          type: string
+                        rebalanced_at:
+                          type:
+                          - string
+                          - 'null'
+                        next_rebalance_at:
+                          type: string
+                        nav_updated_at:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: false
+                      required:
+                      - symbol
+                      - name
+                      - url
+                      - holdings
+                    - type: 'null'
+                  sectors:
+                    type: object
+                    properties: {}
+                    additionalProperties:
+                      type: object
+                      properties:
+                        symbol:
+                          type: string
+                        name:
+                          type: string
+                        url:
+                          type: string
+                          description: /fund-performance/<symbol>
+                        trade_url:
+                          type:
+                          - string
+                          - 'null'
+                        launched_at:
+                          type:
+                          - string
+                          - 'null'
+                        return_since_launch_pct:
+                          type:
+                          - number
+                          - 'null'
+                        index_price:
+                          type:
+                          - number
+                          - 'null'
+                        holdings:
+                          type: array
+                          items:
+                            type: string
+                        weighting:
+                          type: string
+                        rebalanced_at:
+                          type:
+                          - string
+                          - 'null'
+                        next_rebalance_at:
+                          type: string
+                        nav_updated_at:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: false
+                      required:
+                      - symbol
+                      - name
+                      - url
+                      - holdings
+                    description: theme key (memes, ai, l2, defi, gaming, privacy, depin, dex, l1, infra, rwa, prediction) → its fund; a theme without a fund yet is absent
+                additionalProperties: false
+                required:
+                - as_of
+                - top_picks
+                - sectors
+                description: 'The Cymetica-managed Gem Screener funds: one per sector (its leading coins) and Top Picks (the Degen shortlist), equal weight, rebalanced weekly. The return is the one the fund''s /fund-performance page shows.'
+        '503':
+          description: Fund data is temporarily unavailable; retry shortly.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security: []
+  /api/v1/gem-screener/picks:
+    get:
+      tags:
+      - Gem Screener
+      summary: 'Find crypto gems: the current Degen picks (about 0.6 kB per pick)'
+      description: 'Find crypto gems: apps that pass all six degen gates, by upside: upside, price vs revenue
+
+        (with Hyperliquid''s multiple), 30-day revenue, dilution per week, market cap, $10K-buy
+
+        impact, links, each pick''s `slug` and `warnings`, and the `caveats` to keep next to the list.'
+      operationId: gem_screener_picks_api_v1_gem_screener_picks_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PicksResponse'
+        '503':
+          description: 'The first snapshot is still being collected (status: warming).'
+      security: []
+  /api/v1/gem-screener/ranked:
+    get:
+      tags:
+      - Gem Screener
+      summary: Compact ranked list
+      operationId: gem_screener_ranked_api_v1_gem_screener_ranked_get
+      parameters:
+      - name: sort
+        in: query
+        required: false
+        schema:
+          enum:
+          - upside
+          - revenue_30d
+          - growth_6m
+          - strength_3m
+          - price_vs_revenue
+          - mcap
+          type: string
+          description: 'upside, revenue_30d, growth_6m, strength_3m, mcap: highest first; price_vs_revenue: cheapest first. Unknown values last.'
+          default: upside
+          title: Sort
+        description: 'upside, revenue_30d, growth_6m, strength_3m, mcap: highest first; price_vs_revenue: cheapest first. Unknown values last.'
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Limit
+      - name: kind
+        in: query
+        required: false
+        schema:
+          enum:
+          - apps
+          - chains
+          type: string
+          default: apps
+          title: Kind
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 10000
+          minimum: 0
+          description: Rows to skip; follow `next` to page the whole list.
+          default: 0
+          title: Offset
+        description: Rows to skip; follow `next` to page the whole list.
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RankedResponse'
+        '503':
+          description: 'The first snapshot is still being collected (status: warming).'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/gem-screener/coins/{symbol}:
+    get:
+      tags:
+      - Gem Screener
+      summary: One coin in full
+      description: Every fact the page's coin detail shows. A null value is unknown.
+      operationId: gem_screener_coin_api_v1_gem_screener_coins__symbol__get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 80
+          description: The coin's slug (e.g. pharaoh-exchange, from any list's `slug`) or its ticker, case-insensitive (e.g. PHAR). A shared ticker goes to the largest market cap; the slug never confuses two coins. Apps are searched before chains.
+          title: Symbol
+        description: The coin's slug (e.g. pharaoh-exchange, from any list's `slug`) or its ticker, case-insensitive (e.g. PHAR). A shared ticker goes to the largest market cap; the slug never confuses two coins. Apps are searched before chains.
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoinResponse'
+        '404':
+          description: No coin with that symbol in the snapshot.
+        '503':
+          description: 'The first snapshot is still being collected (status: warming).'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/gem-screener/coins/{symbol}/degen-report:
+    get:
+      tags:
+      - Gem Screener
+      summary: Degen report for one coin (<= 150 words)
+      description: 'What it is / Money / Real or printed / Numbers / Good / Shady / The bet / Verdict, built only
+
+        from the snapshot''s facts (unknown says ''unknown''), sources linked, ''Not financial advice'' at the
+
+        end. `nexus_prompt` asks NEXUS for the same report in the same format.'
+      operationId: gem_screener_degen_report_api_v1_gem_screener_coins__symbol__degen_report_get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 80
+          description: The coin's slug (e.g. pharaoh-exchange, from any list's `slug`) or its ticker, case-insensitive (e.g. PHAR). A shared ticker goes to the largest market cap; the slug never confuses two coins. Apps are searched before chains.
+          title: Symbol
+        description: The coin's slug (e.g. pharaoh-exchange, from any list's `slug`) or its ticker, case-insensitive (e.g. PHAR). A shared ticker goes to the largest market cap; the slug never confuses two coins. Apps are searched before chains.
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DegenReportResponse'
+        '404':
+          description: No coin with that symbol in the snapshot.
+        '503':
+          description: 'The first snapshot is still being collected (status: warming).'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+    post:
+      tags:
+      - Gem Screener
+      summary: Ask for the Degen report of one app, or for a refresh (Pro plan or higher)
+      description: 'Makes the report when the app has none, and makes it again when it is outdated or 7 days
+
+        old. Before that it answers with the cached report (`generated` false). The research reads
+
+        DefiLlama''s audit and hacks lists; every filled check links its source. ASKING needs a NEXUS
+
+        Pro plan or higher (ET-28606 item 16): the account comes from X-API-Key, a Bearer token or the
+
+        session cookie; 401 without one, 402 on the Free plan, 503 when the plan cannot be checked.
+
+        READING a finished report (GET) stays free. 6 requests per hour per address.'
+      operationId: gem_screener_degen_report_ask_api_v1_gem_screener_coins__symbol__degen_report_post
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 80
+          description: The coin's slug (e.g. pharaoh-exchange, from any list's `slug`) or its ticker, case-insensitive (e.g. PHAR). A shared ticker goes to the largest market cap; the slug never confuses two coins. Apps are searched before chains.
+          title: Symbol
+        description: The coin's slug (e.g. pharaoh-exchange, from any list's `slug`) or its ticker, case-insensitive (e.g. PHAR). A shared ticker goes to the largest market cap; the slug never confuses two coins. Apps are searched before chains.
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DegenReportResponse'
+        '401':
+          description: 'No account: send X-API-Key, a Bearer token or a session.'
+        '402':
+          description: Asking needs a NEXUS Pro plan or higher (PAID_PLAN_REQUIRED).
+        '404':
+          description: No app with that symbol in the snapshot.
+        '503':
+          description: 'The report cannot be made right now: not available.'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+  /api/v1/gem-screener/report-access:
+    get:
+      tags:
+      - Gem Screener
+      summary: Gem Screener Report Access
+      description: 'May THIS caller ask for a Degen report (ET-28821 item 18)? The same gate the POST runs
+
+        (`require_paid_plan`), answered without asking: the page reads it once to draw the Pro badge
+
+        and "See the plans" for the viewer in front of it. It says nothing about any other account
+
+        and carries no plan name, no user id and no account detail: only `can_ask` and a `reason`
+
+        (`ok`, `sign_in`, `plan`, or `unknown` when the plan cannot be checked; `can_ask` is then
+
+        null and the page shows nothing it does not know). Never cached.'
+      operationId: gem_screener_report_access_api_v1_gem_screener_report_access_get
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  can_ask:
+                    type:
+                    - boolean
+                    - 'null'
+                    description: May THIS caller ask for a Degen report? null when the plan cannot be checked.
+                  reason:
+                    type: string
+                    enum:
+                    - ok
+                    - sign_in
+                    - plan
+                    - unknown
+                additionalProperties: false
+                required:
+                - can_ask
+                - reason
+                description: 'The same gate POST .../degen-report runs, answered without asking. Says nothing about any other account; no plan name, user id or account detail. Never cached (Cache-Control: no-store).'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
+components:
+  schemas:
+    DegenReportStatus:
+      properties:
+        status:
+          type: string
+          title: Status
+          description: none, ready or outdated.
+          default: none
+        researched_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Researched At
+        level_at_report:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Level At Report
+        outdated_reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Outdated Reason
+          description: admin_changed, contract_upgraded, revenue_2x, unlock_near, band_changed, new_audit_or_hack.
+        outdated_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Outdated At
+          description: When the report became outdated.
+        outdated_event:
+          anyOf:
+          - type: object
+          - type: 'null'
+          title: Outdated Event
+          description: 'What was seen: {kind, date, url}.'
+        refresh_open:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Refresh Open
+          description: 'True when a POST would make the report (again): none yet, outdated, or 7 days old.'
+        refresh_opens_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Refresh Opens At
+        valid_until:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Valid Until
+          description: 30 days after the research; never deleted by age.
+        filled:
+          items:
+            type: object
+          type: array
+          title: Filled
+          description: The report checks this report filled, each with its source link.
+          default: []
+        not_filled:
+          items:
+            type: object
+          type: array
+          title: Not Filled
+          description: The report checks it could not fill, and why.
+          default: []
+        earlier:
+          items:
+            type: object
+          type: array
+          title: Earlier
+          description: 'The last three earlier reports: researched_at, level.'
+          default: []
+      type: object
+      title: DegenReportStatus
+    Quarter:
+      properties:
+        quarter:
+          type: string
+          title: Quarter
+        growth:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        r2:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+      type: object
+      required:
+      - quarter
+      title: Quarter
+    Num:
+      properties:
+        value:
+          anyOf:
+          - type: integer
+          - type: number
+          title: Value
+        unit:
+          type: string
+          title: Unit
+        as_of:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: As Of
+          description: ISO UTC time of this number when it differs by field (market data from the previous update).
+        window:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Window
+          description: Measurement window, e.g. '91 days'.
+        basis:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Basis
+          description: How the run-rate was computed.
+      type: object
+      required:
+      - value
+      - unit
+      title: Num
+      description: A number with its unit; market-derived numbers also carry their own as_of.
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    DegenCheck:
+      properties:
+        id:
+          type: string
+          title: Id
+        area:
+          type: string
+          title: Area
+          description: control, supply, earnings, liquidity, heat or history.
+        verdict:
+          type: string
+          title: Verdict
+          description: good, caution, bad, not_checked or not_applicable.
+        code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Code
+          description: 'Why it is not checked: needs_report, not_scanned, insufficient_history, stale_data, not_applicable.'
+        threshold:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Threshold
+          description: 'With insufficient_history: the days of data needed (180).'
+        value:
+          anyOf:
+          - {}
+          - type: 'null'
+          title: Value
+        unit:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Unit
+        text:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Text
+        context:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Context
+        source:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Source
+          description: on-chain, data, DEX pool, exchange volume, inferred, Degen report, DefiLlama audit list, DefiLlama hacks list.
+        source_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Source Url
+        as_of:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: As Of
+      type: object
+      required:
+      - id
+      - area
+      - verdict
+      title: DegenCheck
+    Liquidity:
+      properties:
+        buy_size:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        impact:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        pool_liquidity:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        dex:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Dex
+        chain:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Chain
+        quote:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Quote
+        pair_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Pair Url
+        volume_24h:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        source:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Source
+        ok:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Ok
+        as_of:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: As Of
+      type: object
+      title: Liquidity
+    GrowthWindow:
+      properties:
+        window:
+          type: string
+          title: Window
+        growth:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        r2:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        total:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+      type: object
+      required:
+      - window
+      title: GrowthWindow
+    Unlocks:
+      properties:
+        unlock_90d:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        insider_share_90d:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        next_cliff:
+          anyOf:
+          - $ref: '#/components/schemas/NextCliff'
+          - type: 'null'
+        no_schedule:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        as_of:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: As Of
+      type: object
+      title: Unlocks
+    Degen:
+      properties:
+        ok:
+          type: boolean
+          title: Ok
+        gates_failed:
+          items:
+            type: string
+          type: array
+          title: Gates Failed
+          default: []
+      type: object
+      required:
+      - ok
+      title: Degen
+    Source:
+      properties:
+        name:
+          type: string
+          title: Name
+        url:
+          type: string
+          title: Url
+      type: object
+      required:
+      - name
+      - url
+      title: Source
+    RankedResponse:
+      properties:
+        as_of:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: As Of
+        kind:
+          type: string
+          enum:
+          - apps
+          - chains
+          title: Kind
+        sort:
+          type: string
+          title: Sort
+        order:
+          type: string
+          title: Order
+        limit:
+          $ref: '#/components/schemas/Num'
+        offset:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        total:
+          $ref: '#/components/schemas/Num'
+        next:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next
+          description: The next page; absent on the last one.
+        benchmark:
+          $ref: '#/components/schemas/Benchmark'
+        items:
+          items:
+            $ref: '#/components/schemas/RankedItem'
+          type: array
+          title: Items
+      type: object
+      required:
+      - kind
+      - sort
+      - order
+      - limit
+      - total
+      - benchmark
+      - items
+      title: RankedResponse
+    Pick:
+      properties:
+        symbol:
+          type: string
+          title: Symbol
+        slug:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Slug
+          description: 'The one name of this coin: pass it to /coins/{slug}. A ticker can be shared by two projects (EDGE, UP, MET, INDEX).'
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Name
+        upside:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+          description: 'x: re-rating to the benchmark multiple, capped at 50.'
+        price_vs_revenue:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+          description: Market cap / annual revenue run-rate.
+        revenue_30d:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        dilution_per_week:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+          description: 'New tokens a week as % of market cap, gross: the larger of last-30-day emissions and next-30-day unlocks at today''s price. Absent = unknown, never zero.'
+        market_cap:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        impact_10k_buy:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+          description: '% price impact of a $10K buy in the main pool.'
+        trade_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Trade Url
+          description: Present when the coin trades on EventTrader.
+        detail_url:
+          type: string
+          title: Detail Url
+        api_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Api Url
+        warnings:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Warnings
+          description: 'What the pick still carries although it passes the gates: exit flags, its dilution flag, a short history. Repeat them next to the name.'
+        as_of:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: As Of
+          description: As-of time of this pick's market fields.
+      type: object
+      required:
+      - symbol
+      - detail_url
+      title: Pick
+    DegenReportResponse:
+      properties:
+        as_of:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: As Of
+        market_as_of:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Market As Of
+        symbol:
+          type: string
+          title: Symbol
+        slug:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Slug
+          description: 'The one name of this coin: pass it to /coins/{slug}. A ticker can be shared by two projects (EDGE, UP, MET, INDEX).'
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Name
+        kind:
+          type: string
+          enum:
+          - apps
+          - chains
+          title: Kind
+        title:
+          type: string
+          title: Title
+        lines:
+          items:
+            type: string
+          type: array
+          title: Lines
+          description: What it is / Money / Real or printed / Numbers / Good / Shady / The bet / Verdict — one line each, in this order.
+        lines_as_of:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Lines As Of
+          description: 'When the lines were written: the report''s research time when there is a report, else the snapshot''s.'
+        degen_level:
+          anyOf:
+          - $ref: '#/components/schemas/DegenLevelShort'
+          - type: 'null'
+          description: 'Apps only: the level today.'
+        report:
+          anyOf:
+          - $ref: '#/components/schemas/DegenReportStatus'
+          - type: 'null'
+          description: 'Apps only: status of the Degen report.'
+        ask:
+          anyOf:
+          - type: object
+          - type: 'null'
+          title: Ask
+          description: How to ask for the report or a refresh.
+        generated:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Generated
+          description: 'POST only: true when this call made the report.'
+        disclaimer:
+          type: string
+          title: Disclaimer
+        markdown:
+          type: string
+          title: Markdown
+        words:
+          $ref: '#/components/schemas/Num'
+        max_words:
+          $ref: '#/components/schemas/Num'
+        sources:
+          items:
+            $ref: '#/components/schemas/Source'
+          type: array
+          title: Sources
+        nexus_prompt:
+          type: string
+          title: Nexus Prompt
+          description: 'Pre-fill for the NEXUS chat: asks NEXUS for the same report.'
+        report_url:
+          type: string
+          title: Report Url
+        coin_url:
+          type: string
+          title: Coin Url
+        page_url:
+          type: string
+          title: Page Url
+        method:
+          type: string
+          title: Method
+      type: object
+      required:
+      - symbol
+      - kind
+      - title
+      - lines
+      - disclaimer
+      - markdown
+      - words
+      - max_words
+      - sources
+      - nexus_prompt
+      - report_url
+      - coin_url
+      - page_url
+      - method
+      title: DegenReportResponse
+      description: 'The Degen report (item 25): 8 lines in order, then ''Not financial advice.'''
+    DegenLevel:
+      properties:
+        level:
+          type: integer
+          title: Level
+        low:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Low
+        high:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: High
+        band:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Band
+        band_text:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Band Text
+        unit:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Unit
+        floor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Floor
+          description: 'unverified_source or uncapped_eoa_mint: the level is 8 or more.'
+        missing:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Missing
+          description: Checks that are not checked (they widen low..high).
+        missing_report:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Missing Report
+        why:
+          items:
+            type: string
+          type: array
+          title: Why
+          default: []
+        areas:
+          items:
+            type: object
+          type: array
+          title: Areas
+          description: 'Per area: id, weight, value, worst, line (the key number in plain words), why (the reason for its colour).'
+          default: []
+        checks:
+          items:
+            $ref: '#/components/schemas/DegenCheck'
+          type: array
+          title: Checks
+          default: []
+        weights:
+          anyOf:
+          - additionalProperties:
+              type: number
+            type: object
+          - type: 'null'
+          title: Weights
+          description: Area weights out of 10.
+        later:
+          items:
+            type: string
+          type: array
+          title: Later
+          description: 'Checks shown as ''Not checked yet'': computed where they ran, not in the level.'
+          default: []
+        report:
+          $ref: '#/components/schemas/DegenReportStatus'
+          default:
+            status: none
+            filled: []
+            not_filled: []
+            earlier: []
+        note:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Note
+      type: object
+      required:
+      - level
+      title: DegenLevel
+      description: 'ET-28378: the Degen meter and its checks (v2, ET-28606: ten in the level + four in the later group). Display only.'
+    MonthRevenue:
+      properties:
+        month:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Month
+        revenue:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        partial:
+          type: boolean
+          title: Partial
+          default: false
+      type: object
+      title: MonthRevenue
+    PicksResponse:
+      properties:
+        as_of:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: As Of
+          description: Snapshot time, ISO UTC.
+        what:
+          type: string
+          title: What
+        caveats:
+          anyOf:
+          - type: object
+          - type: 'null'
+          title: Caveats
+          description: 'Keep these next to the list: the backtest verdict and what a pick is not.'
+        benchmark:
+          $ref: '#/components/schemas/Benchmark'
+        picks:
+          items:
+            $ref: '#/components/schemas/Pick'
+          type: array
+          title: Picks
+        coin_url:
+          type: string
+          title: Coin Url
+        next:
+          anyOf:
+          - additionalProperties:
+              type: string
+            type: object
+          - type: 'null'
+          title: Next
+          description: Where to go from a pick.
+      type: object
+      required:
+      - what
+      - benchmark
+      - picks
+      - coin_url
+      title: PicksResponse
+    Trajectory:
+      properties:
+        phase:
+          type: string
+          title: Phase
+        level_vs_peak:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        quarters:
+          items:
+            $ref: '#/components/schemas/Quarter'
+          type: array
+          title: Quarters
+          default: []
+      type: object
+      required:
+      - phase
+      title: Trajectory
+    CoinResponse:
+      properties:
+        as_of:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: As Of
+        market_as_of:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Market As Of
+        market_source:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Market Source
+        price_source:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Price Source
+          description: 'Who supplied the price: coingecko, or defillama when CoinGecko did not answer.'
+        supply_as_of:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Supply As Of
+          description: ISO UTC time of the token supply behind market cap and FDV (older than the price when DeFiLlama priced it).
+        kind:
+          type: string
+          enum:
+          - apps
+          - chains
+          title: Kind
+        symbol:
+          type: string
+          title: Symbol
+        slug:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Slug
+          description: 'The one name of this coin: pass it to /coins/{slug}. A ticker can be shared by two projects (EDGE, UP, MET, INDEX).'
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Name
+        category:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Category
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Url
+          description: 'The project''s own web address (apps and chains): DeFiLlama''s where it has one, otherwise CoinGecko''s homepage; null when neither has one.'
+        chains:
+          items:
+            type: string
+          type: array
+          title: Chains
+          default: []
+        theme:
+          anyOf:
+          - $ref: '#/components/schemas/Theme'
+          - type: 'null'
+        price:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        market_cap:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        fdv:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        fdv_to_market_cap:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        tokens_out:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        price_vs_revenue:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        benchmark:
+          $ref: '#/components/schemas/Benchmark'
+        upside:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        upside_uncapped:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        upside_if_all_tokens_out:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        value_at_benchmark_multiple:
+          $ref: '#/components/schemas/ValueAtBenchmark'
+        test_30x:
+          anyOf:
+          - $ref: '#/components/schemas/Test30'
+          - type: 'null'
+        strength:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        growth_6m:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        growth_6m_fit:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        trajectory:
+          $ref: '#/components/schemas/Trajectory'
+        growth_windows:
+          items:
+            $ref: '#/components/schemas/GrowthWindow'
+          type: array
+          title: Growth Windows
+          default: []
+        history:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        data_lag:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        liquidity:
+          anyOf:
+          - $ref: '#/components/schemas/Liquidity'
+          - type: 'null'
+        unlocks:
+          anyOf:
+          - $ref: '#/components/schemas/Unlocks'
+          - type: 'null'
+        price_change:
+          anyOf:
+          - $ref: '#/components/schemas/PriceChange'
+          - type: 'null'
+        vetted:
+          $ref: '#/components/schemas/Vetted'
+        degen:
+          anyOf:
+          - $ref: '#/components/schemas/Degen'
+          - type: 'null'
+        degen_level:
+          anyOf:
+          - $ref: '#/components/schemas/DegenLevel'
+          - type: 'null'
+          description: 'Apps only: level 1-10 and its checks (ten in the level, four more in the later group).'
+        exit_flags:
+          items:
+            type: string
+          type: array
+          title: Exit Flags
+          default: []
+        risks:
+          items:
+            type: string
+          type: array
+          title: Risks
+          default: []
+        page_url:
+          type: string
+          title: Page Url
+        api_url:
+          type: string
+          title: Api Url
+        degen_report_url:
+          type: string
+          title: Degen Report Url
+        trade_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Trade Url
+        trade_note:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Trade Note
+          description: 'Why trade_url is null: no listed pair with a real ask on our order book.'
+        sources:
+          items:
+            $ref: '#/components/schemas/Source'
+          type: array
+          title: Sources
+          default: []
+        revenue_30d:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        annual_run_rate:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        to_holders:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        emissions_30d:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        earnings_after_emissions_30d:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+          description: 'Apps: 30-day revenue MINUS 30-day token emissions (USD per 30 days), the older measure. It is still returned, but the picks gate and the Degen meter use `dilution`, not this number; revenue is never netted against emissions there. null when there is no emissions data.'
+        revenue_bought_with_emissions:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Revenue Bought With Emissions
+        dilution:
+          title: Dilution
+          description: 'Apps: per_week (% of market cap a week in new tokens, gross), flag (ok, caution, red, unknown) against the benchmark app, basis, new_tokens_30d. Gate 7 fails above 1% a week; unknown is not a fail.'
+          anyOf:
+          - type: object
+            properties:
+              per_week:
+                anyOf:
+                - $ref: '#/components/schemas/Num'
+                - type: 'null'
+                description: New tokens as a percent of market cap per week, gross (no revenue subtracted).
+              flag:
+                type:
+                - string
+                - 'null'
+                description: 'ok | caution | red | unknown. This is the figure the picks gate (gate 7: at most 1 % a week) and the Degen meter use.'
+              flag_meaning:
+                type:
+                - string
+                - 'null'
+              basis:
+                type:
+                - string
+                - 'null'
+                description: 'Which was larger: emissions of the last 30 days, or tokens unlocking in the next 30 days.'
+              new_tokens_30d:
+                anyOf:
+                - $ref: '#/components/schemas/Num'
+                - type: 'null'
+              over_benchmark:
+                anyOf:
+                - $ref: '#/components/schemas/Num'
+                - type: 'null'
+                description: Points a week over the benchmark app.
+            additionalProperties: true
+          - type: 'null'
+        supply:
+          title: Supply
+          description: 'Apps: mcap, fdv, out_pct (share of tokens out), circ (CoinGecko circulating, the figure Upside and Dilution use), unlocked_defillama, sources_ratio, sources_disagree (over 2x).'
+          anyOf:
+          - type: object
+            properties:
+              mcap:
+                type:
+                - number
+                - 'null'
+              fdv:
+                type:
+                - number
+                - 'null'
+              out_pct:
+                type:
+                - number
+                - 'null'
+                description: Share of tokens out, percent.
+              circ:
+                type:
+                - number
+                - 'null'
+                description: Circulating supply the page uses.
+              circ_source:
+                type:
+                - string
+                - 'null'
+                description: coingecko | market_cap/price.
+              unlocked_defillama:
+                type:
+                - number
+                - 'null'
+              sources_ratio:
+                type:
+                - number
+                - 'null'
+              sources_disagree:
+                type: boolean
+                description: The two supply sources differ by more than 2x.
+            additionalProperties: true
+          - type: 'null'
+        next_unlock:
+          title: Next Unlock
+          description: 'Apps: kind event (ts, days, tokens, pct_of_circ, usd, category), stream (tokens_week, week_pct, usd_week) or none (the source shows nothing in 90 days), with total90_*; kind unknown (with a note) when no schedule is on file.'
+          anyOf:
+          - type: object
+            properties:
+              kind:
+                type: string
+                description: 'event | stream | none | unknown (coin record only: no schedule on file).'
+              note:
+                type:
+                - string
+                - 'null'
+              as_of:
+                type:
+                - number
+                - 'null'
+              stale:
+                type: boolean
+              total90_tokens:
+                type:
+                - number
+                - 'null'
+              total90_pct:
+                type:
+                - number
+                - 'null'
+              total90_usd:
+                type:
+                - number
+                - 'null'
+              insider90_share:
+                type:
+                - number
+                - 'null'
+              ts:
+                type:
+                - number
+                - 'null'
+              days:
+                type:
+                - number
+                - 'null'
+              tokens:
+                type:
+                - number
+                - 'null'
+              pct_of_circ:
+                type:
+                - number
+                - 'null'
+              usd:
+                type:
+                - number
+                - 'null'
+              category:
+                type:
+                - string
+                - 'null'
+              insider_share:
+                type:
+                - number
+                - 'null'
+              window_days:
+                type: integer
+              tokens_week:
+                type:
+                - number
+                - 'null'
+              week_pct:
+                type:
+                - number
+                - 'null'
+              usd_week:
+                type:
+                - number
+                - 'null'
+            additionalProperties: true
+          - type: 'null'
+        unlock_schedule:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Unlock Schedule
+          description: 'Apps: known | unknown (no unlock schedule on file).'
+        doublecounted:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Doublecounted
+          description: 'Apps: true when DeFiLlama counts this revenue inside another adapter too and no other row has the token; the row is priced on its own revenue and kept out of sector sums.'
+        monthly_revenue:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/MonthRevenue'
+            type: array
+          - type: 'null'
+          title: Monthly Revenue
+        links:
+          anyOf:
+          - type: object
+          - type: 'null'
+          title: Links
+          description: 'coingecko: the coin''s CoinGecko page. dextools: its deepest DEX pair on DEXTools, or null with no_dextools_reason (no_dex_pair, chain_not_on_dextools).'
+        activity:
+          anyOf:
+          - type: object
+          - type: 'null'
+          title: Activity
+          description: 'Chains: yearly activity fees with source, as_of and every rule that changed the number.'
+        adoption:
+          anyOf:
+          - type: object
+          - type: 'null'
+          title: Adoption
+          description: 'Chains (ET-28821): value (the adoption), inputs {daily_users, dex_volume_30d, tvl, stablecoins} each with as_of, counted {daily_users, dex_volume_30d} after the holding-back rule, limits (what the chain''s TVL and stablecoins back), held_back {any, daily_users, dex_volume_30d} as shares, lift_if_users_and_volume_were_10x, rule, tvl_basis, tvl_own_token_removed, history, oldest_input, source.'
+        gas_token:
+          anyOf:
+          - type: object
+          - type: 'null'
+          title: Gas Token
+          description: 'Chains: {own, symbol, gecko_id, note}. own false = gas is paid in another token, so this token does not collect the chain''s fees. A tag, not a gate.'
+        listing:
+          anyOf:
+          - type: object
+          - type: 'null'
+          title: Listing
+          description: 'Chains: why the chain is listed: categories (layer-1, layer-2), list_mcap, min_mcap, other_chains sharing the token.'
+        price_vs_stablecoins:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+          description: 'Chains: the old price tag, context only.'
+        stablecoins:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        dex_volume_30d:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        tvl:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        fee_check:
+          anyOf:
+          - $ref: '#/components/schemas/FeeCheck'
+          - type: 'null'
+        contract:
+          anyOf:
+          - additionalProperties:
+              type: string
+            type: object
+          - type: 'null'
+          title: Contract
+          description: '{chain, address}: identifies the coin exactly'
+        contracts:
+          items:
+            additionalProperties:
+              type: string
+            type: object
+          type: array
+          title: Contracts
+          default: []
+        chart_analyzer_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Chart Analyzer Url
+          description: Chart Analyzer score for this coin, by contract address (by ticker for native chain coins)
+        chart_from:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Chart From
+          description: 'Chains only: where the chain token''s chart score comes from: exchange (exchange candles, by ticker), dex_pool (the token''s DEX pool, by contract address) or null (no score).'
+        chart:
+          anyOf:
+          - type: object
+          - type: 'null'
+          title: Chart
+          description: 'Apps and chains (a chain: its native token; a score from exchange candles carries symbol instead of contract). {daily, weekly}: each with status (scored, no_pool, no_contract, no_candles, too_little_history, collecting, not_available) and, when scored, score (1-100), band, as_of, source, coverage {covered, coin, timeframe, note}, last_candle_forming and closes (the candles the line is drawn from). A reading of the chart, not advice.'
+      type: object
+      required:
+      - kind
+      - symbol
+      - benchmark
+      - value_at_benchmark_multiple
+      - trajectory
+      - vetted
+      - page_url
+      - api_url
+      - degen_report_url
+      title: CoinResponse
+      description: One coin with every fact the page's detail panel shows. null = unknown.
+    NextCliff:
+      properties:
+        date:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Date
+        in:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        size:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        mostly_to:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Mostly To
+      type: object
+      title: NextCliff
+    DegenLevelShort:
+      properties:
+        level:
+          type: integer
+          title: Level
+          description: 1-10, how much of a casino the coin is; higher is riskier.
+        low:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Low
+          description: The level if every check that is not checked came out good.
+        high:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: High
+          description: The level if every check that is not checked came out bad.
+        band:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Band
+          description: blue_chip (1-3), spicy (4-6) or casino (7-10).
+        unit:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Unit
+        report_status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Report Status
+          description: none, ready or outdated.
+        report_researched_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Report Researched At
+        level_at_report:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Level At Report
+          description: The level when the report was made.
+        report_outdated_reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Report Outdated Reason
+          description: admin_changed, contract_upgraded, revenue_2x, unlock_near, band_changed, new_audit_or_hack.
+        report_outdated_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Report Outdated At
+      type: object
+      required:
+      - level
+      title: DegenLevelShort
+      description: 'ET-28378. Display only: never a filter, a gate or an input to any pick or fund.'
+    RankedItem:
+      properties:
+        rank:
+          $ref: '#/components/schemas/Num'
+        symbol:
+          type: string
+          title: Symbol
+        slug:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Slug
+          description: 'The one name of this coin: pass it to /coins/{slug}. A ticker can be shared by two projects (EDGE, UP, MET, INDEX).'
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Name
+        category:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Category
+        upside:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        price_vs_revenue:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        market_cap:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        growth_6m:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        strength_3m:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+          description: Revenue growth / price growth over ~3 months (window says the real span).
+        revenue_30d:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+          description: Apps only.
+        unlock_schedule:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Unlock Schedule
+          description: 'Apps only: known when an unlock schedule is on file, unknown when none is (unknown, not zero).'
+        stablecoins:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+          description: Chains only. Context, not ranked on.
+        activity_fees:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+          description: 'Chains only: yearly activity fees, the price tag''s base.'
+        no_price_tag_reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: No Price Tag Reason
+          description: 'Chains only, when price_vs_revenue is null: no_activity_data, activity_too_small or no_market_cap.'
+        adoption:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+          description: 'Chains only: adoption, the fourth root of daily users x DEX volume x TVL x stablecoins, users and volume held back to what the chain''s money backs. The price tag''s base.'
+        gas_token:
+          anyOf:
+          - type: object
+          - type: 'null'
+          title: Gas Token
+          description: 'Chains only: {own, symbol, gecko_id, note}. own false = gas is paid in another token, so this token does not collect the chain''s fees.'
+        vetted:
+          type: boolean
+          title: Vetted
+        young:
+          type: boolean
+          title: Young
+        degen_ok:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Degen Ok
+          description: 'Apps only: passes all 6 degen gates.'
+        degen_level:
+          anyOf:
+          - $ref: '#/components/schemas/DegenLevelShort'
+          - type: 'null'
+          description: Apps only. Display only.
+        chart_status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Chart Status
+          description: The Chart Analyzer's daily status for the coin's contract, or for a chain's native token (scored, no_pool, no_contract, no_candles, too_little_history, collecting, not_available).
+        chart_score:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+          description: Daily chart score 1-100, a reading of the chart, not advice; never a sort key.
+        chart_band:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Chart Band
+        detail_url:
+          type: string
+          title: Detail Url
+        api_url:
+          type: string
+          title: Api Url
+        trade_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Trade Url
+      type: object
+      required:
+      - rank
+      - symbol
+      - vetted
+      - young
+      - detail_url
+      - api_url
+      title: RankedItem
+    Test30:
+      properties:
+        implied_market_cap:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        ceiling:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        ceiling_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Ceiling Name
+        ceiling_kind:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Ceiling Kind
+        fits_under_ceiling:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Fits Under Ceiling
+        room_to_ceiling:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        upside_at_least_30x:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Upside At Least 30X
+      type: object
+      title: Test30
+    Theme:
+      properties:
+        key:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Key
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Name
+        tags:
+          items:
+            type: string
+          type: array
+          title: Tags
+          default: []
+        alt_sensitivity:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+          description: 'How far the theme beats BTC when alts beat BTC; 1 = like the average top-50 alt. Tags: leads, waiting, turning, falling, own_story, fund_up.'
+      type: object
+      title: Theme
+    Benchmark:
+      properties:
+        name:
+          type: string
+          title: Name
+          description: Hyperliquid for apps, a named leader chain for chains.
+        price_vs_revenue:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        kind:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Kind
+          description: 'Chains: ''leader'', or ''median'' when no chain may lead.'
+        rule:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Rule
+          description: 'Chains: how the leader is chosen.'
+        measure:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Measure
+          description: 'Chains: what the price tag divides by.'
+        yearly_activity_fees:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+          description: 'Chains: the leader''s yearly activity fees.'
+        may_lead:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: May Lead
+          description: Chains that pass the leader filter.
+        cannot_lead:
+          anyOf:
+          - items:
+              type: object
+            type: array
+          - type: 'null'
+          title: Cannot Lead
+          description: Chains filtered out, each with its reason.
+        adoption_version:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Adoption Version
+          description: 'Chains: ''four-inputs-1'' when adoption is daily users, DEX volume, TVL and stablecoins together.'
+        members:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Members
+          description: 'Chains: the chains whose median price tag is the benchmark.'
+        not_in_median:
+          anyOf:
+          - items:
+              type: object
+            type: array
+          - type: 'null'
+          title: Not In Median
+          description: Chains left out of the median, each with its reason (market_cap_under_1bn, insufficient_history, stale_data, held_back_over_half, no_adoption_data).
+        hold_rule:
+          anyOf:
+          - type: object
+          - type: 'null'
+          title: Hold Rule
+          description: 'Chains: the holding-back lines (pct, users_per_usd_tvl, users_per_usd_stablecoins, dex_turnover_30d): users and DEX volume count only up to them.'
+        source:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Source
+      type: object
+      required:
+      - name
+      title: Benchmark
+    Vetted:
+      properties:
+        ok:
+          type: boolean
+          title: Ok
+        young:
+          type: boolean
+          title: Young
+        failed:
+          items:
+            type: string
+          type: array
+          title: Failed
+          default: []
+      type: object
+      required:
+      - ok
+      - young
+      title: Vetted
+    ValueAtBenchmark:
+      properties:
+        market_cap:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        price:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        capped:
+          type: boolean
+          title: Capped
+          default: false
+      type: object
+      title: ValueAtBenchmark
+    FeeCheck:
+      properties:
+        fees_run_rate:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        market_cap_vs_fees:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        upside_by_fees:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+      type: object
+      title: FeeCheck
+    PriceChange:
+      properties:
+        7d:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        30d:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        1y:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        from_all_time_high:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        all_time_high:
+          anyOf:
+          - $ref: '#/components/schemas/Num'
+          - type: 'null'
+        all_time_high_date:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: All Time High Date
+      type: object
+      title: PriceChange
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

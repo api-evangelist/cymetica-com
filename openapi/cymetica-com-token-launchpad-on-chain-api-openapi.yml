@@ -61,7 +61,9 @@ paths:
           anyOf:
           - type: integer
           - type: 'null'
+          description: 'Only launches on this chain (4663 Robinhood Chain, 5042 Arc). Omit for every listed chain. A chain in config `paused_chain_ids` is unlisted: its tokens are left out of the default list and returned only when that chain_id is asked for explicitly.'
           title: Chain Id
+        description: 'Only launches on this chain (4663 Robinhood Chain, 5042 Arc). Omit for every listed chain. A chain in config `paused_chain_ids` is unlisted: its tokens are left out of the default list and returned only when that chain_id is asked for explicitly.'
       - name: sort
         in: query
         required: false
@@ -151,8 +153,11 @@ paths:
         schema:
           type: integer
           maximum: 500
+          minimum: 1
+          description: Maximum rows in the whole response, across both sources
           default: 200
           title: Limit
+        description: Maximum rows in the whole response, across both sources
       - name: include_external
         in: query
         required: false
@@ -550,60 +555,59 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
       security: []
+  /api/v1/launchpad/arc/clock:
+    get:
+      tags:
+      - Token Launchpad (on-chain)
+      summary: Arc Mainnet Clock
+      description: 'Public go-live clock for /launchpad/arc: `opens_at` (ISO-8601 UTC),
+
+        `opened` (a public go-live signal fired), `opened_at`, the per-signal
+
+        booleans and `checked_at`. The page polls this every 30 s so a detection
+
+        retargets or ends the countdown without a deploy.'
+      operationId: arc_mainnet_clock_api_v1_launchpad_arc_clock_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  opens_at:
+                    type: string
+                    description: ISO-8601 UTC go-live target.
+                  opened:
+                    type: boolean
+                  opened_at:
+                    type:
+                    - string
+                    - 'null'
+                  signals:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: Per-signal booleans from the go-live poller.
+                  checked_at:
+                    type:
+                    - string
+                    - 'null'
+                  source:
+                    type: string
+                    enum:
+                    - env
+                    - poller
+                additionalProperties: false
+                required:
+                - opens_at
+                - opened
+                - signals
+                - source
+      security: []
 components:
   schemas:
-    CrossLaunchRecordRequest:
-      properties:
-        platform:
-          type: string
-          maxLength: 32
-          title: Platform
-          description: Launcher slug, e.g. 'arcpad', 'lift', 'radian' or 'warp'
-        chain_id:
-          type: integer
-          title: Chain Id
-          description: Chain the launch happened on (5042002 / 5042)
-        tx_hash:
-          anyOf:
-          - type: string
-            pattern: ^0x[0-9a-fA-F]{64}$
-          - type: 'null'
-          title: Tx Hash
-          description: 'Factory launches we encoded (ArcPad, lift.fun, Radian): the launch tx hash — verified by receipt'
-        token_address:
-          anyOf:
-          - type: string
-            pattern: ^0x[0-9a-fA-F]{40}$
-          - type: 'null'
-          title: Token Address
-          description: 'Launches made on a platform''s OWN site (Warp, Arcodian, Archemist, Long.supply, …): the token address it minted — verified on-chain (contract + symbol matches `symbol`)'
-        creator_address:
-          type: string
-          pattern: ^0x[0-9a-fA-F]{40}$
-          title: Creator Address
-        source_token_address:
-          anyOf:
-          - type: string
-            pattern: ^0x[0-9a-fA-F]{40}$
-          - type: 'null'
-          title: Source Token Address
-          description: Your EventTrader token on the same chain
-        name:
-          type: string
-          maxLength: 100
-          title: Name
-          default: ''
-        symbol:
-          type: string
-          maxLength: 20
-          title: Symbol
-          default: ''
-      type: object
-      required:
-      - platform
-      - chain_id
-      - creator_address
-      title: CrossLaunchRecordRequest
     LaunchPrepareRequest:
       properties:
         name:
@@ -711,6 +715,67 @@ components:
       - symbol
       title: LaunchPrepareRequest
       description: Everything a launch writes on-chain. Immutable once signed.
+    CrossLaunchRecordRequest:
+      properties:
+        platform:
+          type: string
+          maxLength: 32
+          title: Platform
+          description: Launcher slug, e.g. 'arcpad', 'lift', 'radian' or 'warp'
+        chain_id:
+          type: integer
+          title: Chain Id
+          description: Chain the launch happened on (5042002 / 5042)
+        tx_hash:
+          anyOf:
+          - type: string
+            pattern: ^0x[0-9a-fA-F]{64}$
+          - type: 'null'
+          title: Tx Hash
+          description: 'Factory launches we encoded (ArcPad, lift.fun, Radian): the launch tx hash — verified by receipt'
+        token_address:
+          anyOf:
+          - type: string
+            pattern: ^0x[0-9a-fA-F]{40}$
+          - type: 'null'
+          title: Token Address
+          description: 'Launches made on a platform''s OWN site (Warp, Arcodian, Archemist, Long.supply, …): the token address it minted — verified on-chain (contract + symbol matches `symbol`)'
+        creator_address:
+          type: string
+          pattern: ^0x[0-9a-fA-F]{40}$
+          title: Creator Address
+        source_token_address:
+          anyOf:
+          - type: string
+            pattern: ^0x[0-9a-fA-F]{40}$
+          - type: 'null'
+          title: Source Token Address
+          description: Your EventTrader token on the same chain
+        name:
+          type: string
+          maxLength: 100
+          title: Name
+          default: ''
+        symbol:
+          type: string
+          maxLength: 20
+          title: Symbol
+          default: ''
+      type: object
+      required:
+      - platform
+      - chain_id
+      - creator_address
+      title: CrossLaunchRecordRequest
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
     ValidationError:
       properties:
         loc:
@@ -726,21 +791,17 @@ components:
         type:
           type: string
           title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
       type: object
       required:
       - loc
       - msg
       - type
       title: ValidationError
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

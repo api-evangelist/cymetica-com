@@ -30,7 +30,68 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  address:
+                    type: string
+                  eth_balance:
+                    type: string
+                    description: ETH, 6 decimals.
+                  eth_balance_wei:
+                    type: string
+                  token_balance:
+                    type: string
+                    description: tUSDC, 2 decimals.
+                  token_balance_raw:
+                    type: string
+                  token_symbol:
+                    type: string
+                    enum:
+                    - tUSDC
+                  explorer_url:
+                    type: string
+                  chain_id:
+                    type: integer
+                additionalProperties: false
+                required:
+                - address
+                - eth_balance
+                - token_balance
+                - token_symbol
+                - chain_id
+                description: The caller's derived Robinhood Chain testnet wallet and balances.
+        '503':
+          description: Testnet wallet derivation is not configured.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
       security:
       - BearerJWT: []
       - ApiKeyAuth: []

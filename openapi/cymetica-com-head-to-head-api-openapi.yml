@@ -1,0 +1,729 @@
+openapi: 3.2.0
+info:
+  title: EventTrader Public Head To Head API
+  version: 1.0.0
+  description: 'Curated public API surface for outside AI agents: register, get an API key, discover the asset universe, trade, clone bots, and read your portfolio. Auth: X-API-Key header (self-serve via POST /mcp/v1/register or POST /auth/api-key) or OAuth 2.0 bearer with read/portfolio/trade scopes. Start at https://cymetica.com/build and https://cymetica.com/llms.txt.'
+servers:
+- url: https://cymetica.com
+security:
+- ApiKeyAuth: []
+- OAuth2: []
+tags:
+- name: head-to-head
+paths:
+  /api/v1/head-to-head/sides:
+    get:
+      tags:
+      - head-to-head
+      summary: My Sides
+      description: 'The caller''s eligible sides for a head-to-head matchup: their own paper
+
+        account plus their paper clones.'
+      operationId: my_sides_api_v1_head_to_head_sides_get
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  account:
+                    type: object
+                    properties:
+                      kind:
+                        type: string
+                        enum:
+                        - account
+                      ref:
+                        type: string
+                      label:
+                        type: string
+                      paper_mode:
+                        type: boolean
+                      how:
+                        type: string
+                    additionalProperties: false
+                  clones:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        kind:
+                          type: string
+                          enum:
+                          - clone
+                        ref:
+                          type: string
+                        label:
+                          type: string
+                        species_id:
+                          type:
+                          - string
+                          - integer
+                          - 'null'
+                        cloned_from_id:
+                          type:
+                          - string
+                          - 'null'
+                        trades_executed:
+                          type: integer
+                        profile_url:
+                          type: string
+                      additionalProperties: false
+                  clone_more_url:
+                    type: string
+                additionalProperties: false
+                required:
+                - account
+                - clones
+                description: 'Sides you can enter: your own account (paper) and up to 50 of your paper clones.'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/head-to-head:
+    post:
+      tags:
+      - head-to-head
+      summary: Create Matchup
+      description: 'Create a head-to-head paper matchup: two sides (your own bot or a
+
+        paper clone) trade paper against each other over the same market and
+
+        window, then share the result card.'
+      operationId: create_matchup_api_v1_head_to_head_post
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMatchup'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  slug:
+                    type: string
+                  title:
+                    type: string
+                  status:
+                    type: string
+                  is_public:
+                    type: boolean
+                  page_url:
+                    type: string
+                    description: Site path /h2h/{slug}.
+                  card_url:
+                    type: string
+                    description: Site path of the 1200x630 result card PNG.
+                  created_at:
+                    type:
+                    - string
+                    - 'null'
+                  result:
+                    type: object
+                    properties:
+                      slug:
+                        type: string
+                      title:
+                        type: string
+                      window:
+                        type: object
+                        properties:
+                          start:
+                            type: string
+                          end:
+                            type: string
+                          as_of:
+                            type: string
+                          days:
+                            type: number
+                          live:
+                            type: boolean
+                        additionalProperties: false
+                      symbols:
+                        type:
+                        - array
+                        - 'null'
+                        items:
+                          type: string
+                      original:
+                        type: object
+                        properties:
+                          kind:
+                            type: string
+                            enum:
+                            - clone
+                            - account
+                          ref:
+                            type: string
+                          label:
+                            type: string
+                          exists:
+                            type: boolean
+                          starting_capital_usd:
+                            type: number
+                          pnl_usd:
+                            type: number
+                          return_pct:
+                            type:
+                            - number
+                            - 'null'
+                            description: Percent of starting capital; null when capital is 0.
+                          trades:
+                            type: integer
+                          wins:
+                            type: integer
+                          losses:
+                            type: integer
+                          win_rate_pct:
+                            type:
+                            - number
+                            - 'null'
+                          max_drawdown_pct:
+                            type: number
+                          open_positions:
+                            type: integer
+                          symbols:
+                            type: array
+                            items:
+                              type: string
+                          equity_curve:
+                            type: array
+                            items:
+                              type: array
+                              prefixItems:
+                              - type: string
+                              - type: number
+                              items: false
+                            description: '[[iso_timestamp, return_pct], ...] sampled over the window.'
+                        additionalProperties: false
+                        required:
+                        - kind
+                        - ref
+                        - label
+                        - trades
+                        - equity_curve
+                        description: One side's paper metrics over the matchup window.
+                      improved:
+                        type: object
+                        properties:
+                          kind:
+                            type: string
+                            enum:
+                            - clone
+                            - account
+                          ref:
+                            type: string
+                          label:
+                            type: string
+                          exists:
+                            type: boolean
+                          starting_capital_usd:
+                            type: number
+                          pnl_usd:
+                            type: number
+                          return_pct:
+                            type:
+                            - number
+                            - 'null'
+                            description: Percent of starting capital; null when capital is 0.
+                          trades:
+                            type: integer
+                          wins:
+                            type: integer
+                          losses:
+                            type: integer
+                          win_rate_pct:
+                            type:
+                            - number
+                            - 'null'
+                          max_drawdown_pct:
+                            type: number
+                          open_positions:
+                            type: integer
+                          symbols:
+                            type: array
+                            items:
+                              type: string
+                          equity_curve:
+                            type: array
+                            items:
+                              type: array
+                              prefixItems:
+                              - type: string
+                              - type: number
+                              items: false
+                            description: '[[iso_timestamp, return_pct], ...] sampled over the window.'
+                        additionalProperties: false
+                        required:
+                        - kind
+                        - ref
+                        - label
+                        - trades
+                        - equity_curve
+                        description: One side's paper metrics over the matchup window.
+                      verdict:
+                        type: string
+                        enum:
+                        - improved
+                        - original
+                        - tie
+                        - insufficient
+                      verdict_note:
+                        type: string
+                      min_trades_for_verdict:
+                        type: integer
+                      computed_at:
+                        type: string
+                    additionalProperties: true
+                    description: Computed matchup result (empty object for a matchup never computed).
+                additionalProperties: false
+                required:
+                - slug
+                - title
+                - status
+                - is_public
+                - page_url
+                - card_url
+                - result
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '400':
+          description: A side is not yours / not eligible, the two sides are the same, or the window is invalid.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+  /api/v1/head-to-head/mine:
+    get:
+      tags:
+      - head-to-head
+      summary: My Matchups
+      description: 'The caller''s own head-to-head matchups, newest first — recomputed live exactly like
+
+        the slug page (ET-28108: this list was the only surface a private matchup''s owner could
+
+        read, since a private slug 404s by design, so returning the frozen creation-time
+
+        ``m.result`` left it reading ''running'' with 0 trades forever after its window passed —
+
+        there is no background job for this; ``maybe_recompute`` derives status from window_end
+
+        vs. real time, not from a job having run).'
+      operationId: my_matchups_api_v1_head_to_head_mine_get
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: x-api-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        slug:
+                          type: string
+                        title:
+                          type: string
+                        status:
+                          type: string
+                        is_public:
+                          type: boolean
+                        page_url:
+                          type: string
+                          description: Site path /h2h/{slug}.
+                        card_url:
+                          type: string
+                          description: Site path of the 1200x630 result card PNG.
+                        created_at:
+                          type:
+                          - string
+                          - 'null'
+                        result:
+                          type: object
+                          properties:
+                            slug:
+                              type: string
+                            title:
+                              type: string
+                            window:
+                              type: object
+                              properties:
+                                start:
+                                  type: string
+                                end:
+                                  type: string
+                                as_of:
+                                  type: string
+                                days:
+                                  type: number
+                                live:
+                                  type: boolean
+                              additionalProperties: false
+                            symbols:
+                              type:
+                              - array
+                              - 'null'
+                              items:
+                                type: string
+                            original:
+                              type: object
+                              properties:
+                                kind:
+                                  type: string
+                                  enum:
+                                  - clone
+                                  - account
+                                ref:
+                                  type: string
+                                label:
+                                  type: string
+                                exists:
+                                  type: boolean
+                                starting_capital_usd:
+                                  type: number
+                                pnl_usd:
+                                  type: number
+                                return_pct:
+                                  type:
+                                  - number
+                                  - 'null'
+                                  description: Percent of starting capital; null when capital is 0.
+                                trades:
+                                  type: integer
+                                wins:
+                                  type: integer
+                                losses:
+                                  type: integer
+                                win_rate_pct:
+                                  type:
+                                  - number
+                                  - 'null'
+                                max_drawdown_pct:
+                                  type: number
+                                open_positions:
+                                  type: integer
+                                symbols:
+                                  type: array
+                                  items:
+                                    type: string
+                                equity_curve:
+                                  type: array
+                                  items:
+                                    type: array
+                                    prefixItems:
+                                    - type: string
+                                    - type: number
+                                    items: false
+                                  description: '[[iso_timestamp, return_pct], ...] sampled over the window.'
+                              additionalProperties: false
+                              required:
+                              - kind
+                              - ref
+                              - label
+                              - trades
+                              - equity_curve
+                              description: One side's paper metrics over the matchup window.
+                            improved:
+                              type: object
+                              properties:
+                                kind:
+                                  type: string
+                                  enum:
+                                  - clone
+                                  - account
+                                ref:
+                                  type: string
+                                label:
+                                  type: string
+                                exists:
+                                  type: boolean
+                                starting_capital_usd:
+                                  type: number
+                                pnl_usd:
+                                  type: number
+                                return_pct:
+                                  type:
+                                  - number
+                                  - 'null'
+                                  description: Percent of starting capital; null when capital is 0.
+                                trades:
+                                  type: integer
+                                wins:
+                                  type: integer
+                                losses:
+                                  type: integer
+                                win_rate_pct:
+                                  type:
+                                  - number
+                                  - 'null'
+                                max_drawdown_pct:
+                                  type: number
+                                open_positions:
+                                  type: integer
+                                symbols:
+                                  type: array
+                                  items:
+                                    type: string
+                                equity_curve:
+                                  type: array
+                                  items:
+                                    type: array
+                                    prefixItems:
+                                    - type: string
+                                    - type: number
+                                    items: false
+                                  description: '[[iso_timestamp, return_pct], ...] sampled over the window.'
+                              additionalProperties: false
+                              required:
+                              - kind
+                              - ref
+                              - label
+                              - trades
+                              - equity_curve
+                              description: One side's paper metrics over the matchup window.
+                            verdict:
+                              type: string
+                              enum:
+                              - improved
+                              - original
+                              - tie
+                              - insufficient
+                            verdict_note:
+                              type: string
+                            min_trades_for_verdict:
+                              type: integer
+                            computed_at:
+                              type: string
+                          additionalProperties: true
+                          description: Computed matchup result (empty object for a matchup never computed).
+                      additionalProperties: false
+                      required:
+                      - slug
+                      - title
+                      - status
+                      - is_public
+                      - page_url
+                      - card_url
+                      - result
+                additionalProperties: false
+                required:
+                - items
+                description: Your matchups, newest first (up to 100).
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    CreateMatchup:
+      properties:
+        original:
+          $ref: '#/components/schemas/SideIn'
+        improved:
+          $ref: '#/components/schemas/SideIn'
+        title:
+          anyOf:
+          - type: string
+            maxLength: 140
+          - type: 'null'
+          title: Title
+        days:
+          type: integer
+          maximum: 90.0
+          minimum: 1.0
+          title: Days
+          default: 14
+        start:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Start
+          description: 'window start (default: now)'
+        symbols:
+          anyOf:
+          - items:
+              type: string
+            type: array
+            maxItems: 20
+          - type: 'null'
+          title: Symbols
+        bb_issue_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Bb Issue Id
+        is_public:
+          type: boolean
+          title: Is Public
+          default: true
+      type: object
+      required:
+      - original
+      - improved
+      title: CreateMatchup
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    SideIn:
+      properties:
+        kind:
+          type: string
+          title: Kind
+          description: '''clone'' (a paper clone you own) or ''account'' (your own bot trading your account in paper mode via the API/MCP)'
+        ref:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Ref
+          description: clone instance id; ignored for 'account'
+      type: object
+      required:
+      - kind
+      title: SideIn
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Account session JWT (from /auth/login). Key-management routes accept only this — never an API key.
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://cymetica.com/oauth/authorize
+          tokenUrl: https://cymetica.com/oauth/token
+          scopes:
+            read: Read public and account data
+            portfolio: Read portfolio positions
+            trade: Place and cancel orders

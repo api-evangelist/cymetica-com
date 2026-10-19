@@ -44,7 +44,18 @@ paths:
 
         Live mode clones require a prior deposit.
 
-        The cloned bot starts PAUSED - user must enable trading.'
+        The cloned bot starts PAUSED - user must enable trading.
+
+
+        One ACTIVE clone per source per mode (paper/live) per account. A second
+
+        request for the same source in the same mode is refused 409 ALREADY_CLONED
+
+        and names the existing limit; it is not a transient failure. Exception: a
+
+        PAPER clone on a paid NEXUS plan (the plan GET /nexus/usage reports) may
+
+        repeat a source (" Clone #2", …) within the paid paper caps.'
       operationId: clone_bot_api_v1_cloned_bots_clone_post
       parameters:
       - name: authorization
@@ -68,20 +79,24 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CloneBotRequest'
+              $ref: '#/components/schemas/src__api__routes__cloned_bot__CloneBotRequest'
       responses:
         '200':
           description: Successful Response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CloneBotResponse'
+                $ref: '#/components/schemas/src__api__routes__cloned_bot__CloneBotResponse'
+        '404':
+          description: 'The source bot/species does not exist: {"detail":{"error":{"code":"SOURCE_NOT_FOUND","message":…}}}'
+        '409':
+          description: 'Refused for a reason a retry will not change — you already hold an active clone of this source in the requested mode (ALREADY_CLONED; one active clone per source per mode per account; a PAPER clone on a paid NEXUS plan (Pro, Max 5x, Max 20x) may repeat a source as Clone #2, #3 … within the paid Paper caps), or the source is inactive (SOURCE_INACTIVE). Body: {"detail":{"error":{"code":…,"message":…}}}'
+        '400':
+          description: 'Limits per account (a 400 names the one reached): Free plan, Paper or Live mode, and Live mode on every plan: 5 TRADING bots per mode (paused bots do not count, pause one to clone another) or 25 bots in total including paused ones. Paper mode on a paid NEXUS plan (Pro, Max 5x, Max 20x): 100 TRADING Paper bots (paused bots do not count) or 200 Paper bots in total including paused ones; only the paid Paper caps also let you repeat a source (Clone #2, #3 ...)'
         '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+          description: Malformed request (validation error) or unknown source_type.
+        '503':
+          description: 'Transient: wallet generation collided; retrying is appropriate.'
   /api/v1/cloned-bots/my-clones:
     get:
       tags:
@@ -90,7 +105,11 @@ paths:
       description: 'Get all bots cloned by the current user, optionally filtered by paper/live mode.
 
 
-        EVE-14229: Set include_inactive=true to see deactivated bots.'
+        EVE-14229: Set include_inactive=true to see deactivated bots.
+
+        ET-28660: every bot carries ``status`` (active | paused | stopped | deleted);
+
+        a deleted bot also has ``deleted_at`` and ``deactivated_reason``.'
       operationId: get_my_clones_api_v1_cloned_bots_my_clones_get
       parameters:
       - name: mode
@@ -137,13 +156,625 @@ paths:
                 type: array
                 items:
                   type: object
-                title: Response Get My Clones Api V1 Cloned Bots My Clones Get
+                  properties:
+                    id:
+                      type: string
+                    name:
+                      type:
+                      - string
+                      - 'null'
+                    type:
+                      type: string
+                      description: wta_species, perpetual_agent, backtest_species or custom.
+                    source_id:
+                      type:
+                      - string
+                      - 'null'
+                    source_name:
+                      type:
+                      - string
+                      - 'null'
+                    source_symbol:
+                      type:
+                      - string
+                      - 'null'
+                    team:
+                      type: string
+                    status:
+                      type: string
+                      enum:
+                      - active
+                      - paused
+                      - stopped
+                      - deleted
+                      description: Lifecycle of the bot. active = trading; paused = not trading (owner paused it or it never started); stopped = not trading because the system auto-paused it (see `auto_pause_reason`); deleted = soft-deleted by DELETE /api/v1/cloned-bots/{instance_id} (listed only with include_inactive=true; its balance and activity answer 404).
+                    deleted_at:
+                      type:
+                      - string
+                      - 'null'
+                      description: ISO 8601 time the bot was deleted; null unless status is deleted.
+                    deactivated_reason:
+                      type:
+                      - string
+                      - 'null'
+                      description: Why it was deactivated (`Deleted by owner`); null unless status is deleted.
+                    is_trading:
+                      type: boolean
+                      description: Kept for compatibility; `status` names the state.
+                    is_paper:
+                      type: boolean
+                    current_balance_usdc:
+                      type: number
+                    owner_balance_usdc:
+                      type: number
+                    total_profit_usdc:
+                      type: number
+                    trades_executed:
+                      type: integer
+                    win_rate:
+                      type: number
+                      description: 0-1.
+                    onchain_pct:
+                      type: number
+                    capital:
+                      type:
+                      - object
+                      - 'null'
+                    execution_economics:
+                      type: object
+                      properties: {}
+                      additionalProperties: true
+                    auto_pause_reason:
+                      type:
+                      - string
+                      - 'null'
+                    auto_pause_pnl_pct:
+                      type:
+                      - number
+                      - 'null'
+                    auto_pause_at:
+                      type:
+                      - string
+                      - 'null'
+                    last_trade_at:
+                      type:
+                      - string
+                      - 'null'
+                    created_at:
+                      type:
+                      - string
+                      - 'null'
+                    owner:
+                      type: object
+                      properties:
+                        kind:
+                          type: string
+                          description: human or agent.
+                        agent_id:
+                          type: string
+                        agent_name:
+                          type: string
+                      additionalProperties: true
+                  additionalProperties: true
+                  required:
+                  - id
+                  - status
+                  - is_trading
+                  description: One cloned bot. Other fields (wallet, strategy, indicators, avatar) are as before.
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/cloned-bots/backtest/queue:
+    get:
+      tags:
+      - cloned-bots
+      summary: Get Backtest Queue
+      description: 'Get global backtest queue status.
+
+
+        Returns active count, max concurrent, queued count, and anonymized queue items.
+
+        No authentication required.'
+      operationId: get_backtest_queue_api_v1_cloned_bots_backtest_queue_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Get Backtest Queue Api V1 Cloned Bots Backtest Queue Get
+      security: []
+  /api/v1/cloned-bots/backtest/quote:
+    get:
+      tags:
+      - cloned-bots
+      summary: Get Backtest Quote
+      description: 'The paid-run confirmation (ET-21042 item 8): free runs remaining, runs,
+
+        BRRR required, BRRR contract and live price, USDC cost, conversion fee and
+
+        slippage, maximum total charge. Paper mode shows the same real charge.'
+      operationId: get_backtest_quote_api_v1_cloned_bots_backtest_quote_get
+      parameters:
+      - name: num_runs
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 10
+          minimum: 1
+          description: Runs per bot
+          default: 1
+          title: Num Runs
+        description: Runs per bot
+      - name: bots
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 20
+          minimum: 1
+          description: Bots in a team run
+          default: 1
+          title: Bots
+        description: Bots in a team run
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  runs_requested:
+                    type: integer
+                  bots:
+                    type: integer
+                  runs_per_bot:
+                    type: integer
+                  free_daily_limit:
+                    type: integer
+                  free_used_today:
+                    type: integer
+                  free_runs_remaining:
+                    type: integer
+                  free_runs_used_by_this:
+                    type: integer
+                  paid_runs:
+                    type: integer
+                  cost_per_run:
+                    type: string
+                  cost_currency:
+                    type: string
+                  brrr_required:
+                    type: number
+                  brrr_balance:
+                    type: number
+                  brrr_shortfall:
+                    type: number
+                  brrr_contract:
+                    type:
+                    - string
+                    - 'null'
+                  brrr_contract_chain:
+                    type: string
+                  brrr_best_ask_usdc:
+                    type:
+                    - number
+                    - 'null'
+                  brrr_price_bound_usdc:
+                    type:
+                    - number
+                    - 'null'
+                  price_source:
+                    type:
+                    - string
+                    - 'null'
+                  usdc_cost:
+                    type:
+                    - number
+                    - 'null'
+                  conversion_fee_bps:
+                    type:
+                    - number
+                    - 'null'
+                  conversion_fee_usdc:
+                    type:
+                    - number
+                    - 'null'
+                  conversion_slippage_pct:
+                    type:
+                    - number
+                    - 'null'
+                  max_total_charge_usdc:
+                    type:
+                    - number
+                    - 'null'
+                  mode:
+                    type: string
+                  charge_is_real:
+                    type: boolean
+                  paper_mode_note:
+                    type: string
+                  confirmation_required:
+                    type: boolean
+                    description: true when paid runs are in the request; echo max_total_charge_usdc as confirmed_max_charge_usdc when starting.
+                additionalProperties: true
+                required:
+                - runs_requested
+                - paid_runs
+                - brrr_required
+                - confirmation_required
+                description: 'Cost confirmation for `num_runs` × `bots` runs: free runs left, BRRR required, live BRRR price, USDC cost, fee and slippage, maximum total charge.'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Session JWT required (an API key is not accepted here).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security:
+      - BearerJWT: []
+  /api/v1/cloned-bots/backtest/runs/{run_id}:
+    get:
+      tags:
+      - cloned-bots
+      summary: Get Backtest Run Record
+      description: 'The immutable run record (ET-21042 items 1/5): parameter snapshot, config
+
+        hash, engine + data version, UTC window, seed, cost model, result checksum.
+
+        Owner only.'
+      operationId: get_backtest_run_record_api_v1_cloned_bots_backtest_runs__run_id__get
+      parameters:
+      - name: run_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Run Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  run_id:
+                    type: string
+                  status:
+                    type: string
+                  config_hash:
+                    type: string
+                  asset_id:
+                    type:
+                    - string
+                    - 'null'
+                    description: Stable instrument id `<class>:<SYMBOL>` of the series the run read, e.g. crypto:BTC (Bitcoin) vs stock:BTC (Grayscale Bitcoin Mini Trust).
+                  asset_class:
+                    type:
+                    - string
+                    - 'null'
+                    description: crypto | stock | perpetual | wta | polymarket.
+                  symbol:
+                    type:
+                    - string
+                    - 'null'
+                  data_source:
+                    type:
+                    - string
+                    - 'null'
+                  candle_source:
+                    type:
+                    - string
+                    - 'null'
+                    description: 'Feed the class maps to: crypto (Binance 5m) or stocks (Yahoo 1h/1d), with the stored-history fallback.'
+                  engine_version:
+                    type: string
+                  data_hash:
+                    type:
+                    - string
+                    - 'null'
+                  seed:
+                    type:
+                    - integer
+                    - 'null'
+                  result_checksum:
+                    type:
+                    - string
+                    - 'null'
+                  window_start:
+                    type:
+                    - string
+                    - 'null'
+                  window_end:
+                    type:
+                    - string
+                    - 'null'
+                  created_at:
+                    type:
+                    - string
+                    - 'null'
+                  record:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: 'The full immutable run record: parameter_snapshot (with asset_id), data_version, window_utc, cost_model, benchmark, checksum_covers.'
+                  result_summary:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                    description: 'Headline metrics: total_return_pct, sharpe_ratio, max_drawdown_pct, total_trades, win_rate, ending_capital.'
+                additionalProperties: true
+                required:
+                - run_id
+                - status
+                - config_hash
+                - engine_version
+                - record
+                description: The immutable run record — owner only.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '400':
+          description: Invalid run id.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '403':
+          description: Not your run.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: No run record with that id.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security:
+      - BearerJWT: []
+  /api/v1/cloned-bots/backtest/available-assets:
+    get:
+      tags:
+      - cloned-bots
+      summary: Get Backtest Available Assets
+      description: 'Return platform-validated asset lists for each backtest data source.
+
+
+        No authentication required. Used by frontend to populate symbol dropdowns.'
+      operationId: get_backtest_available_assets_api_v1_cloned_bots_backtest_available_assets_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Get Backtest Available Assets Api V1 Cloned Bots Backtest Available Assets Get
+      security: []
+  /api/v1/cloned-bots/backtest/catalog-assets:
+    get:
+      tags:
+      - cloned-bots
+      summary: Search Backtest Catalog Assets
+      description: 'Search the ~48k trading-vehicle catalog for back-testable symbols.
+
+
+        The catalog is too large for a static dropdown, so the UI searches it here by
+
+        symbol or name. No auth (read-only lookup, same as available-assets). Every
+
+        cataloged vehicle is back-testable via the existing candle engine.'
+      operationId: search_backtest_catalog_assets_api_v1_cloned_bots_backtest_catalog_assets_get
+      parameters:
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          default: ''
+          title: Q
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 50
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  query:
+                    type: string
+                  assets:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        value:
+                          type: string
+                          description: Ticker symbol to send as `symbol` with data_source=catalog.
+                        asset_id:
+                          type:
+                          - string
+                          - 'null'
+                          description: '`crypto:BTC` / `stock:AAPL` — the class is the candle series a run reads; the name below belongs to that same class.'
+                        name:
+                          type:
+                          - string
+                          - 'null'
+                        label:
+                          type: string
+                        asset_class:
+                          type: string
+                          description: crypto | stock
+                        data_source:
+                          type: string
+                          description: crypto | stocks
+                        has_market:
+                          type: boolean
+                        has_history:
+                          type:
+                          - boolean
+                          - 'null'
+                          description: false = no backfilled candles (a run would fail); null = coverage unknown.
+                        market_note:
+                          type: string
+                      additionalProperties: true
+                      required:
+                      - value
+                      - label
+                      - asset_class
+                      - data_source
+                additionalProperties: false
+                required:
+                - query
+                - assets
+                description: Catalog search (`q`, `limit` ≤ 200). One item per symbol, named from the class it is routed to.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
   /api/v1/cloned-bots/{instance_id}/fund:
     post:
       tags:
@@ -311,6 +942,116 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/cloned-bots/{instance_id}/profile:
+    get:
+      tags:
+      - cloned-bots
+      summary: Get Bot Profile
+      description: 'Get full profile for a cloned bot.
+
+
+        Returns comprehensive data including:
+
+        - Bot identity and visual info
+
+        - Trading settings
+
+        - Performance metrics
+
+        - Recent activity summary
+
+        - Basescan wallet link for verification'
+      operationId: get_bot_profile_api_v1_cloned_bots__instance_id__profile_get
+      parameters:
+      - name: instance_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Instance Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  reference_number:
+                    type: string
+                  type:
+                    type: string
+                    description: wta_species, perpetual_agent, backtest_species or custom.
+                  source_id:
+                    type:
+                    - string
+                    - 'null'
+                  name:
+                    type:
+                    - string
+                    - 'null'
+                  source_name:
+                    type:
+                    - string
+                    - 'null'
+                  source_symbol:
+                    type:
+                    - string
+                    - 'null'
+                  strategy_type:
+                    type:
+                    - string
+                    - 'null'
+                  strategy_override:
+                    type:
+                    - string
+                    - 'null'
+                  strategy_description:
+                    type:
+                    - string
+                    - 'null'
+                  primary_indicators:
+                    type: array
+                    items:
+                      type: object
+                      properties: {}
+                      additionalProperties: true
+                  live_decision_source:
+                    type:
+                    - object
+                    - 'null'
+                    description: 'The rule the clone''s 5-minute epoch entries are decided on: strategy_symbol, label, differs_from_display (true when that rule is not the indicators the species advertises).'
+                  auto_pause_reason:
+                    type:
+                    - string
+                    - 'null'
+                    description: stop_loss / take_profit / breakeven / trailing_floor; null while trading.
+                  is_paper:
+                    type: boolean
+                  is_trading:
+                    type: boolean
+                additionalProperties: true
+                required:
+                - id
+                - name
+                description: The clone's profile — identity, strategy, stop_loss_pct / take_profit_pct settings, live_decision_source, lifecycle and performance. Owner-only fields appear with a key.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security: []
   /api/v1/cloned-bots/{instance_id}/activity:
     get:
       tags:
@@ -650,32 +1391,216 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/cloned-bots/{instance_id}/backtest:
+    post:
+      tags:
+      - cloned-bots
+      summary: Start Backtest
+      description: 'Start a backtest for an equipped model on this bot. Requires a deposit.
+
+
+        Runs in the background. Poll GET /backtest/status for progress.
+
+        Supports multi-run (num_runs 1-10) — 3 free runs per UTC day, then 1 BRRR per run (backtest_billing.py).'
+      operationId: start_backtest_api_v1_cloned_bots__instance_id__backtest_post
+      parameters:
+      - name: instance_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Instance Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/src__api__routes__cloned_bot__BacktestRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  group_id:
+                    type: string
+                  runs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        run_id:
+                          type: string
+                        status:
+                          type: string
+                          description: running | queued | failed
+                        model_id:
+                          type:
+                          - string
+                          - 'null'
+                        queue_position:
+                          type:
+                          - integer
+                          - 'null'
+                        error:
+                          type:
+                          - string
+                          - 'null'
+                      additionalProperties: true
+                  total_runs:
+                    type: integer
+                  brrr_charged:
+                    type: integer
+                additionalProperties: true
+                required:
+                - group_id
+                - runs
+                - total_runs
+                description: Runs started (or queued) for the bot; poll GET /api/v1/cloned-bots/{instance_id}/backtest/status, then read the immutable record at /backtest/runs/{run_id}.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '400':
+          description: Unknown data_source, missing symbol, or an unconfirmed paid charge.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '402':
+          description: Not enough BRRR / USDC to fund the paid runs.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '403':
+          description: Only the bot owner can run backtests.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+        '404':
+          description: Bot not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    anyOf:
+                    - type: string
+                    - type: object
+                      properties:
+                        error:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                          additionalProperties: true
+                          required:
+                          - code
+                          - message
+                      additionalProperties: true
+                      required:
+                      - error
+                    - type: object
+                additionalProperties: true
+                required:
+                - detail
+                description: 'Error body: `detail` is a message string or an `{error: {code, message}}` object.'
+      security:
+      - BearerJWT: []
 components:
   schemas:
-    FundBotRequest:
-      properties:
-        amount:
-          type: number
-          exclusiveMinimum: 0.0
-          title: Amount
-          description: Amount in USDC to transfer to the bot
-      type: object
-      required:
-      - amount
-      title: FundBotRequest
-      description: Request to fund a clone bot from user's balance.
-    WithdrawBotRequest:
-      properties:
-        amount:
-          type: number
-          exclusiveMinimum: 0.0
-          title: Amount
-          description: Amount in USDC to withdraw from the bot
-      type: object
-      required:
-      - amount
-      title: WithdrawBotRequest
-      description: Request to withdraw funds from a clone bot back to user's balance.
     UpdateSettingsRequest:
       properties:
         stop_loss_pct:
@@ -849,6 +1774,12 @@ components:
           - type: 'null'
           title: Strategy Override
           description: 'Per-instance base-strategy override (ET-15226): ''none'' = run with NO base strategy (research/verifier bots — perpetual-epoch and catalog lanes place no trades, no strategy chip shown); ''inherit'' or null = restore the template strategy; a live strategy symbol (e.g. ''HELIX'', ''CORR'') pins the perpetual lane to that exact versioned strategy (ET-17247 Phase 2).'
+        auto_resume_after_stop:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Auto Resume After Stop
+          description: After a stop-loss / take-profit / breakeven / trailing-floor pause the bot starts a new risk episode by itself one epoch later (baseline re-armed from the current balance, lifetime P&L kept, a trading_resumed event written) — the same re-arm as pressing Resume. true = always, false = stay paused until you resume, null = the default for the mode (paper bots ON, live bots OFF).
         trailing_floor_pct:
           anyOf:
           - type: number
@@ -882,42 +1813,171 @@ components:
       type: object
       title: UpdateSettingsRequest
       description: Request to update bot settings.
-    CloneBotRequest:
+    GoLiveRequest:
       properties:
-        source_type:
-          type: string
-          title: Source Type
-          description: 'Type: ''wta_species'' or ''perpetual_agent'''
-        source_id:
-          type: string
-          title: Source Id
-          description: ID of the species/agent to clone
         custom_name:
           anyOf:
           - type: string
             maxLength: 100
           - type: 'null'
           title: Custom Name
-          description: Optional custom name
-        is_paper:
-          anyOf:
-          - type: boolean
-          - type: 'null'
-          title: Is Paper
-          description: Explicit paper/live mode. If None, inherits user's simulation_mode.
-        paper:
-          anyOf:
-          - type: boolean
-          - type: 'null'
-          title: Paper
-          description: Same as is_paper (canonical name shared with the event-card endpoints). true = paper clone, false = live clone, omitted = inherits the account's simulation_mode.
+          description: Optional name for the live bot
       type: object
-      required:
-      - source_type
-      - source_id
-      title: CloneBotRequest
-      description: Request to clone a bot.
-    CloneBotResponse:
+      title: GoLiveRequest
+      description: Request to create a live bot from a paper bot's settings.
+    src__api__routes__cloned_bot__BacktestRequest:
+      properties:
+        model_id:
+          type: string
+          title: Model Id
+          description: ID of the equipped model to backtest (optional for perpetual)
+          default: ''
+        data_source:
+          type: string
+          title: Data Source
+          description: crypto | stocks | perpetual | polymarket | wta | stockbull_stocks | stockbull_crypto
+          default: crypto
+        symbol:
+          type: string
+          title: Symbol
+          description: Trading symbol (e.g. BTC, ETH, SOL)
+          default: BTC
+        asset_id:
+          anyOf:
+          - type: string
+            maxLength: 40
+          - type: 'null'
+          title: Asset Id
+          description: 'data_source=catalog only: the exact catalog instrument picked, as returned by /backtest/catalog-assets (`crypto:<SYMBOL>` or `stock:<SYMBOL>`). Pins the candle series and is stored in the run record; omitted = the catalog''s own classification of the symbol.'
+        period_days:
+          type: integer
+          maximum: 365.0
+          minimum: 7.0
+          title: Period Days
+          description: Backtest period in days
+          default: 30
+        starting_capital:
+          type: number
+          maximum: 10000.0
+          minimum: 100.0
+          title: Starting Capital
+          description: Starting capital in USD
+          default: 1000.0
+        fee_rate:
+          type: number
+          maximum: 0.05
+          minimum: 0.0
+          title: Fee Rate
+          description: Fee rate per trade (0-5%)
+          default: 0.02
+        slippage_bps:
+          type: number
+          maximum: 100.0
+          minimum: 0.0
+          title: Slippage Bps
+          description: Slippage in basis points
+          default: 50.0
+        stop_loss_override:
+          anyOf:
+          - type: number
+            maximum: 20.0
+            minimum: 1.0
+          - type: 'null'
+          title: Stop Loss Override
+          description: Stop loss % override
+        take_profit_override:
+          anyOf:
+          - type: number
+            maximum: 100.0
+            minimum: 5.0
+          - type: 'null'
+          title: Take Profit Override
+          description: Take profit % override
+        max_positions_override:
+          anyOf:
+          - type: integer
+            maximum: 10.0
+            minimum: 1.0
+          - type: 'null'
+          title: Max Positions Override
+          description: Max positions override
+        agent_symbol:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Agent Symbol
+          description: Perpetual agent symbol (e.g. MOMO, DELTA) for perpetual
+        model_slugs:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Model Slugs
+          description: List of ADM model slugs for ensemble backtest
+        num_runs:
+          type: integer
+          maximum: 10.0
+          minimum: 1.0
+          title: Num Runs
+          description: Number of parallel runs (1-10). 3 free runs/day, then 1 BRRR per run.
+          default: 1
+        ta_weight:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Ta Weight
+          description: TA vs Labs blend weight (1.0=pure TA, 0.0=pure Labs)
+          default: 1.0
+        labs_weights:
+          anyOf:
+          - additionalProperties:
+              type: number
+            type: object
+          - type: 'null'
+          title: Labs Weights
+          description: Per-Labs-strategy weights summing to 1.0
+        labs_params:
+          anyOf:
+          - additionalProperties:
+              type: object
+            type: object
+          - type: 'null'
+          title: Labs Params
+          description: Per-Labs-strategy parameters
+        oos_fraction:
+          type: number
+          maximum: 0.5
+          minimum: 0.0
+          title: Oos Fraction
+          description: Out-of-sample share of the window, e.g. 0.3 = last 30% held out
+          default: 0.0
+        confirmed_max_charge_usdc:
+          anyOf:
+          - type: number
+            minimum: 0.0
+          - type: 'null'
+          title: Confirmed Max Charge Usdc
+          description: Echo of quote.max_total_charge_usdc the caller accepted
+        confirmed_brrr:
+          anyOf:
+          - type: number
+            minimum: 0.0
+          - type: 'null'
+          title: Confirmed Brrr
+          description: Echo of quote.brrr_required when no USDC conversion is needed
+        idempotency_key:
+          anyOf:
+          - type: string
+            maxLength: 80
+            minLength: 1
+          - type: 'null'
+          title: Idempotency Key
+          description: Client key; the same key replays the first response instead of starting again
+      type: object
+      title: BacktestRequest
+      description: Request to start a backtest for an equipped model.
+    src__api__routes__cloned_bot__CloneBotResponse:
       properties:
         id:
           type: string
@@ -987,18 +2047,74 @@ components:
       - created_at
       title: CloneBotResponse
       description: Response after cloning a bot.
-    GoLiveRequest:
+    HTTPValidationError:
       properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    WithdrawBotRequest:
+      properties:
+        amount:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Amount
+          description: Amount in USDC to withdraw from the bot
+      type: object
+      required:
+      - amount
+      title: WithdrawBotRequest
+      description: Request to withdraw funds from a clone bot back to user's balance.
+    FundBotRequest:
+      properties:
+        amount:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Amount
+          description: Amount in USDC to transfer to the bot
+      type: object
+      required:
+      - amount
+      title: FundBotRequest
+      description: Request to fund a clone bot from user's balance.
+    src__api__routes__cloned_bot__CloneBotRequest:
+      properties:
+        source_type:
+          type: string
+          title: Source Type
+          description: 'Type: ''wta_species'' or ''perpetual_agent'''
+        source_id:
+          type: string
+          title: Source Id
+          description: ID of the species/agent to clone
         custom_name:
           anyOf:
           - type: string
             maxLength: 100
           - type: 'null'
           title: Custom Name
-          description: Optional name for the live bot
+          description: Optional custom name
+        is_paper:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Paper
+          description: Explicit paper/live mode. If None, inherits user's simulation_mode.
+        paper:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Paper
+          description: Same as is_paper (canonical name shared with the event-card endpoints). true = paper clone, false = live clone, omitted = inherits the account's simulation_mode.
       type: object
-      title: GoLiveRequest
-      description: Request to create a live bot from a paper bot's settings.
+      required:
+      - source_type
+      - source_id
+      title: CloneBotRequest
+      description: Request to clone a bot.
     ValidationError:
       properties:
         loc:
@@ -1014,21 +2130,17 @@ components:
         type:
           type: string
           title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
       type: object
       required:
       - loc
       - msg
       - type
       title: ValidationError
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
   securitySchemes:
     ApiKeyAuth:
       type: apiKey
