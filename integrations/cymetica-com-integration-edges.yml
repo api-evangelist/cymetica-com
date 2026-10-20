@@ -14,7 +14,7 @@ edges:
     registered_name: com.cymetica/event-trader-mcp
     register_id: com.cymetica/event-trader-mcp
     detected_by: sweep-agent-tools.py
-    detected: '2026-10-15'
+    detected: '2026-10-19'
   mcp_registry:
     servers:
     - com.cymetica/event-trader-mcp
@@ -56,12 +56,12 @@ edges:
     spec_file: null
     standard: A2A
     role: a2a-agent-card
-    registered_name: Cymetica AI
+    registered_name: CyMetica AI
     organization: Cymetica
     matched_domain: cymetica.com
     matched_by: own-domain
     detected_by: sweep-ai-agents.py
-    detected: '2026-10-15'
+    detected: '2026-10-19'
   detected_by: sweep-ai-agents.py
   first_seen: '2026-10-15'
 generated: '2026-10-14'
